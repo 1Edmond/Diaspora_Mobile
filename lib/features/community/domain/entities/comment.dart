@@ -1,0 +1,55 @@
+class Comment {
+  final String id;
+  final String postId;
+  final String authorId;
+  final String authorName;
+  final String? authorAvatar;
+  final String content;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
+  final int likesCount;
+  final bool isLiked;
+  final String? parentCommentId; // For nested replies
+
+  const Comment({
+    required this.id,
+    required this.postId,
+    required this.authorId,
+    required this.authorName,
+    this.authorAvatar,
+    required this.content,
+    required this.createdAt,
+    this.updatedAt,
+    this.likesCount = 0,
+    this.isLiked = false,
+    this.parentCommentId,
+  });
+
+  Comment copyWith({
+    String? id,
+    String? postId,
+    String? authorId,
+    String? authorName,
+    String? authorAvatar,
+    String? content,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    int? likesCount,
+    bool? isLiked,
+    String? parentCommentId,
+  }) {
+    return Comment(
+      id: id ?? this.id,
+      postId: postId ?? this.postId,
+      authorId: authorId ?? this.authorId,
+      authorName: authorName ?? this.authorName,
+      authorAvatar: authorAvatar ?? this.authorAvatar,
+      content: content ?? this.content,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      likesCount: likesCount ?? this.likesCount,
+      isLiked: isLiked ?? this.isLiked,
+      parentCommentId: parentCommentId ?? this.parentCommentId,
+    );
+  }
+}
