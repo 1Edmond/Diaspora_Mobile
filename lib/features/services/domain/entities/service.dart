@@ -25,12 +25,13 @@ class Service {
   final double price;
   final String currency;
   final PriceType priceType;
+  final ServiceCategory category;
   final List<String> images;
   final ServiceScope scope;
   final List<String>? allowedDepartments;
   final double rating;
   final int reviewCount;
-  final String status; // PENDING, APPROVED, REJECTED, ACTIVE, INACTIVE
+  final String status;
   final DateTime createdAt;
 
   const Service({
@@ -41,6 +42,7 @@ class Service {
     required this.price,
     required this.currency,
     required this.priceType,
+    this.category = ServiceCategory.OTHER,
     required this.images,
     required this.scope,
     this.allowedDepartments,

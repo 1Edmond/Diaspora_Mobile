@@ -78,7 +78,7 @@ class ChatNotifier extends StateNotifier<AsyncValue<ChatState>> {
               return c.copyWith(
                 lastMessage: message.content,
                 lastMessageTime: message.timestamp,
-                unreadCount: (c.unreadCount ?? 0) + 1,
+                unreadCount: c.unreadCount + 1,
               );
             }
             return c;

@@ -9,6 +9,7 @@ class ServiceModel extends Service {
     required super.price,
     required super.currency,
     required super.priceType,
+    super.category = ServiceCategory.OTHER,
     required super.images,
     required super.scope,
     super.allowedDepartments,
@@ -28,6 +29,7 @@ class ServiceModel extends Service {
       price: service.price,
       currency: service.currency,
       priceType: service.priceType,
+      category: service.category,
       images: service.images,
       scope: service.scope,
       allowedDepartments: service.allowedDepartments,
@@ -50,6 +52,12 @@ class ServiceModel extends Service {
         (e) =>
             e.toString().split('.').last ==
             (json['priceType'] as String? ?? 'FIXED'),
+      ),
+      category: ServiceCategory.values.firstWhere(
+        (e) =>
+            e.toString().split('.').last ==
+            (json['category'] as String? ?? 'OTHER'),
+        orElse: () => ServiceCategory.OTHER,
       ),
       images: List<String>.from(json['images'] ?? []),
       scope: ServiceScope.values.firstWhere(
@@ -78,6 +86,7 @@ class ServiceModel extends Service {
     'price': price,
     'currency': currency,
     'priceType': priceType.toString().split('.').last,
+    'category': category.toString().split('.').last,
     'images': images,
     'scope': scope.toString().split('.').last,
     'allowedDepartments': allowedDepartments,

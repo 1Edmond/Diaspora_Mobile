@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/containers/glass_container.dart';
 import '../../../../shared/widgets/containers/neumorphic_container.dart';
@@ -25,93 +26,100 @@ class ProceduresListScreen extends ConsumerWidget {
                 _buildAppBar(context),
                 Expanded(
                   child: state.when(
-                    data:
-                        (items) => ListView.builder(
-                          padding: const EdgeInsets.all(20),
-                          itemCount: items.length,
-                          itemBuilder: (context, index) {
-                            final p = items[index];
-                            return Padding(
-                                  padding: const EdgeInsets.only(bottom: 20),
-                                  child: InkWell(
-                                    onTap:
-                                        () =>
-                                            context.push('/procedures/${p.id}'),
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: NeumorphicContainer(
-                                      padding: const EdgeInsets.all(20),
-                                      child: Row(
+                    data: (items) => ListView.builder(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        final p = items[index];
+                        final dateFormat = DateFormat('dd/MM/yyyy');
+                        return Padding(
+                              padding: const EdgeInsets.only(bottom: 20),
+                              child: InkWell(
+                                onTap: () => context.push('/procedures/${p.id}'),
+                                borderRadius: BorderRadius.circular(20),
+                                child: NeumorphicContainer(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Row(
+                                    children: [
+                                      Stack(
+                                        alignment: Alignment.center,
                                         children: [
-                                          Stack(
-                                            alignment: Alignment.center,
-                                            children: [
-                                              SizedBox(
-                                                width: 60,
-                                                height: 60,
-                                                child: CircularProgressIndicator(
-                                                  value: p.userProgress / 100,
-                                                  strokeWidth: 6,
-                                                  backgroundColor: AppColors
-                                                      .primary
-                                                      .withValues(alpha: 0.1),
-                                                  valueColor:
-                                                      const AlwaysStoppedAnimation<
-                                                        Color
-                                                      >(AppColors.accent),
-                                                ),
-                                              ),
-                                              Text(
-                                                '${p.userProgress}%',
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(width: 20),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  p.title,
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 17,
-                                                    color: AppColors.getTextMain(context),
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  p.description,
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    color:
-                                                        AppColors.getTextSecondary(context),
-                                                  ),
-                                                ),
-                                              ],
+                                          SizedBox(
+                                            width: 60,
+                                            height: 60,
+                                            child: CircularProgressIndicator(
+                                              value: p.userProgress / 100,
+                                              strokeWidth: 6,
+                                              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
                                             ),
                                           ),
-                                          Icon(
-                                            Icons.arrow_forward_ios_rounded,
-                                            size: 16,
-                                            color: AppColors.getTextSecondary(context),
+                                          Text(
+                                            '${p.userProgress}%',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
                                           ),
                                         ],
                                       ),
-                                    ),
+                                      const SizedBox(width: 20),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              p.title,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 17,
+                                                color: AppColors.getTextMain(context),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              p.description,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: AppColors.getTextSecondary(context),
+                                              ),
+                                            ),
+                                            if (p.deadline != null) ...[
+                                              const SizedBox(height: 6),
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.access_time_rounded, size: 12, color: p.deadline!.isBefore(DateTime.now()) ? Colors.red : AppColors.getTextSecondary(context)),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    'Limite : ${dateFormat.format(p.deadline!)}',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: p.deadline!.isBefore(DateTime.now()) ? Colors.red : AppColors.getTextSecondary(context),
+                                                      fontWeight: p.deadline!.isBefore(DateTime.now()) ? FontWeight.bold : FontWeight.normal,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        size: 16,
+                                        color: AppColors.getTextSecondary(context),
+                                      ),
+                                    ],
                                   ),
-                                )
-                                .animate()
-                                .fadeIn(delay: (index * 100).ms)
-                                .slideX(begin: 0.1);
-                          },
-                        ),
-                    loading:
-                        () => const Center(child: CircularProgressIndicator()),
+                                ),
+                              ),
+                            )
+                            .animate()
+                            .fadeIn(delay: (index * 100).ms)
+                            .slideX(begin: 0.1);
+                      },
+                    ),
+                    loading: () => const Center(child: CircularProgressIndicator()),
                     error: (e, s) => Center(child: Text('Erreur: $e')),
                   ),
                 ),

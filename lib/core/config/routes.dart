@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:diaspora_app/features/chat/presentation/screens/chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,10 +13,20 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/services/presentation/screens/services_home_screen.dart';
 import '../../features/services/presentation/screens/service_detail_screen.dart';
 import '../../features/services/presentation/screens/create_service_screen.dart';
+import '../../features/services/presentation/screens/services_shell.dart';
+import '../../features/services/presentation/screens/reservations_screen.dart';
+import '../../features/services/presentation/screens/my_services_screen.dart';
+import '../../features/services/presentation/screens/service_settings_screen.dart';
+import '../../features/services/presentation/screens/reservation_detail_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
+import '../../features/chat/presentation/screens/chat_shell.dart';
+import '../../features/chat/presentation/screens/chat_screen.dart';
+import '../../features/chat/presentation/screens/contact_profile_screen.dart';
+import '../../features/chat/presentation/screens/contacts_screen.dart';
 import '../../features/chat/presentation/screens/conversation_list_screen.dart';
 import '../../features/chat/presentation/screens/create_conversation_screen.dart';
 import '../../features/chat/presentation/screens/select_contacts_screen.dart';
+import '../../features/chat/presentation/screens/chat_profile_screen.dart';
 
 import '../../features/community/presentation/screens/community_home_screen.dart';
 import '../../features/community/presentation/screens/post_detail_screen.dart';
@@ -39,7 +48,10 @@ import '../../features/wallet/presentation/screens/send_money_screen.dart';
 import '../realtime/realtime_debug_screen.dart';
 
 class AppRouter {
+  static final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
   static GoRouter router(WidgetRef ref) => GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
     routes: [
       GoRoute(path: '/', builder: (c, s) => const SplashPlaceholder()),
@@ -67,21 +79,49 @@ class AppRouter {
           ),
         ],
       ),
-      GoRoute(
-        path: '/services',
-        builder: (c, s) => const ServicesHomeScreen(),
-        routes: [
-          GoRoute(
-            path: ':id',
-            builder:
-                (c, s) =>
-                    ServiceDetailScreen(serviceId: s.pathParameters['id']!),
+      StatefulShellRoute.indexedStack(
+        builder: (c, s, navigationShell) => ServicesShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/services', builder: (c, s) => const ServicesHomeScreen()),
+            ],
           ),
-          GoRoute(
-            path: 'create',
-            builder: (c, s) => const CreateServiceScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/services/reservations', builder: (c, s) => const ReservationsScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/services/mine', builder: (c, s) => const MyServicesScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/services/settings', builder: (c, s) => const ServiceSettingsScreen()),
+            ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/services/create',
+        builder: (c, s) => const CreateServiceScreen(),
+      ),
+      GoRoute(
+        path: '/services/:id',
+        builder: (c, s) => ServiceDetailScreen(
+          serviceId: s.pathParameters['id']!,
+          isOwn: (s.extra as Map?)?['isOwn'] == true,
+        ),
+      ),
+      GoRoute(
+        path: '/services/:id/edit',
+        builder: (c, s) => CreateServiceScreen(editServiceId: s.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/reservations/:id',
+        builder: (c, s) => ReservationDetailScreen(reservationId: s.pathParameters['id']!),
       ),
       GoRoute(
         path: '/procedures',
@@ -99,24 +139,67 @@ class AppRouter {
         path: '/notifications',
         builder: (c, s) => const NotificationsScreen(),
       ),
-      GoRoute(
-        path: '/chat',
-        builder: (c, s) => const ConversationListScreen(),
-        routes: [
-          GoRoute(
-            path: 'create',
-            builder: (c, s) => const CreateConversationScreen(),
+      StatefulShellRoute.indexedStack(
+        builder: (c, s, navigationShell) => ChatShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/chat',
+                builder: (c, s) => const ConversationListScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: 'select-contacts',
-            builder: (c, s) => const SelectContactsScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/chat/contacts',
+                builder: (c, s) => const ContactsScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: ':id',
-            builder:
-                (c, s) => ChatScreen(conversationId: s.pathParameters['id']!),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/chat/settings',
+                builder: (c, s) => const SettingsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/chat/profile',
+                builder: (c, s) => const ChatProfileScreen(),
+              ),
+            ],
           ),
         ],
+      ),
+      // Chat sub-routes (pushed on root navigator — full-screen, bottom nav hidden)
+      // Specific routes must come BEFORE parameterized /chat/:id
+      GoRoute(
+        path: '/chat/create',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (c, s) => const CreateConversationScreen(),
+      ),
+      GoRoute(
+        path: '/chat/select-contacts',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (c, s) => const SelectContactsScreen(),
+      ),
+      GoRoute(
+        path: '/chat/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (c, s) => ChatScreen(conversationId: s.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/contact-profile/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (c, s) => ContactProfileScreen(
+          contactId: s.pathParameters['id']!,
+          contactName: s.extra as String?,
+        ),
       ),
       GoRoute(
         path: '/community',

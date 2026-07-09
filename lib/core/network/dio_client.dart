@@ -364,10 +364,19 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
-      // Chat messages
+      // Chat messages (/chat/conversations/:id/messages)
       if (method == 'GET' &&
           _matches(path, r'^/chat/conversations/[^/]+/messages')) {
         final conversationId = path.split('/')[3];
+        final data = await MockApi.messages(conversationId);
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // Chat messages (/chat/messages/:id — alternative route used by some repos)
+      if (method == 'GET' && _matches(path, r'^/chat/messages/[^/]+')) {
+        final conversationId = path.split('/').last;
         final data = await MockApi.messages(conversationId);
         return handler.resolve(
           Response(requestOptions: options, data: data, statusCode: 200),

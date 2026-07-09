@@ -95,6 +95,10 @@ class _CommunityHomeScreenState extends ConsumerState<CommunityHomeScreen>
       pinned: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.getTextMain(context), size: 20),
+        onPressed: () => context.pop(),
+      ),
       title: Text(
         'Communauté',
         style: TextStyle(

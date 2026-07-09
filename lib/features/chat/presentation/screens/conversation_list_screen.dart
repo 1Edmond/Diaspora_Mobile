@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/design_system.dart';
-import '../../../../shared/widgets/containers/neumorphic_container.dart';
 import '../../domain/entities/conversation.dart';
 import '../controllers/chat_notifier.dart';
 
@@ -11,12 +10,13 @@ class ConversationListScreen extends ConsumerStatefulWidget {
   const ConversationListScreen({super.key});
 
   @override
-  ConsumerState<ConversationListScreen> createState() =>
-      _ConversationListScreenState();
+  ConsumerState<ConversationListScreen> createState() => _ConversationListScreenState();
 }
 
-class _ConversationListScreenState
-    extends ConsumerState<ConversationListScreen> {
+class _ConversationListScreenState extends ConsumerState<ConversationListScreen> {
+  final _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
@@ -26,220 +26,234 @@ class _ConversationListScreenState
   }
 
   @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(chatNotifierProvider);
 
     return Scaffold(
       backgroundColor: AppColors.getBackground(context),
-      body: Stack(
-        children: [
-          _buildBackground(),
-          SafeArea(
-            child: chatState.when(
-              data:
-                  (state) => CustomScrollView(
-                    slivers: [
-                      _buildAppBar(context),
-                      if (state.conversations.isEmpty)
-                        const SliverFillRemaining(
-                          child: Center(child: Text('Aucune conversation')),
-                        )
-                      else
-                        SliverPadding(
-                          padding: const EdgeInsets.all(16),
-                          sliver: SliverList(
-                            delegate: SliverChildBuilderDelegate((
-                              context,
-                              index,
-                            ) {
-                              final conversation = state.conversations[index];
-                              return _buildConversationItem(
-                                conversation,
-                                index,
-                                context,
-                              );
-                            }, childCount: state.conversations.length),
-                          ),
-                        ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            _buildSearch(context),
+            Expanded(
+              child: chatState.when(
+                data: (state) {
+                  final items = state.conversations.where((c) =>
+                    _searchQuery.isEmpty ||
+                    c.title.toLowerCase().contains(_searchQuery.toLowerCase())
+                  ).toList();
+                  if (items.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.chat_bubble_outline_rounded, size: 48, color: AppColors.getTextSecondary(context)),
+                          const SizedBox(height: 12),
+                          Text('Aucune conversation', style: TextStyle(color: AppColors.getTextSecondary(context))),
+                        ],
+                      ),
+                    );
+                  }
+                  return ListView.separated(
+                    padding: EdgeInsets.zero,
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => Divider(height: 1, indent: 88, color: AppColors.getTextSecondary(context).withValues(alpha: 0.08)),
+                    itemBuilder: (context, index) {
+                      final conversation = items[index];
+                      return _ConversationTile(
+                        conversation: conversation,
+                        onTap: () => context.push('/chat/${conversation.id}'),
+                      ).animate().fadeIn(delay: (index * 50).ms).slideX(begin: 0.05);
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, s) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Erreur: $e'),
+                      const SizedBox(height: 12),
+                      FilledButton(onPressed: () => ref.read(chatNotifierProvider.notifier).loadConversations(), child: const Text('Réessayer')),
                     ],
                   ),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => _buildError(error),
+                ),
+              ),
             ),
-          ),
-        ],
-      ),
-      floatingActionButton: NeumorphicContainer(
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        color: AppColors.primary,
-        child: IconButton(
-          icon: const Icon(
-            Icons.edit_note_rounded,
-            color: Colors.white,
-            size: 30,
-          ),
-          onPressed: () => context.push('/chat/create'),
+          ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.primary,
+        onPressed: () => context.push('/chat/create'),
+        child: const Icon(Icons.edit_rounded, color: Colors.white),
       ).animate().scale(delay: 500.ms),
     );
   }
 
-  Widget _buildBackground() {
-    return Positioned(
-      top: -100,
-      left: -50,
-      child: Container(
-        width: 300,
-        height: 300,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.primary.withValues(alpha: 0.05),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      floating: true,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      centerTitle: false,
-      title: Text(
-        'Messages',
-        style: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: AppColors.getTextMain(context),
-        ),
-      ),
-      actions: [
-        IconButton(
-          icon: Icon(Icons.search_rounded, color: AppColors.getTextMain(context)),
-          onPressed: () {},
-        ),
-      ],
-    );
-  }
-
-  Widget _buildConversationItem(Conversation conversation, int index, BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: NeumorphicContainer(
-        padding: const EdgeInsets.all(4),
-        borderRadius: 24,
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
-          leading: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppColors.primaryGradient,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(2),
-            child: CircleAvatar(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              backgroundImage:
-                  conversation.avatarUrl != null
-                      ? NetworkImage(conversation.avatarUrl!)
-                      : null,
-              child:
-                  conversation.avatarUrl == null
-                      ? Text(conversation.title[0].toUpperCase())
-                      : null,
-            ),
-          ),
-          title: Text(
-            conversation.title,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: AppColors.getTextMain(context),
-            ),
-          ),
-          subtitle: Text(
-            conversation.lastMessage,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: AppColors.getTextSecondary(context)),
-          ),
-          trailing: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _formatTime(conversation.lastMessageTime),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.getTextSecondary(context),
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (conversation.unreadCount > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    conversation.unreadCount.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          onTap: () => context.go('/chat/${conversation.id}'),
-        ),
-      ),
-    ).animate().fadeIn(delay: (index * 100).ms).slideX(begin: 0.1);
-  }
-
-  Widget _buildError(dynamic error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Row(
         children: [
-          Text('Erreur: $error'),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed:
-                () =>
-                    ref.read(chatNotifierProvider.notifier).loadConversations(),
-            child: const Text('Réessayer'),
+          Text(
+            'Messages',
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.getTextMain(context)),
+          ),
+          const Spacer(),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.getTextSecondary(context).withValues(alpha: 0.1)),
+            child: IconButton(
+              icon: Icon(Icons.edit_note_rounded, size: 20, color: AppColors.getTextMain(context)),
+              onPressed: () => context.push('/chat/create'),
+            ),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildSearch(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+      child: Container(
+        height: 40,
+        decoration: BoxDecoration(
+          color: AppColors.getTextSecondary(context).withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: TextField(
+          controller: _searchCtrl,
+          onChanged: (v) => setState(() => _searchQuery = v),
+          decoration: InputDecoration(
+            hintText: 'Rechercher',
+            hintStyle: TextStyle(fontSize: 15, color: AppColors.getTextSecondary(context)),
+            prefixIcon: Icon(Icons.search_rounded, size: 20, color: AppColors.getTextSecondary(context)),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConversationTile extends StatelessWidget {
+  final Conversation conversation;
+  final VoidCallback onTap;
+
+  const _ConversationTile({required this.conversation, required this.onTap});
+
   String _formatTime(DateTime time) {
     final now = DateTime.now();
-    final difference = now.difference(time);
-    if (difference.inDays > 0) return '${time.day}/${time.month}';
-    if (difference.inHours > 0)
-      return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
-    if (difference.inMinutes > 0) return '${difference.inMinutes}min';
-    return 'maintenant';
+    final diff = now.difference(time);
+    if (diff.inDays > 6) return '${time.day}/${time.month}';
+    if (diff.inDays > 0) {
+      const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+      return days[time.weekday - 1];
+    }
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  Color _avatarColor(String name) {
+    final colors = [AppColors.primary, AppColors.secondary, AppColors.accent, Colors.orange, Colors.purple, Colors.teal];
+    return colors[name.codeUnitAt(0) % colors.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Row(
+          children: [
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: _avatarColor(conversation.title),
+                  backgroundImage: conversation.avatarUrl != null ? NetworkImage(conversation.avatarUrl!) : null,
+                  child: conversation.avatarUrl == null
+                      ? Text(conversation.title[0].toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18))
+                      : null,
+                ),
+                if (conversation.unreadCount > 0)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
+                        child: Text(
+                          conversation.unreadCount > 99 ? '99+' : conversation.unreadCount.toString(),
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          conversation.title,
+                          style: TextStyle(
+                            fontWeight: conversation.unreadCount > 0 ? FontWeight.bold : FontWeight.w500,
+                            fontSize: 16,
+                            color: AppColors.getTextMain(context),
+                          ),
+                        ),
+                      ),
+                      Text(
+                        _formatTime(conversation.lastMessageTime),
+                        style: TextStyle(fontSize: 12, color: AppColors.getTextSecondary(context)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (conversation.lastMessage.isNotEmpty && ['user_4', 'user_2', 'user_3', 'user_5'].contains(conversation.id == 'conv_1' ? 'user_1' : null)) ...[
+                        Text('Vous: ', style: TextStyle(fontSize: 14, color: AppColors.getTextSecondary(context))),
+                      ],
+                      Expanded(
+                        child: Text(
+                          conversation.lastMessage,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: conversation.unreadCount > 0 ? AppColors.getTextMain(context) : AppColors.getTextSecondary(context),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

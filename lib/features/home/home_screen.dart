@@ -193,6 +193,12 @@ class HomeScreen extends ConsumerWidget {
         AppColors.accent,
       ),
       _MenuItem(
+        Icons.fact_check_rounded,
+        'Démarches',
+        '/procedures',
+        const Color(0xFF8B5CF6),
+      ),
+      _MenuItem(
         Icons.chat_bubble_rounded,
         'Messagerie',
         '/chat',

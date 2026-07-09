@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
+import '../../../../data/mock/mock_services.dart';
 import '../../data/models/service_model.dart';
 import '../../domain/entities/service.dart';
 import '../../domain/repositories/service_repository.dart';
@@ -46,12 +47,13 @@ class ServicesNotifier extends StateNotifier<AsyncValue<List<ServiceModel>>> {
   Future<ServiceModel?> getDetail(String id) async {
     final currentList = state.value;
     if (currentList != null) {
-      final found = currentList.where((s) => s.id == id).firstOrNull;
-      if (found != null) return found;
+      final matches = currentList.where((s) => s.id == id);
+      if (matches.isNotEmpty) return matches.first;
     }
     // Fallback: fetch all and find
     await fetch();
-    return state.value?.where((s) => s.id == id).firstOrNull;
+    final matches = state.value?.where((s) => s.id == id);
+    return (matches == null || matches.isEmpty) ? null : matches.first;
   }
 
   Future<void> create(Map<String, dynamic> payload) async {
@@ -125,12 +127,8 @@ class _MockServiceRepository implements IServiceRepository {
 
   @override
   Future<List<Service>> getServices(String profileId) async {
-    // Return local store + generic mocks
-    if (_localStore.isEmpty) {
-      // Seed with some data if empty
-      return [];
-    }
-    return _localStore;
+    await Future.delayed(const Duration(milliseconds: 400));
+    return [...mockServices, ..._localStore];
   }
 
   @override

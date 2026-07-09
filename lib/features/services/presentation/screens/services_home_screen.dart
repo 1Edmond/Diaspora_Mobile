@@ -4,8 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/containers/glass_container.dart';
-import '../../../../shared/widgets/containers/neumorphic_container.dart';
+import '../../domain/entities/service.dart';
 import '../controllers/services_notifier.dart';
+import '../../data/models/service_model.dart';
 import '../widgets/service_card.dart';
 
 class ServicesHomeScreen extends ConsumerStatefulWidget {
@@ -16,6 +17,11 @@ class ServicesHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _ServicesHomeScreenState extends ConsumerState<ServicesHomeScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+  ServiceCategory? _selectedCategory;
+  String _sortBy = 'rating'; // rating, price_asc, price_desc, newest
+
   @override
   void initState() {
     super.initState();
@@ -23,178 +29,255 @@ class _ServicesHomeScreenState extends ConsumerState<ServicesHomeScreen> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<ServiceModel> _filterAndSort(List<ServiceModel> items) {
+    var result = items.where((s) => s.status == 'ACTIVE').toList();
+
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      result = result.where((s) =>
+        s.title.toLowerCase().contains(q) ||
+        s.description.toLowerCase().contains(q)
+      ).toList();
+    }
+
+    if (_selectedCategory != null) {
+      result = result.where((s) => s.category == _selectedCategory!).toList();
+    }
+
+    switch (_sortBy) {
+      case 'price_asc':
+        result.sort((a, b) => a.price.compareTo(b.price));
+        break;
+      case 'price_desc':
+        result.sort((a, b) => b.price.compareTo(a.price));
+        break;
+      case 'newest':
+        result.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
+      case 'rating':
+      default:
+        result.sort((a, b) => b.rating.compareTo(a.rating));
+        break;
+    }
+
+    return result;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(servicesProvider);
+    final categories = ServiceCategory.values;
 
     return Scaffold(
-      backgroundColor: AppColors.getBackground(context),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
-          _buildBackground(),
+          Positioned(
+            top: -100,
+            right: -80,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.secondary.withValues(alpha: 0.04),
+              ),
+            ),
+          ),
           SafeArea(
             child: CustomScrollView(
               slivers: [
-                _buildAppBar(context),
-                _buildProcedureSummary(context),
-                _buildSectionHeader('Explorez nos Services', context),
-                state.when(
-                  data:
-                      (items) => SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, i) => Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: ServiceCard(
-                                    service: items[i],
-                                    onTap:
-                                        () => context.push(
-                                          '/services/${items[i].id}',
-                                        ),
-                                  )
-                                  .animate()
-                                  .fadeIn(delay: (i * 100).ms)
-                                  .slideY(begin: 0.1),
-                            ),
-                            childCount: items.length,
-                          ),
+                SliverAppBar(
+                  floating: true,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  title: Text(
+                    'E-Services',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.getTextMain(context),
+                    ),
+                  ),
+                  actions: [
+                    IconButton(
+                      icon: Icon(Icons.history_rounded, color: AppColors.getTextMain(context)),
+                      onPressed: () => context.push('/services/reservations'),
+                    ),
+                  ],
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: GlassContainer(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (v) => setState(() => _searchQuery = v),
+                        decoration: InputDecoration(
+                          hintText: 'Rechercher un service...',
+                          hintStyle: TextStyle(color: AppColors.getTextSecondary(context)),
+                          border: InputBorder.none,
+                          icon: Icon(Icons.search_rounded, color: AppColors.getTextSecondary(context)),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(Icons.clear_rounded, color: AppColors.getTextSecondary(context)),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() => _searchQuery = '');
+                                  },
+                                )
+                              : null,
                         ),
                       ),
-                  loading:
-                      () => const SliverFillRemaining(
-                        child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 34,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [
+                        _FilterChip(
+                          label: 'Tous',
+                          selected: _selectedCategory == null,
+                          onTap: () => setState(() => _selectedCategory = null),
+                        ),
+                        ...categories.map((c) => _FilterChip(
+                          label: c.toString().split('.').last.replaceAll('_', ' '),
+                          selected: _selectedCategory == c,
+                          onTap: () => setState(() => _selectedCategory = c),
+                        )),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Disponibles',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.getTextSecondary(context),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const Spacer(),
+                        PopupMenuButton<String>(
+                          onSelected: (v) => setState(() => _sortBy = v),
+                          offset: const Offset(0, 32),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Trier',
+                                style: TextStyle(
+              fontSize: 10,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Icon(Icons.swap_vert_rounded, size: 16, color: AppColors.primary),
+                            ],
+                          ),
+                          itemBuilder: (context) => [
+                            PopupMenuItem(value: 'rating', child: const Text('Meilleure note')),
+                            PopupMenuItem(value: 'price_asc', child: const Text('Prix croissant')),
+                            PopupMenuItem(value: 'price_desc', child: const Text('Prix décroissant')),
+                            PopupMenuItem(value: 'newest', child: const Text('Plus récent')),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                state.when(
+                  data: (items) {
+                    final filtered = _filterAndSort(items);
+                    if (filtered.isEmpty) {
+                      return SliverFillRemaining(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.search_off_rounded, size: 48, color: AppColors.getTextSecondary(context)),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Aucun service trouvé',
+                                style: TextStyle(color: AppColors.getTextSecondary(context)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    return SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, i) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: ServiceCard(
+                              service: filtered[i],
+                              onTap: () => context.push('/services/${filtered[i].id}'),
+                            ).animate().fadeIn(delay: (i * 50).ms).slideX(begin: 0.05),
+                          ),
+                          childCount: filtered.length,
+                        ),
                       ),
-                  error:
-                      (e, s) => SliverFillRemaining(
-                        child: Center(child: Text('Erreur: $e')),
-                      ),
+                    );
+                  },
+                  loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
+                  error: (e, s) => SliverFillRemaining(child: Center(child: Text('Erreur: $e'))),
                 ),
               ],
             ),
           ),
         ],
       ),
-      floatingActionButton: NeumorphicContainer(
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        color: AppColors.primary,
-        child: IconButton(
-          icon: const Icon(
-            Icons.add_task_rounded,
-            color: Colors.white,
-            size: 28,
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _FilterChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : AppColors.getBackground(context),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? AppColors.primary : AppColors.getTextSecondary(context).withValues(alpha: 0.3),
+            ),
           ),
-          onPressed: () => context.push('/services/create'),
-        ),
-      ).animate().scale(delay: 500.ms),
-    );
-  }
-
-  Widget _buildBackground() {
-    return Positioned(
-      top: -150,
-      left: -100,
-      child: Container(
-        width: 350,
-        height: 350,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.primary.withValues(alpha: 0.04),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      floating: true,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      title: Text(
-        'E-Services',
-        style: TextStyle(
-          fontSize: 26,
-          fontWeight: FontWeight.bold,
-          color: AppColors.getTextMain(context),
-        ),
-      ),
-      actions: [
-        IconButton(
-          icon: Icon(Icons.history_rounded, color: AppColors.getTextMain(context)),
-          onPressed: () {},
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProcedureSummary(BuildContext context) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GlassContainer(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Procédures en cours',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.getTextMain(context),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildStatusChip('Juridique', 'En cours', AppColors.primary),
-                  _buildStatusChip('Visa', 'Validé', AppColors.accent),
-                ],
-              ),
-            ],
-          ),
-        ).animate().fadeIn().slideY(begin: 0.1),
-      ),
-    );
-  }
-
-  Widget _buildStatusChip(String label, String status, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-          ),
-          const SizedBox(width: 8),
-          Text(
+          child: Text(
             label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, BuildContext context) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-        child: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.getTextSecondary(context),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : AppColors.getTextSecondary(context),
+            ),
           ),
         ),
       ),
