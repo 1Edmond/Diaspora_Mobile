@@ -77,28 +77,28 @@ class ProceduresListScreen extends ConsumerWidget {
                                               children: [
                                                 Text(
                                                   p.title,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 17,
-                                                    color: AppColors.textMain,
+                                                    color: AppColors.getTextMain(context),
                                                   ),
                                                 ),
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   p.description,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontSize: 13,
                                                     color:
-                                                        AppColors.textSecondary,
+                                                        AppColors.getTextSecondary(context),
                                                   ),
                                                 ),
                                               ],
                                             ),
                                           ),
-                                          const Icon(
+                                          Icon(
                                             Icons.arrow_forward_ios_rounded,
                                             size: 16,
-                                            color: AppColors.textSecondary,
+                                            color: AppColors.getTextSecondary(context),
                                           ),
                                         ],
                                       ),
@@ -145,20 +145,20 @@ class ProceduresListScreen extends ConsumerWidget {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textMain,
+              color: AppColors.getTextMain(context),
               size: 20,
             ),
             onPressed: () => context.pop(),
           ),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             'Mes Démarches',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: AppColors.textMain,
+              color: AppColors.getTextMain(context),
             ),
           ),
         ],

@@ -50,13 +50,13 @@ class NotificationListItem extends StatelessWidget {
           style: TextStyle(
             fontWeight:
                 notification.isRead ? FontWeight.normal : FontWeight.bold,
-            color: AppColors.textMain,
+            color: AppColors.getTextMain(context),
             fontSize: 15,
           ),
         ),
         subtitle: Text(
           notification.body,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          style: TextStyle(color: AppColors.getTextSecondary(context), fontSize: 13),
         ),
         trailing:
             notification.isRead

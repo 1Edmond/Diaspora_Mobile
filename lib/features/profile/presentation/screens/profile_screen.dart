@@ -11,7 +11,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       body: Stack(
         children: [
           _buildBackground(),
@@ -22,9 +22,9 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   _buildAppBar(context),
                   const SizedBox(height: 32),
-                  _buildProfileHeader(),
+                  _buildProfileHeader(context),
                   const SizedBox(height: 40),
-                  _buildMenuSection('Informations Personnelles', [
+                  _buildMenuSection(context, 'Informations Personnelles', [
                     _ProfileMenuItem(
                       Icons.person_outline_rounded,
                       'Détails du compte',
@@ -32,7 +32,7 @@ class ProfileScreen extends StatelessWidget {
                     _ProfileMenuItem(Icons.email_outlined, 'Email et Contact'),
                   ]),
                   const SizedBox(height: 24),
-                  _buildMenuSection('Sécurité et Accès', [
+                  _buildMenuSection(context, 'Sécurité et Accès', [
                     _ProfileMenuItem(
                       Icons.lock_outline_rounded,
                       'Changer le mot de passe',
@@ -40,7 +40,7 @@ class ProfileScreen extends StatelessWidget {
                     _ProfileMenuItem(Icons.fingerprint_rounded, 'Biométrie'),
                   ]),
                   const SizedBox(height: 24),
-                  _buildMenuSection('Préférences', [
+                  _buildMenuSection(context, 'Préférences', [
                     _ProfileMenuItem(
                       Icons.notifications_none_rounded,
                       'Notifications',
@@ -78,19 +78,19 @@ class ProfileScreen extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: AppColors.textMain,
+            color: AppColors.getTextMain(context),
             size: 20,
           ),
           onPressed: () => context.pop(),
         ),
-        const Text(
+        Text(
           'Mon Profil',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: AppColors.textMain,
+            color: AppColors.getTextMain(context),
           ),
         ),
         const SizedBox(width: 48), // Balance
@@ -98,7 +98,7 @@ class ProfileScreen extends StatelessWidget {
     ).animate().fadeIn().slideY(begin: -0.2);
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(BuildContext context) {
     return Column(
       children: [
         Hero(
@@ -122,12 +122,12 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Koffi Togolais',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: AppColors.textMain,
+            color: AppColors.getTextMain(context),
           ),
         ),
         const Text(
@@ -142,7 +142,7 @@ class ProfileScreen extends StatelessWidget {
     ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.9, 0.9));
   }
 
-  Widget _buildMenuSection(String title, List<_ProfileMenuItem> items) {
+  Widget _buildMenuSection(BuildContext context, String title, List<_ProfileMenuItem> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -150,38 +150,38 @@ class ProfileScreen extends StatelessWidget {
           padding: const EdgeInsets.only(left: 8, bottom: 12),
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
+              color: AppColors.getTextSecondary(context),
             ),
           ),
         ),
         GlassContainer(
           padding: EdgeInsets.zero,
           child: Column(
-            children: items.map((item) => _buildTile(item)).toList(),
+            children: items.map((item) => _buildTile(context, item)).toList(),
           ),
         ),
       ],
     ).animate().fadeIn(delay: 300.ms).slideX(begin: 0.1);
   }
 
-  Widget _buildTile(_ProfileMenuItem item) {
+  Widget _buildTile(BuildContext context, _ProfileMenuItem item) {
     return ListTile(
       leading: Icon(item.icon, color: AppColors.primary, size: 22),
       title: Text(
         item.label,
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-          color: AppColors.textMain,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppColors.getTextMain(context),
         ),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.arrow_forward_ios_rounded,
         size: 14,
-        color: AppColors.textSecondary,
+        color: AppColors.getTextSecondary(context),
       ),
       onTap: () {},
     );

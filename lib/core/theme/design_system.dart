@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 
+/// Unified color system for the Diaspora app.
+///
+/// Usage guidelines:
+/// - For text/background → use theme-aware getters:
+///     `getTextMain(context)`, `getTextSecondary(context)`, `getBackground(context)`
+/// - For accent/palette colors → use static constants:
+///     `primary`, `secondary`, `accent`, `success`, `warning`, `info`
 class AppColors {
-  // Get theme-aware background color
+  // ── Theme-aware getters (use these for text & background) ──────────────
+
   static Color getBackground(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
         ? const Color(0xFF1A1A1A)
         : const Color(0xFFE0E5EC);
   }
 
-  // Get theme-aware text colors
   static Color getTextMain(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
         ? const Color(0xFFE5E7EB)
@@ -21,32 +28,44 @@ class AppColors {
         : const Color(0xFF718096);
   }
 
-  // Static colors (theme-independent)
-  static const Color background = Color(0xFFE0E5EC); // Light mode default
-  static const Color backgroundDark = Color(0xFF1A1A1A); // Dark mode
+  // ── Palette (theme-independent – safe everywhere) ─────────────────────
+
   static const Color primary = Color(0xFF6366F1); // Indigo
   static const Color secondary = Color(0xFFEC4899); // Pink
   static const Color accent = Color(0xFF10B981); // Emerald
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color info = Color(0xFF3B82F6);
 
-  // Text Colors (static fallback)
+  // ── Surfaces (theme-dependent – prefer getters above) ─────────────────
+
+  /// Light-mode background (use [getBackground] for theme-aware).
+  static const Color background = Color(0xFFE0E5EC);
+  static const Color backgroundDark = Color(0xFF1A1A1A);
+
+  /// Light-mode text (use [getTextMain]/[getTextSecondary] for theme-aware).
   static const Color textMain = Color(0xFF2D3748);
   static const Color textSecondary = Color(0xFF718096);
 
-  // Neumorphic Shadows
-  static const Color lightShadow = Colors.white;
-  static final Color darkShadow = const Color(
-    0xFFA3B1C6,
-  ).withValues(alpha: 0.4);
+  // ── Neumorphic Shadows ────────────────────────────────────────────────
 
-  // Dark mode shadows
+  static const Color lightShadow = Colors.white;
+  static final Color darkShadow = const Color(0xFFA3B1C6).withValues(alpha: 0.4);
   static final Color darkModeLightShadow = Colors.white.withValues(alpha: 0.05);
   static final Color darkModeDarkShadow = Colors.black.withValues(alpha: 0.5);
 
-  // Glassmorphic Colors
+  // ── Glassmorphic ──────────────────────────────────────────────────────
+
   static final Color glassBackground = Colors.white.withValues(alpha: 0.2);
   static final Color glassBorder = Colors.white.withValues(alpha: 0.5);
 
-  // Gradients
+  // ── Shimmer ───────────────────────────────────────────────────────────
+
+  static const Color shimmerBase = Color(0xFFE0E0E0);
+  static const Color shimmerHighlight = Color(0xFFF5F5F5);
+
+  // ── Gradients ─────────────────────────────────────────────────────────
+
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [primary, Color(0xFF818CF8)],
     begin: Alignment.topLeft,

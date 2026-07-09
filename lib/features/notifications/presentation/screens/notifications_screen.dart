@@ -30,7 +30,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final notificationsState = ref.watch(notificationsStateProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       body: Stack(
         children: [
           _buildBackground(),
@@ -41,7 +41,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 Expanded(
                   child: notificationsState.when(
                     data: (notifications) {
-                      if (notifications.isEmpty) return _buildEmptyState();
+                      if (notifications.isEmpty) return _buildEmptyState(context);
                       return ListView.builder(
                         padding: const EdgeInsets.all(20),
                         itemCount: notifications.length,
@@ -105,20 +105,20 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textMain,
+              color: AppColors.getTextMain(context),
               size: 20,
             ),
             onPressed: () => context.pop(),
           ),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             'Notifications',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: AppColors.textMain,
+              color: AppColors.getTextMain(context),
             ),
           ),
           const Spacer(),
@@ -127,9 +127,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             height: 40,
             borderRadius: 20,
             child: IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.clear_all_rounded,
-                color: AppColors.textMain,
+                color: AppColors.getTextMain(context),
                 size: 20,
               ),
               onPressed: () {
@@ -146,7 +146,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     ).animate().fadeIn().slideY(begin: -0.2);
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -155,24 +155,24 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             width: 100,
             height: 100,
             borderRadius: 50,
-            child: const Icon(
+            child: Icon(
               Icons.notifications_none_rounded,
               size: 48,
-              color: AppColors.textSecondary,
+              color: AppColors.getTextSecondary(context),
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Tout est calme ici',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.textMain,
+              color: AppColors.getTextMain(context),
             ),
           ),
-          const Text(
+          Text(
             'Aucune nouvelle notification.',
-            style: TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: AppColors.getTextSecondary(context)),
           ),
         ],
       ),

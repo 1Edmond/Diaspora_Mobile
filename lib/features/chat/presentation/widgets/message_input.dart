@@ -41,16 +41,16 @@ class _MessageInputState extends State<MessageInput> {
         child: Row(
           children: [
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.emoji_emotions_outlined,
-                color: AppColors.textSecondary,
+                color: AppColors.getTextSecondary(context),
               ),
               onPressed: () {},
             ),
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.add_circle_outline_rounded,
-                color: AppColors.textSecondary,
+                color: AppColors.getTextSecondary(context),
               ),
               onPressed: () {},
             ),
@@ -59,9 +59,9 @@ class _MessageInputState extends State<MessageInput> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: TextField(
                   controller: _controller,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Votre message...',
-                    hintStyle: TextStyle(color: AppColors.textSecondary),
+                    hintStyle: TextStyle(color: AppColors.getTextSecondary(context)),
                     border: InputBorder.none,
                   ),
                   maxLines: null,
@@ -84,11 +84,11 @@ class _MessageInputState extends State<MessageInput> {
           width: 48,
           height: 48,
           borderRadius: 24,
-          color: isTextEmpty ? AppColors.background : AppColors.primary,
+          color: isTextEmpty ? AppColors.getBackground(context) : AppColors.primary,
           child: IconButton(
             icon: Icon(
               isTextEmpty ? Icons.mic_rounded : Icons.send_rounded,
-              color: isTextEmpty ? AppColors.textSecondary : Colors.white,
+              color: isTextEmpty ? AppColors.getTextSecondary(context) : Colors.white,
               size: 20,
             ),
             onPressed: () {

@@ -30,7 +30,7 @@ class _ConversationListScreenState
     final chatState = ref.watch(chatNotifierProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       body: Stack(
         children: [
           _buildBackground(),
@@ -39,7 +39,7 @@ class _ConversationListScreenState
               data:
                   (state) => CustomScrollView(
                     slivers: [
-                      _buildAppBar(),
+                      _buildAppBar(context),
                       if (state.conversations.isEmpty)
                         const SliverFillRemaining(
                           child: Center(child: Text('Aucune conversation')),
@@ -56,6 +56,7 @@ class _ConversationListScreenState
                               return _buildConversationItem(
                                 conversation,
                                 index,
+                                context,
                               );
                             }, childCount: state.conversations.length),
                           ),
@@ -100,30 +101,30 @@ class _ConversationListScreenState
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(BuildContext context) {
     return SliverAppBar(
       floating: true,
       backgroundColor: Colors.transparent,
       elevation: 0,
       centerTitle: false,
-      title: const Text(
+      title: Text(
         'Messages',
         style: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
-          color: AppColors.textMain,
+          color: AppColors.getTextMain(context),
         ),
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.search_rounded, color: AppColors.textMain),
+          icon: Icon(Icons.search_rounded, color: AppColors.getTextMain(context)),
           onPressed: () {},
         ),
       ],
     );
   }
 
-  Widget _buildConversationItem(Conversation conversation, int index) {
+  Widget _buildConversationItem(Conversation conversation, int index, BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: NeumorphicContainer(
@@ -163,17 +164,17 @@ class _ConversationListScreenState
           ),
           title: Text(
             conversation.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: AppColors.textMain,
+              color: AppColors.getTextMain(context),
             ),
           ),
           subtitle: Text(
             conversation.lastMessage,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: AppColors.getTextSecondary(context)),
           ),
           trailing: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -181,9 +182,9 @@ class _ConversationListScreenState
             children: [
               Text(
                 _formatTime(conversation.lastMessageTime),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: AppColors.getTextSecondary(context),
                 ),
               ),
               const SizedBox(height: 8),

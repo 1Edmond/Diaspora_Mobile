@@ -52,19 +52,19 @@ class HomeScreen extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildSectionHeader('Services rapides'),
+                            _buildSectionHeader('Services rapides', context),
                             const SizedBox(height: 16),
                             _buildMenuGrid(context),
                             const SizedBox(height: 32),
-                            _buildSectionHeader('Actualités Communauté'),
+                            _buildSectionHeader('Actualités Communauté', context),
                             const SizedBox(height: 16),
                             _buildCommunityFeed(postsAsync, context),
                             const SizedBox(height: 32),
-                            _buildSectionHeader('Vos Démarches'),
+                            _buildSectionHeader('Vos Démarches', context),
                             const SizedBox(height: 16),
                             _buildProceduresHighlight(proceduresAsync, context),
                             const SizedBox(height: 32),
-                            _buildSectionHeader('Comités Actifs'),
+                            _buildSectionHeader('Comités Actifs', context),
                             const SizedBox(height: 16),
                             _buildCommitteeList(committeesAsync, context),
                             const SizedBox(height: 100),
@@ -125,19 +125,19 @@ class HomeScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Bonjour,',
                   style: TextStyle(
                     fontSize: 16,
-                    color: AppColors.textSecondary,
+                    color: AppColors.getTextSecondary(context),
                   ),
                 ),
                 Text(
                   'Koffi Togolais',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textMain,
+                    color: AppColors.getTextMain(context),
                   ),
                 ),
               ],
@@ -148,9 +148,9 @@ class HomeScreen extends ConsumerWidget {
             height: 48,
             borderRadius: 24,
             child: IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.notifications_none_rounded,
-                color: AppColors.textMain,
+                color: AppColors.getTextMain(context),
                 size: 24,
               ),
               onPressed: () => context.push('/notifications'),
@@ -161,13 +161,13 @@ class HomeScreen extends ConsumerWidget {
     ).animate().fadeIn(delay: 100.ms).slideY(begin: -0.2);
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: AppColors.textMain,
+        color: AppColors.getTextMain(context),
       ),
     ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1);
   }
@@ -242,9 +242,9 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(height: 12),
                       Text(
                         items[index].label,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textMain,
+                          color: AppColors.getTextMain(context),
                           fontSize: 13,
                         ),
                       ),
@@ -300,9 +300,9 @@ class HomeScreen extends ConsumerWidget {
                         const SizedBox(height: 8),
                         Text(
                           c.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: AppColors.textMain,
+                            color: AppColors.getTextMain(context),
                           ),
                         ),
                       ],
@@ -359,19 +359,19 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     Text(
                       p.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
-                        color: AppColors.textMain,
+                        color: AppColors.getTextMain(context),
                       ),
                     ),
                     Text(
                       p.description,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: AppColors.getTextSecondary(context),
                       ),
                     ),
                   ],
@@ -379,10 +379,10 @@ class HomeScreen extends ConsumerWidget {
               ),
               InkWell(
                 onTap: () => context.push('/procedures'),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 16,
-                  color: AppColors.textSecondary,
+                  color: AppColors.getTextSecondary(context),
                 ),
               ),
             ],
@@ -434,9 +434,9 @@ class HomeScreen extends ConsumerWidget {
                                 post.content,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.getTextSecondary(context),
                                 ),
                               ),
                             ],
@@ -466,7 +466,7 @@ class HomeScreen extends ConsumerWidget {
           elevation: 0,
           type: BottomNavigationBarType.fixed,
           selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.textSecondary,
+          unselectedItemColor: AppColors.getTextSecondary(context),
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),

@@ -38,7 +38,7 @@ class ProcedureDetailScreen extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildProgressCard(p),
+                            _buildProgressCard(context, p),
                             const SizedBox(height: 32),
                             Text(
                               'Étapes de la procédure',
@@ -46,11 +46,11 @@ class ProcedureDetailScreen extends ConsumerWidget {
                                 context,
                               ).textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.textMain,
+                                color: AppColors.getTextMain(context),
                               ),
                             ),
                             const SizedBox(height: 16),
-                            _buildStepsList(p),
+                            _buildStepsList(context, p),
                           ],
                         ),
                       ),
@@ -89,23 +89,23 @@ class ProcedureDetailScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(
+        icon: Icon(
           Icons.arrow_back_ios_new_rounded,
-          color: AppColors.textMain,
+          color: AppColors.getTextMain(context),
         ),
         onPressed: () => context.pop(),
       ),
       title: Text(
         title,
-        style: const TextStyle(
-          color: AppColors.textMain,
+        style: TextStyle(
+          color: AppColors.getTextMain(context),
           fontWeight: FontWeight.bold,
         ),
       ),
     );
   }
 
-  Widget _buildProgressCard(dynamic p) {
+  Widget _buildProgressCard(BuildContext context, dynamic p) {
     return NeumorphicContainer(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -129,10 +129,10 @@ class ProcedureDetailScreen extends ConsumerWidget {
                   ),
                   Text(
                     '${p.userProgress}%',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textMain,
+                      color: AppColors.getTextMain(context),
                     ),
                   ),
                 ],
@@ -142,10 +142,10 @@ class ProcedureDetailScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Statut Actuel',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: AppColors.getTextSecondary(context),
                         fontSize: 14,
                       ),
                     ),
@@ -163,8 +163,8 @@ class ProcedureDetailScreen extends ConsumerWidget {
                     const SizedBox(height: 12),
                     Text(
                       p.description,
-                      style: const TextStyle(
-                        color: AppColors.textMain,
+                      style: TextStyle(
+                        color: AppColors.getTextMain(context),
                         fontSize: 14,
                       ),
                     ),
@@ -178,7 +178,7 @@ class ProcedureDetailScreen extends ConsumerWidget {
     ).animate().fadeIn().slideY(begin: 0.1);
   }
 
-  Widget _buildStepsList(dynamic p) {
+  Widget _buildStepsList(BuildContext context, dynamic p) {
     // Mocking steps for now as they might not be in the model yet
     final steps = [
       {'title': 'Dépôt du dossier', 'status': 'Complété', 'date': '12/01/2026'},
@@ -269,14 +269,14 @@ class ProcedureDetailScreen extends ConsumerWidget {
                                 color:
                                     isCurrent
                                         ? AppColors.primary
-                                        : AppColors.textMain,
+                                        : AppColors.getTextMain(context),
                               ),
                             ),
                             Text(
                               step['date']!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.textSecondary,
+                                color: AppColors.getTextSecondary(context),
                               ),
                             ),
                           ],
@@ -291,7 +291,7 @@ class ProcedureDetailScreen extends ConsumerWidget {
                                     ? AppColors.accent
                                     : (isCurrent
                                         ? AppColors.primary
-                                        : AppColors.textSecondary),
+                                        : AppColors.getTextSecondary(context)),
                             fontWeight: FontWeight.w600,
                           ),
                         ),

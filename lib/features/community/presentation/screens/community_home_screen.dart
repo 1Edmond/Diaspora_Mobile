@@ -197,7 +197,7 @@ class _CommunityHomeScreenState extends ConsumerState<CommunityHomeScreen>
           indicatorSize: TabBarIndicatorSize.label,
           indicatorColor: AppColors.primary,
           labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
+          unselectedLabelColor: AppColors.getTextSecondary(context),
           labelStyle: const TextStyle(fontWeight: FontWeight.bold),
           tabs: const [
             Tab(text: 'Actualités'),
@@ -323,8 +323,8 @@ class _CommunityHomeScreenState extends ConsumerState<CommunityHomeScreen>
                           ),
                           Text(
                             event['date']!,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: AppColors.getTextSecondary(context),
                               fontSize: 12,
                             ),
                           ),
@@ -342,16 +342,16 @@ class _CommunityHomeScreenState extends ConsumerState<CommunityHomeScreen>
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.location_on_outlined,
                             size: 14,
-                            color: AppColors.textSecondary,
+                            color: AppColors.getTextSecondary(context),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             event['location']!,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: AppColors.getTextSecondary(context),
                               fontSize: 13,
                             ),
                           ),
@@ -421,17 +421,17 @@ class _CommunityHomeScreenState extends ConsumerState<CommunityHomeScreen>
                     children: [
                       Text(
                         s['title']!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
-                          color: AppColors.textMain,
+                          color: AppColors.getTextMain(context),
                         ),
                       ),
                       Text(
                         s['provider']!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: AppColors.getTextSecondary(context),
                         ),
                       ),
                       const SizedBox(height: 8),

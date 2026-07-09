@@ -41,7 +41,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final chatState = ref.watch(chatNotifierProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       body: Stack(
         children: [
           _buildBackground(),
@@ -107,9 +107,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textMain,
+              color: AppColors.getTextMain(context),
               size: 20,
             ),
             onPressed: () => context.pop(),
@@ -135,10 +135,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       children: [
                         Text(
                           conversation?.title ?? 'Chat',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            color: AppColors.textMain,
+                            color: AppColors.getTextMain(context),
                           ),
                         ),
                         const Text(
@@ -168,9 +168,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.info_outline_rounded,
-              color: AppColors.textSecondary,
+              color: AppColors.getTextSecondary(context),
             ),
             onPressed: () {},
           ),

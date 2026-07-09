@@ -15,7 +15,7 @@ class CommitteeHomeScreen extends ConsumerWidget {
     final committeesAsync = ref.watch(committeesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       body: Stack(
         children: [
           _buildBackground(),
@@ -32,11 +32,11 @@ class CommitteeHomeScreen extends ConsumerWidget {
                     data:
                         (committees) =>
                             committees.isEmpty
-                                ? const Center(
+                                ? Center(
                                   child: Text(
                                     'Aucun comité disponible',
                                     style: TextStyle(
-                                      color: AppColors.textSecondary,
+                                      color: AppColors.getTextSecondary(context),
                                     ),
                                   ),
                                 )
@@ -63,29 +63,29 @@ class CommitteeHomeScreen extends ConsumerWidget {
                                                     Expanded(
                                                       child: Text(
                                                         committee.name,
-                                                        style: const TextStyle(
+                                                        style: TextStyle(
                                                           fontSize: 20,
                                                           fontWeight:
                                                               FontWeight.bold,
                                                           color:
-                                                              AppColors
-                                                                  .textMain,
+                                                              AppColors.getTextMain(context),
                                                         ),
                                                       ),
                                                     ),
                                                     _buildStatusChip(
                                                       committee.status ==
                                                           'ACTIVE',
+                                                      context,
                                                     ),
                                                   ],
                                                 ),
                                                 const SizedBox(height: 12),
                                                 Text(
                                                   committee.description,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontSize: 14,
                                                     color:
-                                                        AppColors.textSecondary,
+                                                        AppColors.getTextSecondary(context),
                                                     height: 1.4,
                                                   ),
                                                 ),
@@ -157,20 +157,20 @@ class CommitteeHomeScreen extends ConsumerWidget {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textMain,
+              color: AppColors.getTextMain(context),
               size: 20,
             ),
             onPressed: () => context.pop(),
           ),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             'Vos Comités',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: AppColors.textMain,
+              color: AppColors.getTextMain(context),
             ),
           ),
         ],
@@ -178,7 +178,7 @@ class CommitteeHomeScreen extends ConsumerWidget {
     ).animate().fadeIn().slideY(begin: -0.2);
   }
 
-  Widget _buildStatusChip(bool isActive) {
+  Widget _buildStatusChip(bool isActive, BuildContext context) {
     return GlassContainer(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       borderRadius: 12,
@@ -226,10 +226,10 @@ class CommitteeHomeScreen extends ConsumerWidget {
               Icon(icon, size: 20, color: AppColors.primary),
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textMain,
+                  color: AppColors.getTextMain(context),
                 ),
               ),
             ],

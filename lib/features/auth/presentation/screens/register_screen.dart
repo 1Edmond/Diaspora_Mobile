@@ -44,7 +44,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           const SizedBox(height: 32),
 
                           // Phone Field
-                          _buildInputLabel(l10n.phoneHint),
+                          _buildInputLabel(l10n.phoneHint, context),
                           const SizedBox(height: 8),
                           Focus(
                             onFocusChange:
@@ -67,7 +67,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           const SizedBox(height: 20),
 
                           // Password Field
-                          _buildInputLabel(l10n.passwordHint),
+                          _buildInputLabel(l10n.passwordHint, context),
                           const SizedBox(height: 8),
                           Focus(
                             onFocusChange:
@@ -90,7 +90,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           const SizedBox(height: 20),
 
                           // User Type Dropdown
-                          _buildInputLabel(l10n.userTypeLabel),
+                          _buildInputLabel(l10n.userTypeLabel, context),
                           const SizedBox(height: 8),
                           NeumorphicContainer(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -148,9 +148,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             top: 40,
             left: 20,
             child: IconButton(
-              icon: const Icon(
+                icon: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                color: AppColors.textMain,
+                color: AppColors.getTextMain(context),
               ),
               onPressed: () => context.pop(),
             ).animate().fadeIn(delay: 800.ms),
@@ -217,22 +217,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           l10n.register,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.textMain,
+            color: AppColors.getTextMain(context),
           ),
         ).animate().fadeIn(delay: 300.ms),
       ],
     );
   }
 
-  Widget _buildInputLabel(String label) {
+  Widget _buildInputLabel(String label, BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
+          color: AppColors.getTextSecondary(context),
         ),
       ),
     );

@@ -27,16 +27,16 @@ class _ServicesHomeScreenState extends ConsumerState<ServicesHomeScreen> {
     final state = ref.watch(servicesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.getBackground(context),
       body: Stack(
         children: [
           _buildBackground(),
           SafeArea(
             child: CustomScrollView(
               slivers: [
-                _buildAppBar(),
-                _buildProcedureSummary(),
-                _buildSectionHeader('Explorez nos Services'),
+                _buildAppBar(context),
+                _buildProcedureSummary(context),
+                _buildSectionHeader('Explorez nos Services', context),
                 state.when(
                   data:
                       (items) => SliverPadding(
@@ -106,29 +106,29 @@ class _ServicesHomeScreenState extends ConsumerState<ServicesHomeScreen> {
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(BuildContext context) {
     return SliverAppBar(
       floating: true,
       backgroundColor: Colors.transparent,
       elevation: 0,
-      title: const Text(
+      title: Text(
         'E-Services',
         style: TextStyle(
           fontSize: 26,
           fontWeight: FontWeight.bold,
-          color: AppColors.textMain,
+          color: AppColors.getTextMain(context),
         ),
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.history_rounded, color: AppColors.textMain),
+          icon: Icon(Icons.history_rounded, color: AppColors.getTextMain(context)),
           onPressed: () {},
         ),
       ],
     );
   }
 
-  Widget _buildProcedureSummary() {
+  Widget _buildProcedureSummary(BuildContext context) {
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -137,12 +137,12 @@ class _ServicesHomeScreenState extends ConsumerState<ServicesHomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Procédures en cours',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textMain,
+                  color: AppColors.getTextMain(context),
                 ),
               ),
               const SizedBox(height: 16),
@@ -185,16 +185,16 @@ class _ServicesHomeScreenState extends ConsumerState<ServicesHomeScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, BuildContext context) {
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
+            color: AppColors.getTextSecondary(context),
           ),
         ),
       ),

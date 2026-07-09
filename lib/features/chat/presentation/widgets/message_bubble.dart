@@ -39,10 +39,10 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
               padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
               child: Text(
                 widget.message.senderName ?? 'Inconnu',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textSecondary,
+                  color: AppColors.getTextSecondary(context),
                 ),
               ),
             ),
@@ -53,9 +53,9 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
             padding: const EdgeInsets.all(4.0),
             child: Text(
               _formatTime(widget.message.timestamp),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
-                color: AppColors.textSecondary,
+                color: AppColors.getTextSecondary(context),
               ),
             ),
           ),
@@ -113,7 +113,7 @@ class _MessageBubbleState extends ConsumerState<MessageBubble> {
         return Text(
           widget.message.content,
           style: TextStyle(
-            color: isMe ? Colors.white : AppColors.textMain,
+            color: isMe ? Colors.white : AppColors.getTextMain(context),
             fontSize: 15,
             height: 1.4,
           ),

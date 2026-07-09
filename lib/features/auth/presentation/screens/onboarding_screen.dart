@@ -65,7 +65,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         gradient: LinearGradient(
           colors: [
             _pages[_currentPage].color.withValues(alpha: 0.1),
-            AppColors.background,
+            AppColors.getBackground(context),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -101,19 +101,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 Text(
                   data.title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textMain,
+                    color: AppColors.getTextMain(context),
                   ),
                 ).animate().fadeIn().slideY(begin: 0.2),
                 const SizedBox(height: 16),
                 Text(
                   data.description,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
-                    color: AppColors.textSecondary,
+                    color: AppColors.getTextSecondary(context),
                   ),
                 ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
               ],
@@ -144,7 +144,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   color:
                       _currentPage == index
                           ? AppColors.primary
-                          : AppColors.textSecondary.withValues(alpha: 0.3),
+                          : AppColors.getTextSecondary(context).withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -156,10 +156,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               Expanded(
                 child: TextButton(
                   onPressed: () => GoRouter.of(context).go('/auth/login'),
-                  child: const Text(
+                  child: Text(
                     'Passer',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: AppColors.getTextSecondary(context),
                       fontWeight: FontWeight.bold,
                     ),
                   ),

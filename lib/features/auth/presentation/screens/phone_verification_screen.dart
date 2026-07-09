@@ -45,15 +45,15 @@ class _PhoneVerificationScreenState
                           Text(
                             l10n.codeSentMessage,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: AppColors.getTextSecondary(context),
                               fontSize: 15,
                             ),
                           ).animate().fadeIn(delay: 400.ms),
                           const SizedBox(height: 32),
 
                           // OTP Field
-                          _buildInputLabel(l10n.codeHint),
+                          _buildInputLabel(l10n.codeHint, context),
                           const SizedBox(height: 8),
                           Focus(
                             onFocusChange:
@@ -113,9 +113,9 @@ class _PhoneVerificationScreenState
             top: 40,
             left: 20,
             child: IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                color: AppColors.textMain,
+                color: AppColors.getTextMain(context),
               ),
               onPressed: () => context.pop(),
             ).animate().fadeIn(delay: 800.ms),
@@ -187,22 +187,22 @@ class _PhoneVerificationScreenState
           l10n.verificationTitle,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.textMain,
+            color: AppColors.getTextMain(context),
           ),
         ).animate().fadeIn(delay: 300.ms),
       ],
     );
   }
 
-  Widget _buildInputLabel(String label) {
+  Widget _buildInputLabel(String label, BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
+          color: AppColors.getTextSecondary(context),
         ),
       ),
     );

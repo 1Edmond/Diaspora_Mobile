@@ -46,7 +46,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(height: 40),
 
                           // Phone Input
-                          _buildInputLabel(l10n.phoneHint),
+                          _buildInputLabel(l10n.phoneHint, context),
                           const SizedBox(height: 8),
                           Focus(
                             onFocusChange:
@@ -69,7 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(height: 24),
 
                           // Password Input
-                          _buildInputLabel(l10n.passwordHint),
+                          _buildInputLabel(l10n.passwordHint, context),
                           const SizedBox(height: 8),
                           Focus(
                             onFocusChange:
@@ -180,22 +180,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           l10n.login,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.textMain,
+            color: AppColors.getTextMain(context),
           ),
         ).animate().fadeIn(delay: 300.ms),
       ],
     );
   }
 
-  Widget _buildInputLabel(String label) {
+  Widget _buildInputLabel(String label, BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
+          color: AppColors.getTextSecondary(context),
         ),
       ),
     );
