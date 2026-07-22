@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../domain/entities/document_category.dart';
-import '../../presentation/controllers/document_providers.dart';
+import '../../../../shared/widgets/containers/neumorphic_container.dart';
+import '../../../../core/theme/design_system.dart';
+import '../controllers/document_providers.dart';
+import '../../data/models/document_type_model.dart';
+import '../../../profile/presentation/controllers/profile_providers.dart';
 
 class UploadDocumentScreen extends ConsumerStatefulWidget {
   const UploadDocumentScreen({super.key});
@@ -14,30 +18,32 @@ class UploadDocumentScreen extends ConsumerStatefulWidget {
 }
 
 class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
-  late TextEditingController _titleController;
   late TextEditingController _descriptionController;
-  DocumentCategory _selectedCategory = DocumentCategory.other;
+  DocumentTypeModel? _selectedType;
   DateTime? _expirationDate;
+  DateTime? _issuedDate;
+  final _issuedByController = TextEditingController();
   PlatformFile? _selectedFile;
   bool _hasExpiration = false;
+  bool _hasIssuedDate = false;
 
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController();
     _descriptionController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
     _descriptionController.dispose();
+    _issuedByController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final uploadAsync = ref.watch(documentUploadProvider);
+    final typesAsync = ref.watch(documentTypesProvider);
 
     ref.listen(documentUploadProvider, (previous, next) {
       next.maybeWhen(
@@ -66,267 +72,408 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ajouter un document'),
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // File selection
-            Text(
-              'Fichier',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: _pickFile,
-              child: Container(
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.grey.shade300,
-                    width: 2,
-                    style: BorderStyle.solid,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey.shade50,
-                ),
-                child: Column(
-                  children: [
-                    if (_selectedFile == null) ...[
-                      Icon(
-                        Icons.cloud_upload_outlined,
-                        size: 48,
-                        color: Colors.grey.shade400,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Cliquez pour sélectionner un fichier',
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'PDF, Images ou Documents',
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ] else ...[
-                      Icon(
-                        Icons.check_circle,
-                        size: 48,
-                        color: Colors.green.shade400,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _selectedFile!.name,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.green.shade700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatFileSize(_selectedFile!.size),
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextButton.icon(
-                        onPressed: _pickFile,
-                        icon: const Icon(Icons.edit),
-                        label: const Text('Changer'),
-                      ),
-                    ],
+      backgroundColor: AppColors.getBackground(context),
+      body: Stack(
+        children: [
+          _buildBackground(),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 24),
+
+                  _buildSectionLabel('Fichier'),
+                  const SizedBox(height: 12),
+                  _buildFilePicker().animate().fadeIn(delay: 100.ms).slideY(begin: 0.1),
+
+                  const SizedBox(height: 28),
+                  _buildSectionLabel('Type de document'),
+                  const SizedBox(height: 12),
+                  _buildTypeDropdown(typesAsync).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
+
+                  const SizedBox(height: 28),
+                  _buildSectionLabel('Description (optionnelle)'),
+                  const SizedBox(height: 12),
+                  _buildDescriptionField().animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),
+
+                  const SizedBox(height: 28),
+                  _buildCheckboxRow(
+                    'Date d\'expiration',
+                    _hasExpiration,
+                    (v) => setState(() {
+                      _hasExpiration = v ?? false;
+                      if (!_hasExpiration) _expirationDate = null;
+                    }),
+                  ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1),
+                  if (_hasExpiration) ...[
+                    const SizedBox(height: 12),
+                    _buildDatePicker(
+                      'Sélectionnez une date',
+                      _expirationDate,
+                      () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _expirationDate ?? DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 3650)),
+                        );
+                        if (date != null) setState(() => _expirationDate = date);
+                      },
+                    ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.05),
                   ],
-                ),
+
+                  const SizedBox(height: 16),
+                  _buildCheckboxRow(
+                    'Date de délivrance',
+                    _hasIssuedDate,
+                    (v) => setState(() {
+                      _hasIssuedDate = v ?? false;
+                      if (!_hasIssuedDate) _issuedDate = null;
+                    }),
+                  ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1),
+                  if (_hasIssuedDate) ...[
+                    const SizedBox(height: 12),
+                    _buildDatePicker(
+                      'Sélectionnez une date',
+                      _issuedDate,
+                      () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _issuedDate ?? DateTime.now(),
+                          firstDate: DateTime(1900),
+                          lastDate: DateTime.now(),
+                        );
+                        if (date != null) setState(() => _issuedDate = date);
+                      },
+                    ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.05),
+                  ],
+
+                  const SizedBox(height: 24),
+                  _buildSectionLabel('Délivré par (optionnel)'),
+                  const SizedBox(height: 12),
+                  _buildIssuedByField().animate().fadeIn(delay: 600.ms).slideY(begin: 0.1),
+
+                  const SizedBox(height: 36),
+                  _buildSubmitButton(uploadAsync).animate().fadeIn(delay: 700.ms).slideY(begin: 0.2),
+                  const SizedBox(height: 12),
+                  _buildCancelButton().animate().fadeIn(delay: 750.ms).slideY(begin: 0.2),
+
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-            // Title
-            Text(
-              'Titre',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackground() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: 300,
+            height: 300,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary.withValues(alpha: 0.05),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _titleController,
-              decoration: InputDecoration(
-                hintText: 'Entrez le titre du document',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                prefixIcon: const Icon(Icons.title),
-              ),
+          ),
+        ),
+        Positioned(
+          bottom: -50,
+          left: -50,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.accent.withValues(alpha: 0.04),
             ),
-            const SizedBox(height: 20),
-            // Category
-            Text(
-              'Catégorie',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<DocumentCategory>(
-              value: _selectedCategory,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                prefixIcon: const Icon(Icons.category),
-              ),
-              items:
-                  DocumentCategory.values
-                      .map(
-                        (category) => DropdownMenuItem(
-                          value: category,
-                          child: Text(category.label),
-                        ),
-                      )
-                      .toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => _selectedCategory = value);
-                }
-              },
-            ),
-            const SizedBox(height: 20),
-            // Description
-            Text(
-              'Description (optionnelle)',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _descriptionController,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Ajoutez une description',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                prefixIcon: const Icon(Icons.description),
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Expiration date
-            Row(
-              children: [
-                Checkbox(
-                  value: _hasExpiration,
-                  onChanged: (value) {
-                    setState(() => _hasExpiration = value ?? false);
-                    if (!_hasExpiration) {
-                      _expirationDate = null;
-                    }
-                  },
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Date d\'expiration',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-            if (_hasExpiration) ...[
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        IconButton(
+          icon: Icon(Icons.arrow_back_rounded, color: AppColors.getTextMain(context)),
+          onPressed: () => context.pop(),
+        ),
+        const Spacer(),
+        Text(
+          'Ajouter un document',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.getTextMain(context),
+          ),
+        ),
+        const Spacer(),
+        const SizedBox(width: 48),
+      ],
+    );
+  }
+
+  Widget _buildSectionLabel(String label) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: AppColors.getTextMain(context),
+      ),
+    );
+  }
+
+  Widget _buildFilePicker() {
+    return NeumorphicContainer(
+      width: double.infinity,
+      borderRadius: 16,
+      padding: const EdgeInsets.all(24),
+      child: GestureDetector(
+        onTap: _pickFile,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_selectedFile == null) ...[
+              Icon(Icons.cloud_upload_outlined, size: 52, color: AppColors.primary.withValues(alpha: 0.7)),
               const SizedBox(height: 12),
-              GestureDetector(
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: _expirationDate ?? DateTime.now(),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 3650)),
-                  );
-                  if (date != null) {
-                    setState(() => _expirationDate = date);
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _expirationDate == null
-                              ? 'Sélectionnez une date'
-                              : '${_expirationDate!.day}/${_expirationDate!.month}/${_expirationDate!.year}',
-                          style: TextStyle(
-                            color:
-                                _expirationDate == null
-                                    ? Colors.grey
-                                    : Colors.black,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+              Text(
+                'Cliquez pour sélectionner un fichier',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.getTextMain(context),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
                 ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'PDF, Images ou Documents',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.getTextSecondary(context),
+                  fontSize: 13,
+                ),
+              ),
+            ] else ...[
+              Icon(Icons.check_circle, size: 52, color: AppColors.success),
+              const SizedBox(height: 12),
+              Text(
+                _selectedFile!.name,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.getTextMain(context),
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _formatFileSize(_selectedFile!.size),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.getTextSecondary(context),
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _pickFile,
+                icon: const Icon(Icons.edit, size: 18),
+                label: const Text('Changer'),
               ),
             ],
-            const SizedBox(height: 32),
-            // Submit button
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed:
-                    _selectedFile == null ||
-                            _titleController.text.isEmpty ||
-                            uploadAsync is AsyncLoading
-                        ? null
-                        : _submitForm,
-                child:
-                    uploadAsync is AsyncLoading
-                        ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                        : const Text('Uploader le document'),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton(
-                onPressed: () => context.pop(),
-                child: const Text('Annuler'),
-              ),
-            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeDropdown(AsyncValue<List<DocumentTypeModel>> typesAsync) {
+    return typesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      error: (e, _) => Text('Erreur: $e', style: TextStyle(color: AppColors.error, fontSize: 13)),
+      data: (types) => NeumorphicContainer(
+        isPressed: true,
+        borderRadius: 16,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: DropdownButtonFormField<DocumentTypeModel>(
+          initialValue: _selectedType,
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            prefixIcon: Icon(Icons.category_rounded, color: AppColors.primary),
+          ),
+          hint: Text(
+            'Sélectionnez un type',
+            style: TextStyle(color: AppColors.getTextSecondary(context)),
+          ),
+          isExpanded: true,
+          items: types
+              .map((type) => DropdownMenuItem(
+                    value: type,
+                    child: Text(type.name, style: TextStyle(color: AppColors.getTextMain(context))),
+                  ))
+              .toList(),
+          onChanged: (value) {
+            setState(() => _selectedType = value);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDescriptionField() {
+    return NeumorphicContainer(
+      isPressed: true,
+      borderRadius: 16,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: TextField(
+        controller: _descriptionController,
+        maxLines: 3,
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+          prefixIcon: Icon(Icons.description_outlined, color: AppColors.primary),
+          hintText: 'Ajoutez une description',
+        ),
+        style: TextStyle(color: AppColors.getTextMain(context)),
+      ),
+    );
+  }
+
+  Widget _buildCheckboxRow(String label, bool value, ValueChanged<bool?> onChanged) {
+    return Row(
+      children: [
+        SizedBox(
+          height: 24,
+          width: 24,
+          child: Checkbox(
+            value: value,
+            onChanged: onChanged,
+            activeColor: AppColors.primary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.getTextMain(context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDatePicker(String hint, DateTime? selectedDateValue, VoidCallback onTap) {
+    return NeumorphicContainer(
+      borderRadius: 16,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_today_rounded, color: AppColors.primary, size: 22),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                selectedDateValue == null
+                    ? hint
+                    : '${selectedDateValue.day}/${selectedDateValue.month}/${selectedDateValue.year}',
+                style: TextStyle(
+                  color: selectedDateValue == null
+                      ? AppColors.getTextSecondary(context)
+                      : AppColors.getTextMain(context),
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.getTextSecondary(context)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIssuedByField() {
+    return NeumorphicContainer(
+      isPressed: true,
+      borderRadius: 16,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      child: TextField(
+        controller: _issuedByController,
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+          prefixIcon: Icon(Icons.person_outline_rounded, color: AppColors.primary),
+          hintText: 'Délivré par',
+        ),
+        style: TextStyle(color: AppColors.getTextMain(context)),
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton(AsyncValue uploadAsync) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 0,
+        ),
+        onPressed: _selectedFile == null || _selectedType == null || uploadAsync is AsyncLoading
+            ? null
+            : _submitForm,
+        child: uploadAsync is AsyncLoading
+            ? const SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                'Uploader le document',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildCancelButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.getTextSecondary(context),
+          side: BorderSide(color: AppColors.getTextSecondary(context).withValues(alpha: 0.3)),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        onPressed: () => context.pop(),
+        child: const Text(
+          'Annuler',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
       ),
     );
@@ -338,7 +485,6 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
         type: FileType.custom,
         allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'],
       );
-
       if (result != null && result.files.isNotEmpty) {
         setState(() => _selectedFile = result.files.first);
       }
@@ -355,31 +501,29 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
   }
 
   void _submitForm() {
-    if (_selectedFile == null || _titleController.text.isEmpty) {
+    if (_selectedFile == null || _selectedType == null) return;
+
+    final activeProfile = ref.read(activeProfileProvider);
+    if (activeProfile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Veuillez remplir tous les champs obligatoires'),
+          content: Text('Aucun profil actif. Veuillez d\'abord sélectionner un profil.'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    // For now, using a hardcoded userId - in production, get from auth provider
-    const userId = 'u_test';
-
-    ref
-        .read(documentUploadProvider.notifier)
-        .uploadDocument(
-          userId: userId,
+    ref.read(documentUploadProvider.notifier).uploadDocument(
+          profileId: activeProfile.id,
+          documentTypeId: _selectedType!.id,
           filePath: _selectedFile!.path!,
-          title: _titleController.text,
-          category: _selectedCategory,
-          description:
-              _descriptionController.text.isNotEmpty
-                  ? _descriptionController.text
-                  : null,
+          fileName: _selectedFile!.name,
           expiresAt: _hasExpiration ? _expirationDate : null,
+          issuedAt: _hasIssuedDate ? _issuedDate : null,
+          issuedBy: _issuedByController.text.isNotEmpty
+              ? _issuedByController.text
+              : null,
         );
   }
 
@@ -387,12 +531,10 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
     const suffixes = ['B', 'KB', 'MB', 'GB'];
     var size = bytes.toDouble();
     var suffixIndex = 0;
-
     while (size >= 1024 && suffixIndex < suffixes.length - 1) {
       size /= 1024;
       suffixIndex++;
     }
-
     return '${size.toStringAsFixed(2)} ${suffixes[suffixIndex]}';
   }
 }

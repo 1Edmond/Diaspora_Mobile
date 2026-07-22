@@ -1,21 +1,28 @@
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:diaspora_app/features/notifications/data/repositories/notification_repository_impl.dart';
 import 'package:diaspora_app/features/notifications/domain/entities/notification.dart';
 import 'package:diaspora_app/shared/services/notification_service.dart';
+import 'package:hive/hive.dart';
 
 void main() {
   late NotificationRepositoryImpl repository;
   late NotificationService notificationService;
 
-  setUp(() {
+  setUp(() async {
+    // Hive needs to be initialized before StorageService can access its box
+    Hive.init(Directory.systemTemp.createTempSync('hive_notif_test').path);
+    await Hive.openBox('settings');
+
     notificationService = NotificationService();
     repository = NotificationRepositoryImpl(
       notificationService: notificationService,
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
     notificationService.clear();
+    await Hive.close();
   });
 
   group('NotificationRepositoryImpl', () {

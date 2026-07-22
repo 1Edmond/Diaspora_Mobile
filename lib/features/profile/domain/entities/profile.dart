@@ -1,0 +1,154 @@
+import '../../../../core/constants/enums.dart';
+
+class Profile {
+  final String id;
+  final String userId;
+  final String profileType;
+  final String profileTypeId;
+  final String firstName;
+  final String lastName;
+  final String? phoneNumber;
+  final ProfileStatus status;
+  final DateTime createdAt;
+
+  final DateTime? dateOfBirth;
+  final DateTime? verifiedAt;
+  final String? verifiedByAdminId;
+
+  final String? country;
+  final String? universityOrCompany;
+  final String? localAddress;
+  final String? localPhoneNumber;
+  final DateTime? arrivalDate;
+
+  String get fullName => '$firstName $lastName';
+
+  bool get isInternal => profileType == 'Internal';
+  bool get isExternal => profileType == 'External';
+
+  Profile({
+    required this.id,
+    required this.userId,
+    required this.profileType,
+    required this.profileTypeId,
+    required this.firstName,
+    required this.lastName,
+    this.phoneNumber,
+    required this.status,
+    required this.createdAt,
+    this.dateOfBirth,
+    this.verifiedAt,
+    this.verifiedByAdminId,
+    this.country,
+    this.universityOrCompany,
+    this.localAddress,
+    this.localPhoneNumber,
+    this.arrivalDate,
+  });
+
+  factory Profile.fromJson(Map<String, dynamic> json) {
+    return Profile(
+      id: json['Id'] as String? ?? json['id'] as String? ?? '',
+      userId: json['UserId'] as String? ?? json['userId'] as String? ?? '',
+      profileType:
+          json['ProfileType'] as String? ??
+          json['profileType'] as String? ??
+          'Internal',
+      profileTypeId:
+          json['ProfileTypeId'] as String? ??
+          json['profileTypeId'] as String? ??
+          '',
+      firstName:
+          json['FirstName'] as String? ?? json['firstName'] as String? ?? '',
+      lastName:
+          json['LastName'] as String? ?? json['lastName'] as String? ?? '',
+      phoneNumber:
+          json['PhoneNumber'] as String? ?? json['phoneNumber'] as String?,
+      status: json['Status'] != null
+          ? _parseStatus(json['Status'])
+          : json['status'] != null
+              ? _parseStatus(json['status'])
+              : ProfileStatus.PENDING,
+      createdAt: json['CreatedAt'] != null
+          ? DateTime.parse(json['CreatedAt'] as String)
+          : json['createdAt'] != null
+              ? DateTime.parse(json['createdAt'] as String)
+              : DateTime.now(),
+      dateOfBirth: json['DateOfBirth'] != null
+          ? DateTime.parse(json['DateOfBirth'] as String)
+          : json['dateOfBirth'] != null
+              ? DateTime.parse(json['dateOfBirth'] as String)
+              : null,
+      verifiedAt: json['VerifiedAt'] != null
+          ? DateTime.parse(json['VerifiedAt'] as String)
+          : json['verifiedAt'] != null
+              ? DateTime.parse(json['verifiedAt'] as String)
+              : null,
+      verifiedByAdminId:
+          json['VerifiedByAdminId'] as String? ??
+          json['verifiedByAdminId'] as String?,
+      country: json['Country'] as String? ?? json['country'] as String?,
+      universityOrCompany:
+          json['UniversityOrCompany'] as String? ??
+          json['universityOrCompany'] as String?,
+      localAddress:
+          json['LocalAddress'] as String? ?? json['localAddress'] as String?,
+      localPhoneNumber:
+          json['LocalPhoneNumber'] as String? ??
+          json['localPhoneNumber'] as String?,
+      arrivalDate: json['ArrivalDate'] != null
+          ? DateTime.parse(json['ArrivalDate'] as String)
+          : json['arrivalDate'] != null
+              ? DateTime.parse(json['arrivalDate'] as String)
+              : null,
+    );
+  }
+
+  static ProfileStatus _parseStatus(dynamic val) {
+    if (val == 'VALIDATED' || val == 'Active' || val == 1) {
+      return ProfileStatus.VALIDATED;
+    }
+    if (val == 'REJECTED' || val == 2) return ProfileStatus.REJECTED;
+    return ProfileStatus.PENDING;
+  }
+
+  Profile copyWith({
+    String? id,
+    String? userId,
+    String? profileType,
+    String? profileTypeId,
+    String? firstName,
+    String? lastName,
+    String? phoneNumber,
+    ProfileStatus? status,
+    DateTime? createdAt,
+    DateTime? dateOfBirth,
+    DateTime? verifiedAt,
+    String? verifiedByAdminId,
+    String? country,
+    String? universityOrCompany,
+    String? localAddress,
+    String? localPhoneNumber,
+    DateTime? arrivalDate,
+  }) {
+    return Profile(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      profileType: profileType ?? this.profileType,
+      profileTypeId: profileTypeId ?? this.profileTypeId,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      verifiedAt: verifiedAt ?? this.verifiedAt,
+      verifiedByAdminId: verifiedByAdminId ?? this.verifiedByAdminId,
+      country: country ?? this.country,
+      universityOrCompany: universityOrCompany ?? this.universityOrCompany,
+      localAddress: localAddress ?? this.localAddress,
+      localPhoneNumber: localPhoneNumber ?? this.localPhoneNumber,
+      arrivalDate: arrivalDate ?? this.arrivalDate,
+    );
+  }
+}

@@ -46,6 +46,8 @@ import '../../features/settings/presentation/screens/providers_config_screen.dar
 import '../../features/wallet/presentation/screens/wallet_screen.dart';
 import '../../features/wallet/presentation/screens/send_money_screen.dart';
 import '../realtime/realtime_debug_screen.dart';
+import '../../features/auth/presentation/controllers/pending_verification_provider.dart';
+import '../../features/profile/presentation/screens/profile_list_screen.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -53,6 +55,13 @@ class AppRouter {
   static GoRouter router(WidgetRef ref) => GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
+    redirect: (context, state) {
+      final pending = ref.read(pendingVerificationEmailProvider);
+      if (pending != null && !state.matchedLocation.startsWith('/auth')) {
+        return '/auth/verify';
+      }
+      return null;
+    },
     routes: [
       GoRoute(path: '/', builder: (c, s) => const SplashPlaceholder()),
       GoRoute(path: '/onboarding', builder: (c, s) => const OnboardingScreen()),
@@ -64,7 +73,12 @@ class AppRouter {
           GoRoute(path: 'register', builder: (c, s) => const RegisterScreen()),
           GoRoute(
             path: 'verify',
-            builder: (c, s) => const PhoneVerificationScreen(),
+            builder: (c, s) {
+              final extra = s.extra;
+              final email = extra is String ? extra : (extra as Map?)?['email'] as String?;
+              final code = (extra is Map ? extra['code'] : null) as String?;
+              return PhoneVerificationScreen(email: email, code: code);
+            },
           ),
         ],
       ),
@@ -72,12 +86,10 @@ class AppRouter {
       GoRoute(
         path: '/profile',
         builder: (c, s) => const ProfileScreen(),
-        routes: [
-          GoRoute(
-            path: 'create-external',
-            builder: (c, s) => const SizedBox.shrink(),
-          ),
-        ],
+      ),
+      GoRoute(
+        path: '/profiles',
+        builder: (c, s) => const ProfileListScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (c, s, navigationShell) => ServicesShell(navigationShell: navigationShell),
@@ -239,14 +251,14 @@ class AppRouter {
         builder: (c, s) => const DocumentsListScreen(),
         routes: [
           GoRoute(
+            path: 'upload',
+            builder: (c, s) => const UploadDocumentScreen(),
+          ),
+          GoRoute(
             path: ':id',
             builder:
                 (c, s) =>
                     DocumentDetailScreen(documentId: s.pathParameters['id']!),
-          ),
-          GoRoute(
-            path: 'upload',
-            builder: (c, s) => const UploadDocumentScreen(),
           ),
         ],
       ),

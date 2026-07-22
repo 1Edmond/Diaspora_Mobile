@@ -1,13 +1,19 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'core/di/injection.dart';
+import 'core/deep_link/deep_link_service.dart';
 import 'core/localization/app_localizations.dart';
 import 'core/config/routes.dart';
 import 'core/theme/app_theme.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'features/auth/presentation/controllers/auth_notifier.dart';
 import 'features/notifications/data/services/firebase_messaging_service.dart';
+import 'features/notifications/presentation/providers/sse_provider.dart';
+import 'features/notifications/presentation/providers/notifications_providers.dart';
 import 'features/documents/data/local_storage/document_local_storage.dart';
 import 'core/theme/theme_provider.dart';
 
@@ -16,8 +22,6 @@ void main() async {
 
   // Initialize Firebase if configured.
   try {
-    // If you haven't run `flutterfire configure`, this will fail gracefully
-    // and the app will continue using mock services.
     await Firebase.initializeApp();
   } catch (e) {
     debugPrint(
@@ -29,12 +33,10 @@ void main() async {
   await Hive.initFlutter();
   await Hive.openBox('settings');
 
-  // Initialize local document storage
   await DocumentLocalStorage.initialize();
 
   configureDependencies();
 
-  // Initialize Firebase Messaging after dependency injection if Firebase is available
   final firebaseMessagingService = getIt<FirebaseMessagingService>();
   if (Firebase.apps.isNotEmpty) {
     await firebaseMessagingService.initialize();
@@ -44,21 +46,101 @@ void main() async {
     );
   }
 
+  // Initialize deep link service
+  final deepLinkService = DeepLinkService();
+  await deepLinkService.initialize();
+  getIt.registerSingleton<DeepLinkService>(deepLinkService);
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final router = AppRouter.router(ref);
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
+  StreamSubscription<Uri>? _deepLinkSub;
+  GoRouter? _router;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    final service = getIt<DeepLinkService>();
+
+    final initial = service.initialUri;
+    if (initial != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _handleDeepLink(initial);
+      });
+    }
+
+    _deepLinkSub = service.uriStream.listen((uri) {
+      if (mounted) _handleDeepLink(uri);
+    });
+
+    // Try to restore existing session on startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(authNotifierProvider.notifier).restoreSession();
+      }
+    });
+  }
+
+  void _handleDeepLink(Uri uri) {
+    if (uri.scheme != 'diasporaapp' || uri.host != 'verify-email') return;
+    final email = uri.queryParameters['email'];
+    final code = uri.queryParameters['code'];
+    if (email != null && code != null) {
+      _router?.go(
+        '/auth/verify',
+        extra: <String, String>{'email': email, 'code': code},
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _deepLinkSub?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        ref.read(sseConnectionProvider.notifier).resume();
+        final user = ref.read(authNotifierProvider).valueOrNull;
+        final target = user?.id;
+        if (target != null) {
+          ref
+              .read(notificationsStateProvider.notifier)
+              .fetchNotifications(target);
+        }
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        ref.read(sseConnectionProvider.notifier).pause();
+        break;
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _router = AppRouter.router(ref);
     final themeMode = ref.watch(themeProvider);
 
     return MaterialApp.router(
       title: 'Diaspora',
       debugShowCheckedModeBanner: false,
-      routerConfig: router,
+      routerConfig: _router!,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,

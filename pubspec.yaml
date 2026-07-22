@@ -67,6 +67,9 @@ dependencies:
   shimmer: ^3.0.0
   flutter_native_splash: ^2.3.10
 
+  # Deep Links
+  app_links: ^6.1.1
+
   # QR & scanner
   qr_flutter: ^4.1.0
   mobile_scanner: ^4.0.0
@@ -75,6 +78,9 @@ dependencies:
   image_picker: ^1.0.7
   cached_network_image: ^3.3.1
   flutter_image_compress: ^2.1.0
+
+  cryptography: ^2.9.0
+  uuid: ^4.6.0
 
   # PDF & Documents
   pdf: ^3.10.8

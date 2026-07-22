@@ -1,23 +1,24 @@
-import '../entities/document.dart';
-import '../entities/document_category.dart';
+import '../../../../core/network/paged_response.dart';
+import '../../data/models/document_dto_model.dart';
 
 abstract class IDocumentRepository {
-  Future<List<Document>> getDocuments(
-    String userId, {
-    DocumentCategory? category,
+  Future<PagedResponse<DocumentDtoModel>> getDocuments({
+    required int profileType,
+    required String profileId,
+    int pageNumber = 1,
+    int pageSize = 20,
   });
-  Future<Document?> getDocumentById(String documentId);
-  Future<Document> uploadDocument({
-    required String userId,
+  Future<DocumentDtoModel?> getDocumentById(String documentId);
+  Future<DocumentDtoModel> uploadDocument({
+    required String profileId,
+    required String documentTypeId,
     required String filePath,
-    required String title,
-    required DocumentCategory category,
-    String? description,
+    String? fileName,
     DateTime? expiresAt,
+    DateTime? issuedAt,
+    String? issuedBy,
   });
   Future<void> deleteDocument(String documentId);
-  Future<List<Document>> searchDocuments(String userId, String query);
-  Future<Document> extractTextFromDocument(String documentId);
+  Future<DocumentDtoModel> extractTextFromDocument(String documentId);
   Future<void> verifyDocument(String documentId);
-  Future<List<Document>> getExpiredDocuments(String userId);
 }

@@ -34,41 +34,44 @@ class NotificationListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassContainer(
       padding: EdgeInsets.zero,
-      child: ListTile(
-        onTap: onTap,
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: _getColor().withValues(alpha: 0.15),
-            shape: BoxShape.circle,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          onTap: onTap,
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _getColor().withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(_getIcon(), color: _getColor(), size: 20),
           ),
-          child: Icon(_getIcon(), color: _getColor(), size: 20),
-        ),
-        title: Text(
-          notification.title,
-          style: TextStyle(
-            fontWeight:
-                notification.isRead ? FontWeight.normal : FontWeight.bold,
-            color: AppColors.getTextMain(context),
-            fontSize: 15,
+          title: Text(
+            notification.title,
+            style: TextStyle(
+              fontWeight:
+                  notification.isRead ? FontWeight.normal : FontWeight.bold,
+              color: AppColors.getTextMain(context),
+              fontSize: 15,
+            ),
           ),
-        ),
-        subtitle: Text(
-          notification.body,
-          style: TextStyle(color: AppColors.getTextSecondary(context), fontSize: 13),
-        ),
-        trailing:
-            notification.isRead
-                ? null
-                : Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.accent,
-                    shape: BoxShape.circle,
+          subtitle: Text(
+            notification.body,
+            style: TextStyle(color: AppColors.getTextSecondary(context), fontSize: 13),
+          ),
+          trailing:
+              notification.isRead
+                  ? null
+                  : Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: AppColors.accent,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                ),
+        ),
       ),
     );
   }

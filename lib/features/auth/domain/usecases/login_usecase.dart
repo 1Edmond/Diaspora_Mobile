@@ -4,7 +4,7 @@ class LoginUseCase {
   final IAuthRepository repository;
   LoginUseCase(this.repository);
 
-  Future<Map<String, dynamic>> call(String phone, String password) async {
-    return await repository.login(phone, password);
+  Future<Map<String, dynamic>> call(String email, String password) async {
+    return await repository.login(email, password);
   }
 }

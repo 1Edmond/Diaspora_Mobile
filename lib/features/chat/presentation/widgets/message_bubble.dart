@@ -4,7 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../domain/entities/message.dart';
 import '../../../../core/constants/enums.dart';
-import '../../../auth/presentation/controllers/auth_notifier.dart';
+import '../../../profile/presentation/controllers/profile_providers.dart';
 
 class MessageBubble extends ConsumerWidget {
   final Message message;
@@ -32,8 +32,8 @@ class MessageBubble extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authNotifierProvider);
-    final currentUserId = auth.value?.internalProfile.id ?? 'user_1';
+    final activeProfile = ref.watch(activeProfileProvider);
+    final currentUserId = activeProfile?.id ?? 'user_1';
     final isMe = message.senderId == currentUserId;
 
     return Padding(

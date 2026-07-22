@@ -2,21 +2,25 @@
 import 'dart:async';
 
 class MockApi {
-  static Future<Map<String, dynamic>> register(
-    String phone,
-    String password,
-    String userType,
-  ) async {
+  static Future<Map<String, dynamic>> register({
+    required String phone,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required String email,
+    required DateTime dateOfBirth,
+    required String userType,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 800));
     return {
       'userId': 'user_${phone.substring(phone.length - 4)}',
+      'firstName': firstName,
+      'lastName': lastName,
+      'email': email,
+      'dateOfBirth': dateOfBirth.toIso8601String(),
+      'userType': userType,
       'status': 'pending',
     };
-  }
-
-  static Future<bool> verifyPhone(String phone, String otp) async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    return otp == '123456'; // known test OTP
   }
 
   static Future<Map<String, dynamic>> login(
@@ -38,97 +42,466 @@ class MockApi {
     };
   }
 
-  static Future<List<Map<String, dynamic>>> procedures() async {
+  static Future<Map<String, dynamic>> procedures({
+    int page = 1,
+    int pageSize = 20,
+    String? profileType,
+    String? profileTypeId,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 400));
-    return [
+
+    final allProcedures = <Map<String, dynamic>>[
       {
         'id': 'proc_1',
         'title': 'Enregistrement universitaire',
         'description': 'Procédure d\'inscription à l\'université hôte',
-        'estimatedCost': 0,
+        'costAmount': 15000,
+        'costCurrency': 'XOF',
+        'profileType': 'External',
+        'profileTypeId': 'ptype_external',
         'estimatedDurationDays': 7,
-        'category': 'REGISTRATION',
-        'userProgress': 20,
-        'deadline': '2026-09-30',
-        'steps': [
+        'isActive': true,
+        'locations': [
           {
-            'id': 'step_1_1',
-            'title': 'Dépôt du dossier',
-            'description': 'Fournir les pièces justificatives au bureau des admissions.',
-            'comment': 'Prévoir une copie et l\'original de chaque document.',
-            'price': null,
-            'address': 'Université de Lomé - Bureau 204',
-            'isCompleted': true,
+            'id': 'loc_1_1',
+            'name': 'Université de Lomé - Bureau des admissions',
+            'street': 'Avenue de la Paix',
+            'city': 'Lomé',
+            'state': 'Maritime',
+            'postalCode': '01BP1515',
+            'country': 'TG',
+            'latitude': 6.1725,
+            'longitude': 1.2312,
+            'phoneNumber': '+228 22 21 35 00',
+            'website': 'https://univ-lome.tg',
+            'schedule': [
+              {
+                'day': 'Monday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '16:00:00',
+              },
+              {
+                'day': 'Tuesday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '16:00:00',
+              },
+              {
+                'day': 'Wednesday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '16:00:00',
+              },
+              {
+                'day': 'Thursday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '16:00:00',
+              },
+              {
+                'day': 'Friday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '12:00:00',
+              },
+              {
+                'day': 'Saturday',
+                'isClosed': true,
+                'openTime': null,
+                'closeTime': null,
+              },
+              {
+                'day': 'Sunday',
+                'isClosed': true,
+                'openTime': null,
+                'closeTime': null,
+              },
+            ],
           },
           {
-            'id': 'step_1_2',
-            'title': 'Vérification administrative',
-            'description': 'Vérification des documents par le service scolarité.',
-            'comment': 'Délai de traitement : 48h ouvrés.',
-            'price': null,
-            'address': null,
-            'isCompleted': true,
-          },
-          {
-            'id': 'step_1_3',
-            'title': 'Entretien conseiller',
-            'description': 'Entretien avec un conseiller pédagogique.',
-            'comment': 'Venir avec une pièce d\'identité.',
-            'price': null,
-            'address': 'Cité Universitaire - Bâtiment A, salle 112',
-            'isCompleted': false,
-          },
-          {
-            'id': 'step_1_4',
-            'title': 'Validation finale',
-            'description': 'Validation définitive de l\'inscription.',
-            'comment': 'Un email de confirmation vous sera envoyé.',
-            'price': '15 000',
-            'address': null,
-            'isCompleted': false,
+            'id': 'loc_1_2',
+            'name': 'Cité Universitaire - Bâtiment A',
+            'street': 'Rue de la Cité',
+            'city': 'Lomé',
+            'state': 'Maritime',
+            'postalCode': '01BP1010',
+            'country': 'TG',
+            'latitude': 6.1783,
+            'longitude': 1.2245,
+            'phoneNumber': '+228 90 12 34 56',
+            'website': null,
+            'schedule': [
+              {
+                'day': 'Monday',
+                'isClosed': false,
+                'openTime': '09:00:00',
+                'closeTime': '17:00:00',
+              },
+              {
+                'day': 'Tuesday',
+                'isClosed': false,
+                'openTime': '09:00:00',
+                'closeTime': '17:00:00',
+              },
+              {
+                'day': 'Wednesday',
+                'isClosed': false,
+                'openTime': '09:00:00',
+                'closeTime': '17:00:00',
+              },
+              {
+                'day': 'Thursday',
+                'isClosed': false,
+                'openTime': '09:00:00',
+                'closeTime': '17:00:00',
+              },
+              {
+                'day': 'Friday',
+                'isClosed': false,
+                'openTime': '09:00:00',
+                'closeTime': '15:00:00',
+              },
+              {
+                'day': 'Saturday',
+                'isClosed': true,
+                'openTime': null,
+                'closeTime': null,
+              },
+              {
+                'day': 'Sunday',
+                'isClosed': true,
+                'openTime': null,
+                'closeTime': null,
+              },
+            ],
           },
         ],
+        'dependencyIds': <String>[],
+        'requiredDocumentTypeIds': <String>[
+          'doc_passport',
+          'doc_diploma',
+          'doc_transcript',
+        ],
+        'createdAt': '2026-09-01T00:00:00Z',
       },
       {
         'id': 'proc_2',
         'title': 'Renouvellement de titre de séjour',
-        'description': 'Renouvellement auprès des autorités locales',
-        'estimatedCost': 5000,
+        'description': 'Renouvellement du titre de séjour auprès des autorités locales',
+        'costAmount': 5000,
+        'costCurrency': 'XOF',
+        'profileType': 'External',
+        'profileTypeId': 'ptype_external',
         'estimatedDurationDays': 30,
-        'category': 'VISA',
-        'userProgress': 0,
-        'deadline': '2026-08-15',
-        'steps': [
+        'isActive': true,
+        'locations': [
           {
-            'id': 'step_2_1',
-            'title': 'Prise de rendez-vous',
-            'description': 'Prendre rendez-vous en ligne sur le site de la préfecture.',
-            'comment': 'Les créneaux sont disponibles de 8h à 14h.',
-            'price': null,
-            'address': 'https://rdv.prefecture.gouv.fr',
-            'isCompleted': false,
-          },
-          {
-            'id': 'step_2_2',
-            'title': 'Dépôt du dossier',
-            'description': 'Déposer le dossier complet à la préfecture.',
-            'comment': 'Timbre fiscal de 5000 FCFA requis.',
-            'price': '5 000',
-            'address': 'Préfecture de Lomé - Guichet 5',
-            'isCompleted': false,
-          },
-          {
-            'id': 'step_2_3',
-            'title': 'Retrait du titre',
-            'description': 'Retirer le nouveau titre de séjour.',
-            'comment': 'Délai de fabrication : 2 semaines.',
-            'price': null,
-            'address': 'Préfecture de Lomé - Guichet 7',
-            'isCompleted': false,
+            'id': 'loc_2_1',
+            'name': 'Préfecture de Lomé',
+            'street': 'Boulevard du 13 Janvier',
+            'city': 'Lomé',
+            'state': 'Maritime',
+            'postalCode': '01BP0001',
+            'country': 'TG',
+            'latitude': 6.1319,
+            'longitude': 1.2227,
+            'phoneNumber': '+228 22 21 00 01',
+            'website': 'https://prefecture.gouv.tg',
+            'schedule': [
+              {
+                'day': 'Monday',
+                'isClosed': false,
+                'openTime': '07:30:00',
+                'closeTime': '15:30:00',
+              },
+              {
+                'day': 'Tuesday',
+                'isClosed': false,
+                'openTime': '07:30:00',
+                'closeTime': '15:30:00',
+              },
+              {
+                'day': 'Wednesday',
+                'isClosed': false,
+                'openTime': '07:30:00',
+                'closeTime': '15:30:00',
+              },
+              {
+                'day': 'Thursday',
+                'isClosed': false,
+                'openTime': '07:30:00',
+                'closeTime': '15:30:00',
+              },
+              {
+                'day': 'Friday',
+                'isClosed': false,
+                'openTime': '07:30:00',
+                'closeTime': '14:00:00',
+              },
+              {
+                'day': 'Saturday',
+                'isClosed': true,
+                'openTime': null,
+                'closeTime': null,
+              },
+              {
+                'day': 'Sunday',
+                'isClosed': true,
+                'openTime': null,
+                'closeTime': null,
+              },
+            ],
           },
         ],
+        'dependencyIds': <String>['proc_1'],
+        'requiredDocumentTypeIds': <String>[
+          'doc_passport',
+          'doc_visa',
+          'doc_residence_permit',
+          'doc_bank_document',
+        ],
+        'createdAt': '2026-07-01T00:00:00Z',
+      },
+      {
+        'id': 'proc_3',
+        'title': 'Ouverture de compte bancaire',
+        'description': 'Ouverture d\'un compte bancaire local pour les étudiants étrangers',
+        'costAmount': 0,
+        'costCurrency': 'XOF',
+        'profileType': 'Internal',
+        'profileTypeId': 'ptype_internal',
+        'estimatedDurationDays': 3,
+        'isActive': true,
+        'locations': [
+          {
+            'id': 'loc_3_1',
+            'name': 'Ecobank - Agence Centrale',
+            'street': 'Avenue du Général de Gaulle',
+            'city': 'Lomé',
+            'state': 'Maritime',
+            'postalCode': '01BP1280',
+            'country': 'TG',
+            'latitude': 6.1284,
+            'longitude': 1.2195,
+            'phoneNumber': '+228 22 21 72 14',
+            'website': 'https://ecobank.com/tg',
+            'schedule': [
+              {
+                'day': 'Monday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '17:00:00',
+              },
+              {
+                'day': 'Tuesday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '17:00:00',
+              },
+              {
+                'day': 'Wednesday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '17:00:00',
+              },
+              {
+                'day': 'Thursday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '17:00:00',
+              },
+              {
+                'day': 'Friday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '17:00:00',
+              },
+              {
+                'day': 'Saturday',
+                'isClosed': false,
+                'openTime': '09:00:00',
+                'closeTime': '13:00:00',
+              },
+              {
+                'day': 'Sunday',
+                'isClosed': true,
+                'openTime': null,
+                'closeTime': null,
+              },
+            ],
+          },
+          {
+            'id': 'loc_3_2',
+            'name': 'Orabank - Agence Université',
+            'street': 'Rue de l\'Université',
+            'city': 'Lomé',
+            'state': 'Maritime',
+            'postalCode': '01BP1515',
+            'country': 'TG',
+            'latitude': 6.1750,
+            'longitude': 1.2290,
+            'phoneNumber': '+228 22 21 80 00',
+            'website': null,
+            'schedule': [
+              {
+                'day': 'Monday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '16:30:00',
+              },
+              {
+                'day': 'Tuesday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '16:30:00',
+              },
+              {
+                'day': 'Wednesday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '16:30:00',
+              },
+              {
+                'day': 'Thursday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '16:30:00',
+              },
+              {
+                'day': 'Friday',
+                'isClosed': false,
+                'openTime': '08:00:00',
+                'closeTime': '15:00:00',
+              },
+              {
+                'day': 'Saturday',
+                'isClosed': true,
+                'openTime': null,
+                'closeTime': null,
+              },
+              {
+                'day': 'Sunday',
+                'isClosed': true,
+                'openTime': null,
+                'closeTime': null,
+              },
+            ],
+          },
+        ],
+        'dependencyIds': <String>['proc_1'],
+        'requiredDocumentTypeIds': <String>[
+          'doc_passport',
+          'doc_student_card',
+          'doc_bank_document',
+        ],
+        'createdAt': '2026-08-15T00:00:00Z',
+      },
+      {
+        'id': 'proc_4',
+        'title': 'Demande de bourse d\'études',
+        'description': 'Demande de bourse auprès de l\'ambassade pour l\'année universitaire en cours',
+        'costAmount': 2500,
+        'costCurrency': 'XOF',
+        'profileType': 'External',
+        'profileTypeId': 'ptype_external',
+        'estimatedDurationDays': 45,
+        'isActive': true,
+        'locations': [
+          {
+            'id': 'loc_4_1',
+            'name': 'Ambassade de France - Service culturel',
+            'street': 'Avenue de la Libération',
+            'city': 'Lomé',
+            'state': 'Maritime',
+            'postalCode': '01BP0002',
+            'country': 'TG',
+            'latitude': 6.1297,
+            'longitude': 1.2181,
+            'phoneNumber': '+228 22 23 46 00',
+            'website': 'https://tg.ambafrance.org',
+            'schedule': [
+              {
+                'day': 'Monday',
+                'isClosed': false,
+                'openTime': '08:30:00',
+                'closeTime': '16:30:00',
+              },
+              {
+                'day': 'Tuesday',
+                'isClosed': false,
+                'openTime': '08:30:00',
+                'closeTime': '16:30:00',
+              },
+              {
+                'day': 'Wednesday',
+                'isClosed': false,
+                'openTime': '08:30:00',
+                'closeTime': '16:30:00',
+              },
+              {
+                'day': 'Thursday',
+                'isClosed': false,
+                'openTime': '08:30:00',
+                'closeTime': '16:30:00',
+              },
+              {
+                'day': 'Friday',
+                'isClosed': false,
+                'openTime': '08:30:00',
+                'closeTime': '13:00:00',
+              },
+              {
+                'day': 'Saturday',
+                'isClosed': true,
+                'openTime': null,
+                'closeTime': null,
+              },
+              {
+                'day': 'Sunday',
+                'isClosed': true,
+                'openTime': null,
+                'closeTime': null,
+              },
+            ],
+          },
+        ],
+        'dependencyIds': <String>['proc_1', 'proc_2', 'proc_3'],
+        'requiredDocumentTypeIds': <String>[
+          'doc_passport',
+          'doc_diploma',
+          'doc_transcript',
+          'doc_insurance',
+          'doc_bank_document',
+        ],
+        'createdAt': '2026-08-01T00:00:00Z',
       },
     ];
+
+    var filtered = <Map<String, dynamic>>[];
+    for (final p in allProcedures) {
+      if (profileType != null && p['profileType'] != profileType) continue;
+      if (profileTypeId != null && p['profileTypeId'] != profileTypeId) continue;
+      filtered.add(p);
+    }
+
+    final totalCount = filtered.length;
+    final totalPages = (totalCount / pageSize).ceil();
+    final start = (page - 1) * pageSize;
+    final end = start + pageSize;
+    final items = start < filtered.length
+        ? filtered.sublist(start, end > filtered.length ? filtered.length : end)
+        : <Map<String, dynamic>>[];
+
+    return {
+      'items': items,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': totalCount,
+      'totalPages': totalPages,
+      'hasPrevious': page > 1,
+      'hasNext': page < totalPages,
+    };
   }
 
   // Services (marketplace) - mocked
@@ -1215,98 +1588,149 @@ class MockApi {
     };
   }
 
+  // Document types
+  static Future<List<Map<String, dynamic>>> documentTypes() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return [
+      {
+        'id': 'dt_1',
+        'name': 'Passeport',
+        'description': 'Passeport en cours de validité',
+        'category': 'PASSPORT',
+      },
+      {
+        'id': 'dt_2',
+        'name': 'Carte d\'identité',
+        'description': 'Carte nationale d\'identité',
+        'category': 'ID',
+      },
+      {
+        'id': 'dt_3',
+        'name': 'Visa',
+        'description': 'Visa étudiant ou de séjour',
+        'category': 'VISA',
+      },
+      {
+        'id': 'dt_4',
+        'name': 'Diplôme',
+        'description': 'Diplôme universitaire',
+        'category': 'CERTIFICATE',
+      },
+      {
+        'id': 'dt_5',
+        'name': 'Contrat',
+        'description': 'Contrat de location ou de travail',
+        'category': 'CONTRACT',
+      },
+    ];
+  }
+
   // Documents feature - mocked
   static final Map<String, Map<String, dynamic>> _uploadedDocuments = {};
 
-  static Future<List<Map<String, dynamic>>> documents({
-    required String userId,
-    String? category,
+  static Future<Map<String, dynamic>> documents({
+    int page = 1,
+    int pageSize = 20,
+    int? profileType,
+    String? profileId,
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
     final now = DateTime.now();
+    final pid = profileId ?? 'u_test';
 
-    // base catalog
-    final base = [
+    final base = <Map<String, dynamic>>[
       {
-        'id': 'doc_1',
-        'userId': userId,
-        'title': 'Passeport',
-        'category': 'PASSPORT',
-        'description': 'Passeport personnel',
-        'url': 'https://via.placeholder.com/400x300?text=Passport',
-        'fileSizeBytes': 2048000,
-        'mimeType': 'application/pdf',
-        'uploadedAt': now.subtract(const Duration(days: 30)).toIso8601String(),
-        'expiresAt': now.add(const Duration(days: 365)).toIso8601String(),
-        'isVerified': true,
-        'extractedText': null,
+        'Id': 'doc_1',
+        'ProfileId': pid,
+        'DocumentTypeId': 'dt_1',
+        'DocumentTypeName': 'Passeport',
+        'FileName': 'passeport.pdf',
+        'FileUrl': 'https://via.placeholder.com/400x300?text=Passport',
+        'FileSizeBytes': 2048000,
+        'MimeType': 'application/pdf',
+        'Status': 1,
+        'UploadedAt': now.subtract(const Duration(days: 30)).toIso8601String(),
+        'ExpiresAt': now.add(const Duration(days: 365)).toIso8601String(),
+        'IsVerified': true,
+        'ExtractedText': null,
       },
       {
-        'id': 'doc_2',
-        'userId': userId,
-        'title': 'Carte d\'identité',
-        'category': 'ID',
-        'description': null,
-        'url': 'https://via.placeholder.com/400x300?text=ID+Card',
-        'fileSizeBytes': 1024000,
-        'mimeType': 'image/jpeg',
-        'uploadedAt': now.subtract(const Duration(days: 60)).toIso8601String(),
-        'expiresAt': now.add(const Duration(days: 730)).toIso8601String(),
-        'isVerified': true,
-        'extractedText': null,
+        'Id': 'doc_2',
+        'ProfileId': pid,
+        'DocumentTypeId': 'dt_2',
+        'DocumentTypeName': 'Carte d\'identité',
+        'FileName': 'carte_identite.jpg',
+        'FileUrl': 'https://via.placeholder.com/400x300?text=ID+Card',
+        'FileSizeBytes': 1024000,
+        'MimeType': 'image/jpeg',
+        'Status': 1,
+        'UploadedAt': now.subtract(const Duration(days: 60)).toIso8601String(),
+        'ExpiresAt': now.add(const Duration(days: 730)).toIso8601String(),
+        'IsVerified': true,
+        'ExtractedText': null,
       },
       {
-        'id': 'doc_3',
-        'userId': userId,
-        'title': 'Certificat d\'études',
-        'category': 'CERTIFICATE',
-        'description': 'Diplôme universitaire',
-        'url': 'https://via.placeholder.com/400x300?text=Certificate',
-        'fileSizeBytes': 3072000,
-        'mimeType': 'application/pdf',
-        'uploadedAt': now.subtract(const Duration(days: 15)).toIso8601String(),
-        'expiresAt': null,
-        'isVerified': false,
-        'extractedText': null,
+        'Id': 'doc_3',
+        'ProfileId': pid,
+        'DocumentTypeId': 'dt_4',
+        'DocumentTypeName': 'Diplôme',
+        'FileName': 'diplome.pdf',
+        'FileUrl': 'https://via.placeholder.com/400x300?text=Certificate',
+        'FileSizeBytes': 3072000,
+        'MimeType': 'application/pdf',
+        'Status': 0,
+        'UploadedAt': now.subtract(const Duration(days: 15)).toIso8601String(),
+        'ExpiresAt': null,
+        'IsVerified': false,
+        'ExtractedText': null,
       },
     ];
 
-    // filter by category if provided
-    var result = base;
-    if (category != null) {
-      result = result.where((doc) => doc['category'] == category).toList();
-    }
+    final allDocs = [
+      ..._uploadedDocuments.values.where((d) => d['ProfileId'] == pid).toList(),
+      ...base,
+    ];
 
-    // append any recently uploaded documents
-    final uploaded =
-        _uploadedDocuments.values
-            .where((doc) => doc['userId'] == userId)
-            .toList();
-    return [...uploaded, ...result];
+    final totalCount = allDocs.length;
+    final totalPages = (totalCount / pageSize).ceil();
+    final start = (page - 1) * pageSize;
+    final end = start + pageSize;
+    final items = start < allDocs.length
+        ? allDocs.sublist(start, end > allDocs.length ? allDocs.length : end)
+        : <Map<String, dynamic>>[];
+
+    return {
+      'items': items,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': totalCount,
+      'totalPages': totalPages,
+      'hasPrevious': page > 1,
+      'hasNext': page < totalPages,
+    };
   }
 
   static Future<Map<String, dynamic>> documentDetail(String documentId) async {
     await Future.delayed(const Duration(milliseconds: 300));
 
-    // check in-memory uploads first
     if (_uploadedDocuments.containsKey(documentId)) {
       return Map<String, dynamic>.from(_uploadedDocuments[documentId]!);
     }
 
-    // return deterministic detail for catalog items
     return {
-      'id': documentId,
-      'userId': 'u_test',
-      'title': 'Document $documentId',
-      'category': 'OTHER',
-      'description': 'Description du document',
-      'url': 'https://via.placeholder.com/400x300?text=Document',
-      'fileSizeBytes': 2048000,
-      'mimeType': 'application/pdf',
-      'uploadedAt': DateTime.now().toIso8601String(),
-      'expiresAt': null,
-      'isVerified': false,
-      'extractedText': null,
+      'Id': documentId,
+      'ProfileId': 'u_test',
+      'DocumentTypeId': 'dt_5',
+      'DocumentTypeName': 'Document',
+      'FileName': 'document.pdf',
+      'FileUrl': 'https://via.placeholder.com/400x300?text=Document',
+      'FileSizeBytes': 2048000,
+      'MimeType': 'application/pdf',
+      'Status': 0,
+      'UploadedAt': DateTime.now().toIso8601String(),
+      'ExpiresAt': null,
+      'IsVerified': false,
+      'ExtractedText': null,
     };
   }
 
@@ -1316,12 +1740,19 @@ class MockApi {
     await Future.delayed(const Duration(milliseconds: 600));
     final id = 'doc_${DateTime.now().millisecondsSinceEpoch % 100000}';
     final entry = {
-      'id': id,
-      ...payload,
-      'url': 'https://via.placeholder.com/400x300?text=Document',
-      'uploadedAt': DateTime.now().toIso8601String(),
-      'isVerified': false,
-      'extractedText': null,
+      'Id': id,
+      'ProfileId': payload['ProfileId'] ?? payload['profileId'] ?? 'u_test',
+      'DocumentTypeId': payload['DocumentTypeId'] ?? payload['documentTypeId'] ?? 'dt_5',
+      'DocumentTypeName': 'Document uploadé',
+      'FileName': payload['FileName'] ?? payload['fileName'] ?? 'uploaded_file',
+      'FileUrl': 'https://via.placeholder.com/400x300?text=Uploaded',
+      'FileSizeBytes': 1024000,
+      'MimeType': 'application/pdf',
+      'Status': 0,
+      'UploadedAt': DateTime.now().toIso8601String(),
+      'ExpiresAt': payload['ExpiresAt'] ?? payload['expiresAt'],
+      'IsVerified': false,
+      'ExtractedText': null,
     };
     _uploadedDocuments[id] = entry;
     return entry;
@@ -1332,63 +1763,27 @@ class MockApi {
     _uploadedDocuments.remove(documentId);
   }
 
-  static Future<List<Map<String, dynamic>>> searchDocuments({
-    required String userId,
-    required String query,
-  }) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    final allDocs = await documents(userId: userId);
-    return allDocs
-        .where(
-          (doc) =>
-              doc['title'].toString().toLowerCase().contains(
-                query.toLowerCase(),
-              ) ||
-              (doc['description']?.toString().toLowerCase().contains(
-                    query.toLowerCase(),
-                  ) ??
-                  false),
-        )
-        .toList();
-  }
-
   static Future<Map<String, dynamic>> extractTextFromDocument(
     String documentId,
   ) async {
-    await Future.delayed(
-      const Duration(milliseconds: 1500),
-    ); // simulate OCR processing
+    await Future.delayed(const Duration(milliseconds: 1500));
     const ocrText =
         'Extrait du texte reconnu par OCR.\nCette fonctionnalité utilise Google ML Kit.\n'
         'Le texte peut contenir des erreurs de reconnaissance.';
 
-    // update document with extracted text
     if (_uploadedDocuments.containsKey(documentId)) {
-      _uploadedDocuments[documentId]!['extractedText'] = ocrText;
+      _uploadedDocuments[documentId]!['ExtractedText'] = ocrText;
     }
 
-    // return updated document
-    return {...(await documentDetail(documentId)), 'extractedText': ocrText};
+    final detail = await documentDetail(documentId);
+    return {...detail, 'ExtractedText': ocrText};
   }
 
   static Future<void> verifyDocument(String documentId) async {
     await Future.delayed(const Duration(milliseconds: 300));
     if (_uploadedDocuments.containsKey(documentId)) {
-      _uploadedDocuments[documentId]!['isVerified'] = true;
+      _uploadedDocuments[documentId]!['IsVerified'] = true;
     }
-  }
-
-  static Future<List<Map<String, dynamic>>> expiredDocuments({
-    required String userId,
-  }) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    final allDocs = await documents(userId: userId);
-    final now = DateTime.now();
-    return allDocs.where((doc) {
-      final expiresAt = doc['expiresAt'];
-      if (expiresAt == null) return false;
-      return DateTime.parse(expiresAt as String).isBefore(now);
-    }).toList();
   }
 
   // ==================== SETTINGS ENDPOINTS ====================

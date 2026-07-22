@@ -1,5 +1,11 @@
 import 'package:get_it/get_it.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import '../config/app_config.dart';
 import '../network/dio_client.dart';
+import '../network/auth_interceptor.dart';
+import '../network/token_service.dart';
+import '../../features/notifications/data/services/notification_rest_service.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/services/data/repositories/service_repository_impl.dart';
@@ -38,7 +44,15 @@ import '../../features/committee/domain/repositories/committee_repository.dart';
 
 // Documents
 import '../../features/documents/data/repositories/document_repository_impl.dart';
+import '../../features/documents/data/repositories/document_type_repository_impl.dart';
 import '../../features/documents/domain/repositories/document_repository.dart';
+import '../../features/documents/domain/repositories/document_type_repository.dart';
+
+// Profile
+import '../../features/profile/data/services/profile_service.dart';
+
+// Procedures
+import '../../features/procedures/data/services/procedure_service.dart';
 
 // Settings
 import '../../features/settings/data/repositories/settings_repository_impl.dart';
@@ -52,13 +66,24 @@ void configureDependencies() {
   // Register low-level utilities
   getIt.registerSingleton<DioClient>(DioClient());
 
+  // Shared Dio for the real API with automatic token injection.
+  // Auth endpoints (login/register/verify) do NOT need a token,
+  // but the interceptor gracefully skips when no token exists yet.
+  getIt.registerSingleton<Dio>(_createRealApiDio());
+
   // Mock realtime service for development
   getIt.registerSingleton<MockRealtimeService>(MockRealtimeService());
 
-  // Auth repository (DioClient-backed; MockInterceptor handles dev responses).
+  // Auth repository — uses its own Dio pointing to the real API.
   getIt.registerLazySingleton<IAuthRepository>(
-    () => AuthRepositoryImpl(client: getIt<DioClient>()),
+    () => AuthRepositoryImpl(),
   );
+
+  // Profile service — fetches internal profile data from the real API.
+  getIt.registerLazySingleton<ProfileService>(() => ProfileService());
+
+  // Procedure service — fetches procedures from the real API.
+  getIt.registerLazySingleton<ProcedureService>(() => ProcedureService());
 
   // Services repository — now registered against its interface and backed by DioClient.
   getIt.registerLazySingleton<IServiceRepository>(
@@ -77,11 +102,16 @@ void configureDependencies() {
   getIt.registerLazySingleton<NotificationService>(() => NotificationService());
 
   // Notifications feature
+  getIt.registerLazySingleton<NotificationRestService>(
+    () => NotificationRestService(),
+  );
   getIt.registerLazySingleton<FirebaseMessagingService>(
     () => FirebaseMessagingService(),
   );
   getIt.registerLazySingleton<INotificationRepository>(
-    () => NotificationRepositoryImpl(),
+    () => NotificationRepositoryImpl(
+      restService: getIt<NotificationRestService>(),
+    ),
   );
   getIt.registerLazySingleton<FetchNotificationsUseCase>(
     () => FetchNotificationsUseCase(getIt<INotificationRepository>()),
@@ -131,11 +161,42 @@ void configureDependencies() {
 
   // Documents feature
   getIt.registerLazySingleton<IDocumentRepository>(
-    () => DocumentRepositoryImpl(),
+    () => DocumentRepositoryImpl(dio: getIt<Dio>()),
+  );
+  getIt.registerLazySingleton<IDocumentTypeRepository>(
+    () => DocumentTypeRepositoryImpl(dio: getIt<Dio>()),
   );
 
   // Settings feature
   getIt.registerLazySingleton<ISettingsRepository>(
     () => SettingsRepositoryImpl(settingsBox: Hive.box('settings')),
   );
+}
+
+Dio _createRealApiDio() {
+  final tokenService = TokenService();
+  // Separate Dio for refresh calls to avoid infinite loop with AuthInterceptor
+  final refreshDio = Dio(BaseOptions(
+    baseUrl: AppConfig.realApiBaseUrl,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-client-key': AppConfig.clientKey,
+    },
+  ));
+  final dio = Dio(BaseOptions(
+    baseUrl: AppConfig.realApiBaseUrl,
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
+    validateStatus: (_) => true,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-client-key': AppConfig.clientKey,
+    },
+  ));
+  dio.interceptors.addAll([
+    AuthInterceptor(tokenService, refreshDio),
+    if (kDebugMode)
+      LogInterceptor(requestBody: true, responseBody: true),
+  ]);
+  return dio;
 }

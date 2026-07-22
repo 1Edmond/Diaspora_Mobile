@@ -1,53 +1,49 @@
 import 'package:flutter/material.dart';
-import '../../domain/entities/document.dart';
-import '../../domain/entities/document_category.dart';
+import '../../data/models/document_dto_model.dart';
+import '../../data/models/document_status.dart';
 
-class DocumentCategoryBadge extends StatelessWidget {
-  final DocumentCategory category;
+class DocumentStatusBadge extends StatelessWidget {
+  final DocumentStatus status;
 
-  const DocumentCategoryBadge({required this.category, super.key});
+  const DocumentStatusBadge({required this.status, super.key});
 
   @override
   Widget build(BuildContext context) {
-    final color = _getCategoryColor(category);
+    final color = _getStatusColor(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color, width: 0.5),
       ),
       child: Text(
-        category.label,
+        status.label,
         style: TextStyle(
           color: color,
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
 
-  Color _getCategoryColor(DocumentCategory category) {
-    switch (category) {
-      case DocumentCategory.id:
-        return Colors.blue;
-      case DocumentCategory.passport:
-        return Colors.green;
-      case DocumentCategory.visa:
+  Color _getStatusColor(DocumentStatus status) {
+    switch (status) {
+      case DocumentStatus.pending:
         return Colors.orange;
-      case DocumentCategory.certificate:
-        return Colors.purple;
-      case DocumentCategory.contract:
+      case DocumentStatus.active:
+        return Colors.green;
+      case DocumentStatus.expired:
         return Colors.red;
-      case DocumentCategory.other:
+      case DocumentStatus.rejected:
         return Colors.grey;
     }
   }
 }
 
 class DocumentCard extends StatelessWidget {
-  final Document document;
+  final DocumentDtoModel document;
   final VoidCallback onTap;
   final VoidCallback? onDelete;
 
@@ -66,7 +62,7 @@ class DocumentCard extends StatelessWidget {
         onTap: onTap,
         leading: _buildIcon(),
         title: Text(
-          document.title,
+          document.documentTypeName ?? document.fileName ?? 'Document',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -75,7 +71,7 @@ class DocumentCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
-            DocumentCategoryBadge(category: document.category),
+            DocumentStatusBadge(status: document.status),
             const SizedBox(height: 4),
             Text(
               '${document.formattedFileSize} • ${_formatDate(document.uploadedAt)}',
@@ -100,40 +96,36 @@ class DocumentCard extends StatelessWidget {
                   'Expire dans ${document.expiresInDays} jours',
                   style: TextStyle(
                     fontSize: 12,
-                    color:
-                        document.expiresInDays <= 30
-                            ? Colors.orange
-                            : Colors.green,
+                    color: document.expiresInDays <= 30 ? Colors.orange : Colors.green,
                   ),
                 ),
               ),
           ],
         ),
         trailing: PopupMenuButton(
-          itemBuilder:
-              (context) => [
-                if (document.isVerified)
-                  const PopupMenuItem(
-                    enabled: false,
-                    child: Row(
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.green, size: 16),
-                        SizedBox(width: 8),
-                        Text('Vérifié'),
-                      ],
-                    ),
-                  ),
-                PopupMenuItem(
-                  onTap: onDelete,
-                  child: const Row(
-                    children: [
-                      Icon(Icons.delete, color: Colors.red, size: 16),
-                      SizedBox(width: 8),
-                      Text('Supprimer'),
-                    ],
-                  ),
+          itemBuilder: (context) => [
+            if (document.isVerified)
+              const PopupMenuItem(
+                enabled: false,
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green, size: 16),
+                    SizedBox(width: 8),
+                    Text('Vérifié'),
+                  ],
                 ),
-              ],
+              ),
+            PopupMenuItem(
+              onTap: onDelete,
+              child: const Row(
+                children: [
+                  Icon(Icons.delete, color: Colors.red, size: 16),
+                  SizedBox(width: 8),
+                  Text('Supprimer'),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -143,31 +135,15 @@ class DocumentCard extends StatelessWidget {
     IconData icon;
     Color color;
 
-    switch (document.category) {
-      case DocumentCategory.id:
-        icon = Icons.badge;
-        color = Colors.blue;
-        break;
-      case DocumentCategory.passport:
-        icon = Icons.card_travel;
-        color = Colors.green;
-        break;
-      case DocumentCategory.visa:
-        icon = Icons.assignment;
-        color = Colors.orange;
-        break;
-      case DocumentCategory.certificate:
-        icon = Icons.description;
-        color = Colors.purple;
-        break;
-      case DocumentCategory.contract:
-        icon = Icons.note_add;
-        color = Colors.red;
-        break;
-      case DocumentCategory.other:
-        icon = Icons.file_present;
-        color = Colors.grey;
-        break;
+    if (document.isPdf) {
+      icon = Icons.picture_as_pdf;
+      color = Colors.red;
+    } else if (document.isImage) {
+      icon = Icons.image;
+      color = Colors.blue;
+    } else {
+      icon = Icons.file_present;
+      color = Colors.grey;
     }
 
     return Container(

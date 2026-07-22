@@ -1,3 +1,4 @@
+import '../../../../core/network/paged_response.dart';
 import '../../domain/entities/procedure.dart';
 import '../../domain/entities/task.dart';
 import '../../domain/repositories/procedure_repository.dart';
@@ -9,13 +10,34 @@ class ProcedureRepositoryImpl implements IProcedureRepository {
   // In real app, this would be SQLite/Hive + API
 
   @override
-  Future<List<Procedure>> getProcedures(String profileId) async {
+  Future<PagedResponse<Procedure>> getProcedures({
+    int pageNumber = 1,
+    int pageSize = 20,
+    String? profileType,
+    String? profileTypeId,
+  }) async {
     if (AppConfig.useMockData) {
-      // Filter mock procedures by profile logic (omitted for MVP basics)
-      return List<Procedure>.from(mockProcedures);
+      final items = List<Procedure>.from(mockProcedures);
+      return PagedResponse(
+        items: items,
+        pageNumber: pageNumber,
+        pageSize: pageSize,
+        totalCount: items.length,
+        totalPages: (items.length / pageSize).ceil(),
+        hasPrevious: pageNumber > 1,
+        hasNext: pageNumber < (items.length / pageSize).ceil(),
+      );
     }
     // TODO: Implement API call
-    return [];
+    return PagedResponse(
+      items: [],
+      pageNumber: pageNumber,
+      pageSize: pageSize,
+      totalCount: 0,
+      totalPages: 0,
+      hasPrevious: false,
+      hasNext: false,
+    );
   }
 
   @override

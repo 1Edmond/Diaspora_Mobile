@@ -7,9 +7,12 @@ import '../../../../shared/widgets/containers/neumorphic_container.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../controllers/auth_notifier.dart';
+import '../controllers/pending_verification_provider.dart';
 
 class PhoneVerificationScreen extends ConsumerStatefulWidget {
-  const PhoneVerificationScreen({super.key});
+  final String? email;
+  final String? code;
+  const PhoneVerificationScreen({super.key, this.email, this.code});
 
   @override
   ConsumerState<PhoneVerificationScreen> createState() =>
@@ -18,9 +21,34 @@ class PhoneVerificationScreen extends ConsumerStatefulWidget {
 
 class _PhoneVerificationScreenState
     extends ConsumerState<PhoneVerificationScreen> {
-  final _phone = TextEditingController(text: '+228');
-  final _otp = TextEditingController();
-  bool _isOtpFocused = false;
+  final _code = TextEditingController();
+  bool _isCodeFocused = false;
+  bool _autoVerified = false;
+
+  String get _email =>
+      ref.read(pendingVerificationEmailProvider) ??
+      widget.email ??
+      (GoRouterState.of(context).extra is String
+          ? GoRouterState.of(context).extra as String
+          : GoRouterState.of(context).extra is Map
+              ? (GoRouterState.of(context).extra as Map)['email'] as String?
+              : null) ??
+      '';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.email != null && widget.code != null && !_autoVerified) {
+      _autoVerified = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _handleVerify());
+    }
+  }
+
+  @override
+  void dispose() {
+    _code.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,93 +60,119 @@ class _PhoneVerificationScreenState
         children: [
           _buildBackground(),
           SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: GlassContainer(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildHeader(l10n),
-                          const SizedBox(height: 24),
-                          Text(
-                            l10n.codeSentMessage,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: AppColors.getTextSecondary(context),
-                              fontSize: 15,
-                            ),
-                          ).animate().fadeIn(delay: 400.ms),
-                          const SizedBox(height: 32),
-
-                          // OTP Field
-                          _buildInputLabel(l10n.codeHint, context),
-                          const SizedBox(height: 8),
-                          Focus(
-                            onFocusChange:
-                                (v) => setState(() => _isOtpFocused = v),
-                            child: NeumorphicContainer(
-                              isPressed: _isOtpFocused,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: TextField(
-                                controller: _otp,
-                                keyboardType: TextInputType.number,
+            child: Stack(
+              children: [
+                Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: GlassContainer(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildHeader(l10n, auth.isLoading),
+                              const SizedBox(height: 24),
+                              Text(
+                                '${l10n.codeSentMessage} $_email',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 8,
+                                style: TextStyle(
+                                  color: AppColors.getTextSecondary(context),
+                                  fontSize: 15,
                                 ),
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
+                              ).animate().fadeIn(delay: 400.ms),
+                              const SizedBox(height: 32),
+
+                              _buildInputLabel(l10n.codeHint, context),
+                              const SizedBox(height: 8),
+                              Focus(
+                                onFocusChange:
+                                    (v) => setState(() => _isCodeFocused = v),
+                                child: NeumorphicContainer(
+                                  isPressed: _isCodeFocused,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  child: TextField(
+                                    controller: _code,
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 8,
+                                    ),
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ).animate().fadeIn(delay: 500.ms).slideX(begin: -0.1),
+                              ).animate().fadeIn(delay: 500.ms).slideX(begin: -0.1),
 
-                          const SizedBox(height: 48),
+                              const SizedBox(height: 48),
 
-                          // Verify Button
-                          _buildVerifyButton(l10n, auth.isLoading),
+                              _buildVerifyButton(l10n, auth.isLoading),
 
-                          const SizedBox(height: 24),
-                          TextButton(
-                            onPressed: () {
-                              // Resend logic mock
-                            },
-                            child: const Text(
-                              'Renvoyer le code',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ).animate().fadeIn(delay: 700.ms),
+                              const SizedBox(height: 24),
+                              TextButton(
+                                onPressed: () {},
+                                child: const Text(
+                                  'Renvoyer le code',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ).animate().fadeIn(delay: 700.ms),
 
-                          const SizedBox(height: 12),
-                          _buildErrorMessage(auth, l10n),
-                        ],
-                      ),
-                    )
-                    .animate()
-                    .fadeIn(duration: 600.ms)
-                    .scale(begin: const Offset(0.9, 0.9)),
-              ),
+                              const SizedBox(height: 24),
+                              Text(
+                                l10n.wrongEmailMessage,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: AppColors.getTextSecondary(context),
+                                  fontSize: 13,
+                                ),
+                              ).animate().fadeIn(delay: 800.ms),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: () async {
+                                  await ref
+                                      .read(authNotifierProvider.notifier)
+                                      .cancelRegistration();
+                                  if (!mounted) return;
+                                  context.go('/auth/register');
+                                },
+                                child: Text(
+                                  l10n.wrongEmailButton,
+                                  style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ).animate().fadeIn(delay: 900.ms),
+
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+                        )
+                        .animate()
+                        .fadeIn(duration: 600.ms)
+                        .scale(begin: const Offset(0.9, 0.9)),
+                  ),
+                ),
+                Positioned(
+                  top: 20,
+                  left: 20,
+                  child:                   IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.getTextMain(context),
+                    ),
+                    onPressed: null,
+                  ).animate().fadeIn(delay: 800.ms),
+                ),
+              ],
             ),
-          ),
-          Positioned(
-            top: 40,
-            left: 20,
-            child: IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: AppColors.getTextMain(context),
-              ),
-              onPressed: () => context.pop(),
-            ).animate().fadeIn(delay: 800.ms),
           ),
         ],
       ),
@@ -166,15 +220,17 @@ class _PhoneVerificationScreenState
         );
   }
 
-  Widget _buildHeader(AppLocalizations l10n) {
+  Widget _buildHeader(AppLocalizations l10n, bool isLoading) {
     return Column(
       children: [
         Container(
           width: 70,
           height: 70,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: AppColors.primaryGradient,
+            gradient: isLoading
+                ? const LinearGradient(colors: [Colors.grey, Colors.grey])
+                : AppColors.primaryGradient,
           ),
           child: const Icon(
             Icons.verified_user_rounded,
@@ -241,34 +297,29 @@ class _PhoneVerificationScreenState
   Future<void> _handleVerify() async {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context);
+    final email = _email;
+    if (email.isEmpty) return;
 
-    final ok = await ref
-        .read(authNotifierProvider.notifier)
-        .verifyPhone(_phone.text.trim(), _otp.text.trim());
+    final code = widget.code ?? _code.text.trim();
+    if (code.isEmpty) return;
 
-    if (!mounted) return;
-    if (ok) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.phoneVerified)));
-      context.go('/auth/login');
-    } else {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.codeInvalid)));
+    try {
+      final ok = await ref
+          .read(authNotifierProvider.notifier)
+          .verifyEmail(email, code);
+
+      if (!mounted) return;
+      if (ok) {
+        messenger.showSnackBar(SnackBar(content: Text(l10n.phoneVerified)));
+        context.go('/auth/login');
+      } else {
+        messenger.showSnackBar(SnackBar(content: Text(l10n.codeInvalid)));
+      }
+    } catch (_) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Erreur réseau, veuillez réessayer')),
+      );
     }
-  }
-
-  Widget _buildErrorMessage(AsyncValue auth, AppLocalizations l10n) {
-    return auth.when(
-      data: (_) => const SizedBox.shrink(),
-      loading: () => const SizedBox.shrink(),
-      error:
-          (e, s) =>
-              Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Text(
-                  '${l10n.errorPrefix}${e.toString()}',
-                  style: const TextStyle(color: Colors.red, fontSize: 13),
-                  textAlign: TextAlign.center,
-                ),
-              ).animate().shake(),
-    );
   }
 }

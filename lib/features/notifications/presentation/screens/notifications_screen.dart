@@ -5,7 +5,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/containers/glass_container.dart';
 import '../../../../shared/widgets/containers/neumorphic_container.dart';
+import '../../../auth/presentation/controllers/auth_notifier.dart';
+import '../../../../core/realtime/sse_reconnect_service.dart';
 import '../providers/notifications_providers.dart';
+import '../providers/sse_provider.dart';
 import '../widgets/notification_list_item.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -21,13 +24,18 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(notificationsStateProvider.notifier).fetchNotifications('user1');
+      final user = ref.read(authNotifierProvider).valueOrNull;
+      final target = user?.id ?? 'user1';
+      ref.read(notificationsStateProvider.notifier).fetchNotifications(target);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final notificationsState = ref.watch(notificationsStateProvider);
+    final connState = ref.watch(sseConnectionProvider);
+    final unreadCount = ref.watch(unreadCountProvider);
+    final unreadLabel = unreadCount > 0 ? ' ($unreadCount)' : '';
 
     return Scaffold(
       backgroundColor: AppColors.getBackground(context),
@@ -37,7 +45,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           SafeArea(
             child: Column(
               children: [
-                _buildAppBar(context),
+                _buildAppBar(context, connState, unreadLabel),
                 Expanded(
                   child: notificationsState.when(
                     data: (notifications) {
@@ -92,13 +100,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         height: 300,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AppColors.primary.withOpacity(0.03),
+          color: AppColors.primary.withValues(alpha: 0.03),
         ),
       ),
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
+  Widget _buildAppBar(BuildContext context, SseConnectionState connState, String unreadLabel) {
     return GlassContainer(
       borderRadius: 0,
       padding: const EdgeInsets.fromLTRB(8, 20, 16, 20),
@@ -114,7 +122,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           ),
           const SizedBox(width: 8),
           Text(
-            'Notifications',
+            'Notifications$unreadLabel',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -122,6 +130,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             ),
           ),
           const Spacer(),
+          if (connState != SseConnectionState.connected)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Icon(
+                Icons.cloud_off_rounded,
+                size: 18,
+                color: AppColors.getTextSecondary(context),
+              ),
+            ),
           NeumorphicContainer(
             width: 40,
             height: 40,

@@ -2,9 +2,14 @@
 class NotificationService {
   final List<Map<String, dynamic>> _store = [];
 
-  /// Push a notification (in-memory)
+  /// Push a notification (in-memory), replacing an existing one with the same id.
   void push(Map<String, dynamic> n) {
-    _store.insert(0, n);
+    final idx = _store.indexWhere((e) => e['id'] == n['id']);
+    if (idx != -1) {
+      _store[idx] = n;
+    } else {
+      _store.insert(0, n);
+    }
   }
 
   /// Fetch notifications for a target (user or provider id)

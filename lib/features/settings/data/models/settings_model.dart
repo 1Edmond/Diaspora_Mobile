@@ -6,7 +6,6 @@ class SettingsModel extends SettingsEntity {
     required super.language,
     required super.notificationsEnabled,
     required super.biometricAuthEnabled,
-    required super.darkMode,
     required super.privacyLevel,
   });
 
@@ -16,7 +15,6 @@ class SettingsModel extends SettingsEntity {
       language: json['language'] as String? ?? 'FR',
       notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
       biometricAuthEnabled: json['biometricAuthEnabled'] as bool? ?? false,
-      darkMode: json['darkMode'] as bool? ?? false,
       privacyLevel: PrivacyLevel.fromString(
         json['privacyLevel'] as String? ?? 'PRIVATE',
       ),
@@ -40,7 +38,6 @@ class SettingsModel extends SettingsEntity {
       language: entity.language,
       notificationsEnabled: entity.notificationsEnabled,
       biometricAuthEnabled: entity.biometricAuthEnabled,
-      darkMode: entity.darkMode,
       privacyLevel: entity.privacyLevel,
     );
   }

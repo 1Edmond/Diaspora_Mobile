@@ -1,54 +1,89 @@
-import 'step_model.dart';
+import 'location_model.dart';
 
 class ProcedureModel {
   final String id;
   final String title;
   final String description;
-  final int estimatedCost;
+  final num costAmount;
+  final String costCurrency;
+  final String profileType;
+  final String profileTypeId;
   final int estimatedDurationDays;
-  final String category;
+  final bool isActive;
+  final List<LocationModel> locations;
+  final List<String> dependencyIds;
+  final List<String> requiredDocumentTypeIds;
+  final DateTime createdAt;
   final int userProgress;
-  final DateTime? deadline;
-  final List<StepModel> steps;
 
   ProcedureModel({
     required this.id,
     required this.title,
     required this.description,
-    required this.estimatedCost,
+    required this.costAmount,
+    required this.costCurrency,
+    required this.profileType,
+    required this.profileTypeId,
     required this.estimatedDurationDays,
-    required this.category,
-    required this.userProgress,
-    this.deadline,
-    this.steps = const [],
+    required this.isActive,
+    this.locations = const [],
+    this.dependencyIds = const [],
+    this.requiredDocumentTypeIds = const [],
+    required this.createdAt,
+    this.userProgress = 0,
   });
 
-  ProcedureModel copyWith({int? userProgress, List<StepModel>? steps}) {
+  DateTime? get deadline {
+    if (estimatedDurationDays <= 0) return null;
+    return createdAt.add(Duration(days: estimatedDurationDays));
+  }
+
+  ProcedureModel copyWith({
+    int? userProgress,
+    List<LocationModel>? locations,
+  }) {
     return ProcedureModel(
       id: id,
       title: title,
       description: description,
-      estimatedCost: estimatedCost,
+      costAmount: costAmount,
+      costCurrency: costCurrency,
+      profileType: profileType,
+      profileTypeId: profileTypeId,
       estimatedDurationDays: estimatedDurationDays,
-      category: category,
+      isActive: isActive,
+      locations: locations ?? this.locations,
+      dependencyIds: dependencyIds,
+      requiredDocumentTypeIds: requiredDocumentTypeIds,
+      createdAt: createdAt,
       userProgress: userProgress ?? this.userProgress,
-      deadline: deadline,
-      steps: steps ?? this.steps,
     );
   }
 
   factory ProcedureModel.fromJson(Map<String, dynamic> json) {
-    final stepsJson = json['steps'] as List<dynamic>?;
+    final locationsJson = json['locations'] as List<dynamic>?;
+    final dependencyIdsJson = json['dependencyIds'] as List<dynamic>?;
+    final requiredDocumentTypeIdsJson = json['requiredDocumentTypeIds'] as List<dynamic>?;
     return ProcedureModel(
       id: json['id'] as String,
       title: json['title'] as String,
       description: json['description'] as String,
-      estimatedCost: json['estimatedCost'] as int,
+      costAmount: json['costAmount'] as num,
+      costCurrency: json['costCurrency'] as String,
+      profileType: json['profileType'] as String,
+      profileTypeId: json['profileTypeId'] as String,
       estimatedDurationDays: json['estimatedDurationDays'] as int,
-      category: json['category'] as String,
-      userProgress: json['userProgress'] as int,
-      deadline: json['deadline'] != null ? DateTime.parse(json['deadline'] as String) : null,
-      steps: stepsJson != null ? stepsJson.map((e) => StepModel.fromJson(e as Map<String, dynamic>)).toList() : [],
+      isActive: json['isActive'] as bool,
+      locations: locationsJson != null
+          ? locationsJson.map((e) => LocationModel.fromJson(e as Map<String, dynamic>)).toList()
+          : [],
+      dependencyIds: dependencyIdsJson != null
+          ? dependencyIdsJson.map((e) => e as String).toList()
+          : [],
+      requiredDocumentTypeIds: requiredDocumentTypeIdsJson != null
+          ? requiredDocumentTypeIdsJson.map((e) => e as String).toList()
+          : [],
+      createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
 }

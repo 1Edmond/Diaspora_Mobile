@@ -16,11 +16,30 @@ class RegisterScreen extends ConsumerStatefulWidget {
 }
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
-  final _phone = TextEditingController(text: '+228');
+  final _firstName = TextEditingController();
+  final _lastName = TextEditingController();
+  final _email = TextEditingController();
+  final _dateOfBirth = TextEditingController();
+  final _phone = TextEditingController();
   final _password = TextEditingController();
   String _userType = 'BOURSIER';
+  bool _isFirstNameFocused = false;
+  bool _isLastNameFocused = false;
+  bool _isEmailFocused = false;
   bool _isPhoneFocused = false;
   bool _isPasswordFocused = false;
+  DateTime? _selectedDate;
+
+  @override
+  void dispose() {
+    _firstName.dispose();
+    _lastName.dispose();
+    _email.dispose();
+    _dateOfBirth.dispose();
+    _phone.dispose();
+    _password.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,128 +51,201 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         children: [
           _buildBackground(),
           SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: GlassContainer(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildHeader(l10n),
-                          const SizedBox(height: 32),
+            child: Stack(
+              children: [
+                Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: GlassContainer(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildHeader(l10n),
+                                const SizedBox(height: 32),
 
-                          // Phone Field
-                          _buildInputLabel(l10n.phoneHint, context),
-                          const SizedBox(height: 8),
-                          Focus(
-                            onFocusChange:
-                                (v) => setState(() => _isPhoneFocused = v),
-                            child: NeumorphicContainer(
-                              isPressed: _isPhoneFocused,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: TextField(
-                                controller: _phone,
-                                keyboardType: TextInputType.phone,
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                ),
-                              ),
-                            ),
-                          ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
-
-                          const SizedBox(height: 20),
-
-                          // Password Field
-                          _buildInputLabel(l10n.passwordHint, context),
-                          const SizedBox(height: 8),
-                          Focus(
-                            onFocusChange:
-                                (v) => setState(() => _isPasswordFocused = v),
-                            child: NeumorphicContainer(
-                              isPressed: _isPasswordFocused,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: TextField(
-                                controller: _password,
-                                obscureText: true,
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                ),
-                              ),
-                            ),
-                          ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.1),
-
-                          const SizedBox(height: 20),
-
-                          // User Type Dropdown
-                          _buildInputLabel(l10n.userTypeLabel, context),
-                          const SizedBox(height: 8),
-                          NeumorphicContainer(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                isExpanded: true,
-                                value: _userType,
-                                items: [
-                                  DropdownMenuItem(
-                                    value: 'BOURSIER',
-                                    child: Text(l10n.userTypeScholar),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'CONTRACTUEL',
-                                    child: Text(l10n.userTypeContractor),
-                                  ),
-                                ],
-                                onChanged:
-                                    (v) => setState(
-                                      () => _userType = v ?? 'BOURSIER',
+                                _buildInputLabel(l10n.firstNameLabel, context),
+                                const SizedBox(height: 8),
+                                Focus(
+                                  onFocusChange:
+                                      (v) => setState(() => _isFirstNameFocused = v),
+                                  child: NeumorphicContainer(
+                                    isPressed: _isFirstNameFocused,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: TextField(
+                                      controller: _firstName,
+                                      keyboardType: TextInputType.name,
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                      ),
                                     ),
-                              ),
-                            ),
-                          ).animate().fadeIn(delay: 500.ms).slideX(begin: -0.1),
+                                  ),
+                                ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
 
-                          const SizedBox(height: 40),
+                                const SizedBox(height: 20),
 
-                          // Register Button
-                          _buildRegisterButton(l10n, auth.isLoading),
+                                _buildInputLabel(l10n.lastNameLabel, context),
+                                const SizedBox(height: 8),
+                                Focus(
+                                  onFocusChange:
+                                      (v) => setState(() => _isLastNameFocused = v),
+                                  child: NeumorphicContainer(
+                                    isPressed: _isLastNameFocused,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: TextField(
+                                      controller: _lastName,
+                                      keyboardType: TextInputType.name,
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                      ),
+                                    ),
+                                  ),
+                                ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
 
-                          const SizedBox(height: 20),
-                          TextButton(
-                            onPressed: () => context.pop(),
-                            child: const Text(
-                              'Déjà un compte ? Se connecter',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ).animate().fadeIn(delay: 700.ms),
+                                const SizedBox(height: 20),
 
-                          const SizedBox(height: 12),
-                          _buildErrorMessage(auth, l10n),
-                        ],
-                      ),
-                    )
-                    .animate()
-                    .fadeIn(duration: 600.ms)
-                    .scale(begin: const Offset(0.9, 0.9)),
-              ),
+                                _buildInputLabel(l10n.dateOfBirthLabel, context),
+                                const SizedBox(height: 8),
+                                NeumorphicContainer(
+                                  isPressed: true,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: TextField(
+                                    controller: _dateOfBirth,
+                                    readOnly: true,
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      suffixIcon: Icon(Icons.calendar_today_rounded),
+                                    ),
+                                    onTap: _pickDate,
+                                  ),
+                                ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
+
+                                const SizedBox(height: 20),
+
+                                _buildInputLabel(l10n.emailLabel, context),
+                                const SizedBox(height: 8),
+                                Focus(
+                                  onFocusChange:
+                                      (v) => setState(() => _isEmailFocused = v),
+                                  child: NeumorphicContainer(
+                                    isPressed: _isEmailFocused,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: TextField(
+                                      controller: _email,
+                                      keyboardType: TextInputType.emailAddress,
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                      ),
+                                    ),
+                                  ),
+                                ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
+
+                                const SizedBox(height: 20),
+
+                                _buildInputLabel(l10n.phoneHint, context),
+                                const SizedBox(height: 8),
+                                Focus(
+                                  onFocusChange:
+                                      (v) => setState(() => _isPhoneFocused = v),
+                                  child: NeumorphicContainer(
+                                    isPressed: _isPhoneFocused,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: TextField(
+                                      controller: _phone,
+                                      keyboardType: TextInputType.phone,
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                      ),
+                                    ),
+                                  ),
+                                ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
+
+                                const SizedBox(height: 20),
+
+                                _buildInputLabel(l10n.passwordHint, context),
+                                const SizedBox(height: 8),
+                                Focus(
+                                  onFocusChange:
+                                      (v) => setState(() => _isPasswordFocused = v),
+                                  child: NeumorphicContainer(
+                                    isPressed: _isPasswordFocused,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: TextField(
+                                      controller: _password,
+                                      obscureText: true,
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                      ),
+                                    ),
+                                  ),
+                                ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.1),
+
+                                const SizedBox(height: 20),
+
+                                _buildInputLabel(l10n.userTypeLabel, context),
+                                const SizedBox(height: 8),
+                                NeumorphicContainer(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      isExpanded: true,
+                                      value: _userType,
+                                      items: [
+                                        DropdownMenuItem(
+                                          value: 'BOURSIER',
+                                          child: Text(l10n.userTypeScholar),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'CONTRACTUEL',
+                                          child: Text(l10n.userTypeContractor),
+                                        ),
+                                      ],
+                                      onChanged:
+                                          (v) => setState(
+                                            () => _userType = v ?? 'BOURSIER',
+                                          ),
+                                    ),
+                                  ),
+                                ).animate().fadeIn(delay: 500.ms).slideX(begin: -0.1),
+
+                                const SizedBox(height: 40),
+
+                                _buildRegisterButton(l10n, auth.isLoading),
+
+                                const SizedBox(height: 20),
+                                TextButton(
+                                  onPressed: () => context.pop(),
+                                  child: const Text(
+                                    'Déjà un compte ? Se connecter',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ).animate().fadeIn(delay: 700.ms),
+
+                                const SizedBox(height: 12),
+                              ],
+                          ),
+                        )
+                        .animate()
+                        .fadeIn(duration: 600.ms)
+                        .scale(begin: const Offset(0.9, 0.9)),
+                  ),
+                ),
+                Positioned(
+                  top: 20,
+                  left: 20,
+                  child: IconButton(
+                      icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.getTextMain(context),
+                    ),
+                    onPressed: () => context.pop(),
+                  ).animate().fadeIn(delay: 800.ms),
+                ),
+              ],
             ),
-          ),
-          Positioned(
-            top: 40,
-            left: 20,
-            child: IconButton(
-                icon: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: AppColors.getTextMain(context),
-              ),
-              onPressed: () => context.pop(),
-            ).animate().fadeIn(delay: 800.ms),
           ),
         ],
       ),
@@ -268,29 +360,70 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2);
   }
 
-  Future<void> _handleRegister() async {
-    await ref
-        .read(authNotifierProvider.notifier)
-        .register(_phone.text.trim(), _password.text.trim(), _userType);
-
-    if (!mounted) return;
-    context.go('/auth/verify');
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime(2000, 1, 1),
+      firstDate: DateTime(1950),
+      lastDate: now.subtract(const Duration(days: 365 * 16)),
+      helpText: 'Sélectionnez votre date de naissance',
+      cancelText: 'Annuler',
+      confirmText: 'Choisir',
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        _dateOfBirth.text =
+            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+      });
+    }
   }
 
-  Widget _buildErrorMessage(AsyncValue auth, AppLocalizations l10n) {
-    return auth.when(
-      data: (_) => const SizedBox.shrink(),
-      loading: () => const SizedBox.shrink(),
-      error:
-          (e, s) =>
-              Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Text(
-                  '${l10n.errorPrefix}${e.toString()}',
-                  style: const TextStyle(color: Colors.red, fontSize: 13),
-                  textAlign: TextAlign.center,
-                ),
-              ).animate().shake(),
-    );
+  Future<void> _handleRegister() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final firstName = _firstName.text.trim();
+    final lastName = _lastName.text.trim();
+    final email = _email.text.trim();
+    final phone = _phone.text.trim();
+    final password = _password.text.trim();
+
+    if (firstName.isEmpty ||
+        lastName.isEmpty ||
+        email.isEmpty ||
+        phone.isEmpty ||
+        password.isEmpty ||
+        _selectedDate == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Veuillez remplir tous les champs')),
+      );
+      return;
+    }
+
+    try {
+      final ok = await ref.read(authNotifierProvider.notifier).register(
+            phone: phone,
+            password: password,
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            dateOfBirth: _selectedDate!,
+            userType: _userType,
+          );
+
+      if (!mounted) return;
+      if (ok) {
+        context.go('/auth/verify', extra: <String, String>{'email': email});
+      } else {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Échec de l\'inscription, veuillez réessayer')),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Erreur réseau, veuillez réessayer')),
+      );
+    }
   }
 }

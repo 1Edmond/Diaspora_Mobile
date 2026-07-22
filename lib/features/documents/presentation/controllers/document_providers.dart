@@ -1,88 +1,186 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
-import '../../domain/entities/document.dart';
-import '../../domain/entities/document_category.dart';
+import '../../data/models/document_dto_model.dart';
+import '../../data/models/document_type_model.dart';
 import '../../domain/repositories/document_repository.dart';
-import '../../data/repositories/document_repository_impl.dart';
-import 'dart:io';
+import '../../domain/repositories/document_type_repository.dart';
+import '../../../profile/presentation/controllers/profile_providers.dart';
+
+import 'package:get_it/get_it.dart';
 
 final documentRepositoryProvider = Provider<IDocumentRepository>((ref) {
-  return DocumentRepositoryImpl();
+  return GetIt.instance<IDocumentRepository>();
 });
 
-// Providers for documents list by user
-final documentsByUserProvider = FutureProvider.family<List<Document>, String>((
+final documentTypeRepositoryProvider = Provider<IDocumentTypeRepository>((ref) {
+  return GetIt.instance<IDocumentTypeRepository>();
+});
+
+final documentTypesProvider = FutureProvider<List<DocumentTypeModel>>((
   ref,
-  userId,
 ) async {
-  final repository = ref.watch(documentRepositoryProvider);
-  return repository.getDocuments(userId);
+  final repo = ref.watch(documentTypeRepositoryProvider);
+  return repo.getDocumentTypes();
 });
 
-// Provider for documents filtered by category
-final documentsByCategoryProvider = FutureProvider.family<
-  List<Document>,
-  ({String userId, DocumentCategory? category})
->((ref, params) async {
-  final repository = ref.watch(documentRepositoryProvider);
-  return repository.getDocuments(params.userId, category: params.category);
-});
+// ==================== Paginated documents list ====================
 
-// Provider for a single document detail
-final documentDetailProvider = FutureProvider.family<Document?, String>((
-  ref,
-  documentId,
-) async {
-  final repository = ref.watch(documentRepositoryProvider);
-  return repository.getDocumentById(documentId);
-});
+class DocumentsListState {
+  final List<DocumentDtoModel> items;
+  final bool isLoading;
+  final bool hasNext;
+  final int totalCount;
+  final Object? error;
+  final StackTrace? stackTrace;
 
-// Provider for searching documents
-final documentSearchProvider =
-    FutureProvider.family<List<Document>, ({String userId, String query})>((
-      ref,
-      params,
-    ) async {
-      if (params.query.isEmpty) {
-        return ref.watch(documentsByUserProvider(params.userId)).value ?? [];
-      }
+  const DocumentsListState({
+    this.items = const [],
+    this.isLoading = false,
+    this.hasNext = false,
+    this.totalCount = 0,
+    this.error,
+    this.stackTrace,
+  });
 
-      final repository = ref.watch(documentRepositoryProvider);
-      return repository.searchDocuments(params.userId, params.query);
+  DocumentsListState copyWith({
+    List<DocumentDtoModel>? items,
+    bool? isLoading,
+    bool? hasNext,
+    int? totalCount,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    return DocumentsListState(
+      items: items ?? this.items,
+      isLoading: isLoading ?? this.isLoading,
+      hasNext: hasNext ?? this.hasNext,
+      totalCount: totalCount ?? this.totalCount,
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+}
+
+final documentsListProvider =
+    StateNotifierProvider<DocumentsListNotifier, DocumentsListState>((ref) {
+      return DocumentsListNotifier(
+        repository: ref.watch(documentRepositoryProvider),
+        ref: ref,
+      );
     });
 
-// Provider for expired documents
-final expiredDocumentsProvider = FutureProvider.family<List<Document>, String>((
-  ref,
-  userId,
-) async {
-  final repository = ref.watch(documentRepositoryProvider);
-  return repository.getExpiredDocuments(userId);
-});
+class DocumentsListNotifier extends StateNotifier<DocumentsListState> {
+  final IDocumentRepository _repository;
+  final Ref _ref;
+  int _currentPage = 1;
+  static const _pageSize = 20;
 
-// StateNotifier for document upload
-class DocumentUploadNotifier extends StateNotifier<AsyncValue<Document?>> {
+  DocumentsListNotifier({
+    required IDocumentRepository repository,
+    required Ref ref,
+  }) : _repository = repository,
+       _ref = ref,
+       super(const DocumentsListState(isLoading: true));
+
+  Future<void> fetch({int profileType = 0, String? profileId}) async {
+    final pid = profileId ?? _resolveProfileId();
+    if (pid == null || pid.isEmpty) {
+      state = const DocumentsListState();
+      return;
+    }
+    _currentPage = 1;
+    state = state.copyWith(isLoading: true, error: null, stackTrace: null);
+    try {
+      final paged = await _repository.getDocuments(
+        profileType: profileType,
+        profileId: pid,
+        pageNumber: _currentPage,
+        pageSize: _pageSize,
+      );
+      state = DocumentsListState(
+        items: paged.items,
+        isLoading: false,
+        hasNext: paged.hasNext,
+        totalCount: paged.totalCount,
+      );
+    } catch (e, st) {
+      state = DocumentsListState(error: e, stackTrace: st);
+    }
+  }
+
+  Future<void> loadNextPage({int profileType = 0, String? profileId}) async {
+    final pid = profileId ?? _resolveProfileId();
+    if (pid == null || pid.isEmpty) return;
+    if (!state.hasNext || state.isLoading) return;
+    state = state.copyWith(isLoading: true);
+    try {
+      _currentPage++;
+      final paged = await _repository.getDocuments(
+        profileType: profileType,
+        profileId: pid,
+        pageNumber: _currentPage,
+        pageSize: _pageSize,
+      );
+      state = state.copyWith(
+        items: [...state.items, ...paged.items],
+        isLoading: false,
+        hasNext: paged.hasNext,
+        totalCount: paged.totalCount,
+      );
+    } catch (e, st) {
+      _currentPage--;
+      state = state.copyWith(isLoading: false, error: e, stackTrace: st);
+    }
+  }
+
+  void refresh() {
+    final pid = _resolveProfileId();
+    if (pid != null && pid.isNotEmpty) {
+      fetch(profileId: pid);
+    }
+  }
+
+  String? _resolveProfileId() {
+    final activeProfile = _ref.read(activeProfileProvider);
+    return activeProfile?.id;
+  }
+}
+
+// ==================== Single document detail ====================
+
+final documentDetailProvider = FutureProvider.family<DocumentDtoModel?, String>(
+  (ref, documentId) async {
+    final repository = ref.watch(documentRepositoryProvider);
+    return repository.getDocumentById(documentId);
+  },
+);
+
+// ==================== Upload ====================
+
+class DocumentUploadNotifier
+    extends StateNotifier<AsyncValue<DocumentDtoModel?>> {
   final IDocumentRepository repository;
 
   DocumentUploadNotifier(this.repository) : super(const AsyncValue.data(null));
 
   Future<void> uploadDocument({
-    required String userId,
+    required String profileId,
+    required String documentTypeId,
     required String filePath,
-    required String title,
-    required DocumentCategory category,
-    String? description,
+    String? fileName,
     DateTime? expiresAt,
+    DateTime? issuedAt,
+    String? issuedBy,
   }) async {
     state = const AsyncValue.loading();
     try {
       final document = await repository.uploadDocument(
-        userId: userId,
+        profileId: profileId,
+        documentTypeId: documentTypeId,
         filePath: filePath,
-        title: title,
-        category: category,
-        description: description,
+        fileName: fileName,
         expiresAt: expiresAt,
+        issuedAt: issuedAt,
+        issuedBy: issuedBy,
       );
       state = AsyncValue.data(document);
     } catch (e, st) {
@@ -95,13 +193,16 @@ class DocumentUploadNotifier extends StateNotifier<AsyncValue<Document?>> {
   }
 }
 
-final documentUploadProvider =
-    StateNotifierProvider<DocumentUploadNotifier, AsyncValue<Document?>>((ref) {
-      final repository = ref.watch(documentRepositoryProvider);
-      return DocumentUploadNotifier(repository);
-    });
+final documentUploadProvider = StateNotifierProvider<
+  DocumentUploadNotifier,
+  AsyncValue<DocumentDtoModel?>
+>((ref) {
+  final repository = ref.watch(documentRepositoryProvider);
+  return DocumentUploadNotifier(repository);
+});
 
-// StateNotifier for document deletion
+// ==================== Delete ====================
+
 class DocumentDeleteNotifier extends StateNotifier<AsyncValue<bool>> {
   final IDocumentRepository repository;
 
@@ -128,7 +229,8 @@ final documentDeleteProvider =
       return DocumentDeleteNotifier(repository);
     });
 
-// StateNotifier for OCR text extraction
+// ==================== OCR / Text extraction ====================
+
 class TextExtractionNotifier extends StateNotifier<AsyncValue<String?>> {
   final IDocumentRepository repository;
 
@@ -154,13 +256,3 @@ final textExtractionProvider =
       final repository = ref.watch(documentRepositoryProvider);
       return TextExtractionNotifier(repository);
     });
-
-// Provider for file picker
-final filePickerProvider = Provider<ImagePicker>((ref) {
-  return ImagePicker();
-});
-
-// State for selected file for upload
-final selectedFileProvider = StateProvider<File?>((ref) {
-  return null;
-});

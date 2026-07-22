@@ -1,14 +1,22 @@
 import '../../domain/entities/service.dart';
 import '../../domain/repositories/service_repository.dart';
-import '../../../../data/mock/mock_services.dart'; // Source
+import '../../../../data/mock/mock_services.dart';
 import '../../../../core/config/app_config.dart';
 
 class ServiceRepositoryImpl implements IServiceRepository {
+  List<Service>? _localStore;
+
+  List<Service> get _store {
+    if (_localStore == null) {
+      _localStore = List.from(mockServices);
+    }
+    return _localStore!;
+  }
+
   @override
   Future<List<Service>> getServices(String profileId) async {
     if (AppConfig.useMockData) {
-      // Filter logic would go here
-      return List<Service>.from(mockServices);
+      return List.from(_store);
     }
     return [];
   }
@@ -16,7 +24,7 @@ class ServiceRepositoryImpl implements IServiceRepository {
   @override
   Future<void> createService(Service service) async {
     if (AppConfig.useMockData) {
-      mockServices.add(service);
+      _store.add(service);
     }
   }
 
@@ -27,10 +35,10 @@ class ServiceRepositoryImpl implements IServiceRepository {
     List<String>? allowedDepartments,
   ) async {
     if (AppConfig.useMockData) {
-      final index = mockServices.indexWhere((s) => s.id == serviceId);
+      final index = _store.indexWhere((s) => s.id == serviceId);
       if (index != -1) {
-        final old = mockServices[index];
-        mockServices[index] = Service(
+        final old = _store[index];
+        _store[index] = Service(
           id: old.id,
           providerId: old.providerId,
           title: old.title,
@@ -39,11 +47,11 @@ class ServiceRepositoryImpl implements IServiceRepository {
           currency: old.currency,
           priceType: old.priceType,
           images: old.images,
-          scope: scope, // Updated scope
-          allowedDepartments: allowedDepartments, // Updated departments
+          scope: scope,
+          allowedDepartments: allowedDepartments,
           rating: old.rating,
           reviewCount: old.reviewCount,
-          status: 'ACTIVE', // Approved
+          status: 'ACTIVE',
           createdAt: old.createdAt,
         );
       }
@@ -53,10 +61,10 @@ class ServiceRepositoryImpl implements IServiceRepository {
   @override
   Future<void> rejectService(String serviceId, String reason) async {
     if (AppConfig.useMockData) {
-      final index = mockServices.indexWhere((s) => s.id == serviceId);
+      final index = _store.indexWhere((s) => s.id == serviceId);
       if (index != -1) {
-        final old = mockServices[index];
-        mockServices[index] = Service(
+        final old = _store[index];
+        _store[index] = Service(
           id: old.id,
           providerId: old.providerId,
           title: old.title,

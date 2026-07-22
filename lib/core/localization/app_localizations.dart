@@ -19,15 +19,21 @@ class AppLocalizations {
       'account_pending': 'Compte en attente de validation',
       'login_failed': 'Échec de la connexion',
       'error_prefix': 'Erreur: ',
+      'email_label': 'Email',
+      'first_name_label': 'Prénom',
+      'last_name_label': 'Nom',
+      'date_of_birth_label': 'Date de naissance',
       'user_type_label': 'Type d\'utilisateur',
       'user_type_scholar': 'Boursier',
       'user_type_contractor': 'Contractuel',
       'verification_title': 'Vérification',
-      'code_sent_message': 'Un code a été envoyé sur votre numéro',
+      'code_sent_message': 'Un code a été envoyé a votre adresse mail',
       'code_hint': 'Entrez le code',
       'verify_button': 'Vérifier',
       'phone_verified': 'Numéro vérifié',
       'code_invalid': 'Code invalide',
+      'wrong_email_message': 'Vous ne recevez pas le code ? Vérifiez votre email',
+      'wrong_email_button': 'Email incorrect ? S\'inscrire à nouveau',
     },
     'en': {
       'welcome': 'Welcome',
@@ -40,15 +46,21 @@ class AppLocalizations {
       'account_pending': 'Account pending validation',
       'login_failed': 'Login failed',
       'error_prefix': 'Error: ',
+      'email_label': 'Email',
+      'first_name_label': 'First Name',
+      'last_name_label': 'Last Name',
+      'date_of_birth_label': 'Date of Birth',
       'user_type_label': 'User Type',
       'user_type_scholar': 'Scholar',
       'user_type_contractor': 'Contractor',
       'verification_title': 'Verification',
-      'code_sent_message': 'A code has been sent to your number',
+      'code_sent_message': 'A code has been sent to your email address',
       'code_hint': 'Enter code',
       'verify_button': 'Verify',
       'phone_verified': 'Phone verified',
       'code_invalid': 'Invalid code',
+      'wrong_email_message': 'Not receiving the code? Check your email',
+      'wrong_email_button': 'Wrong email? Register again',
     },
     'ru': {
       'welcome': 'Добро пожаловать',
@@ -61,15 +73,21 @@ class AppLocalizations {
       'account_pending': 'Аккаунт ожидает подтверждения',
       'login_failed': 'Ошибка входа',
       'error_prefix': 'Ошибка: ',
+      'email_label': 'Эл. почта',
+      'first_name_label': 'Имя',
+      'last_name_label': 'Фамилия',
+      'date_of_birth_label': 'Дата рождения',
       'user_type_label': 'Тип пользователя',
       'user_type_scholar': 'Стипендиат',
       'user_type_contractor': 'Контрактник',
       'verification_title': 'Подтверждение',
-      'code_sent_message': 'Код отправлен на ваш номер',
+      'code_sent_message': 'Код отправлен на ваш адрес электронной почты',
       'code_hint': 'Введите код',
       'verify_button': 'Подтвердить',
       'phone_verified': 'Номер подтвержден',
       'code_invalid': 'Неверный код',
+      'wrong_email_message': 'Не получаете код? Проверьте почту',
+      'wrong_email_button': 'Неверный email? Зарегистрироваться снова',
     },
   };
 
@@ -86,6 +104,10 @@ class AppLocalizations {
       _t('account_pending') ?? 'Account pending validation';
   String get loginFailed => _t('login_failed') ?? 'Login failed';
   String get errorPrefix => _t('error_prefix') ?? 'Error: ';
+  String get emailLabel => _t('email_label') ?? 'Email';
+  String get firstNameLabel => _t('first_name_label') ?? 'First Name';
+  String get lastNameLabel => _t('last_name_label') ?? 'Last Name';
+  String get dateOfBirthLabel => _t('date_of_birth_label') ?? 'Date of Birth';
   String get userTypeLabel => _t('user_type_label') ?? 'User Type';
   String get userTypeScholar => _t('user_type_scholar') ?? 'Scholar';
   String get userTypeContractor => _t('user_type_contractor') ?? 'Contractor';
@@ -96,6 +118,10 @@ class AppLocalizations {
   String get verifyButton => _t('verify_button') ?? 'Verify';
   String get phoneVerified => _t('phone_verified') ?? 'Phone verified';
   String get codeInvalid => _t('code_invalid') ?? 'Invalid code';
+  String get wrongEmailMessage =>
+      _t('wrong_email_message') ?? 'Not receiving the code? Check your email';
+  String get wrongEmailButton =>
+      _t('wrong_email_button') ?? 'Wrong email? Register again';
 
   static AppLocalizations of(BuildContext context) {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;

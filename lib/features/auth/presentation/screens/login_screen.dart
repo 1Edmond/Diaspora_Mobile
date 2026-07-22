@@ -6,8 +6,12 @@ import '../../../../shared/widgets/containers/glass_container.dart';
 import '../../../../shared/widgets/containers/neumorphic_container.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../core/localization/app_localizations.dart';
-import '../../../../core/constants/enums.dart';
+import '../../../../core/services/biometric_service.dart';
 import '../controllers/auth_notifier.dart';
+
+final _biometricServiceProvider = Provider<BiometricService>(
+  (ref) => BiometricService(),
+);
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -17,10 +21,126 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _phone = TextEditingController(text: '+228');
+  final _email = TextEditingController();
   final _password = TextEditingController();
-  bool _isPhoneFocused = false;
+  bool _isEmailFocused = false;
   bool _isPasswordFocused = false;
+  bool _isBiometricAvailable = false;
+  bool _biometricLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initBiometric();
+  }
+
+  @override
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initBiometric() async {
+    final svc = ref.read(_biometricServiceProvider);
+    final deviceAvailable = await svc.isAvailable;
+    final enrolled = await svc.isEnrolled;
+    if (mounted) {
+      setState(() => _isBiometricAvailable = deviceAvailable && enrolled);
+    }
+  }
+
+  Future<void> _handleBiometric() async {
+    setState(() => _biometricLoading = true);
+    try {
+      final svc = ref.read(_biometricServiceProvider);
+      final response = await svc.authenticateAndLogin(
+        reason: 'Authentifiez-vous pour accéder à votre compte',
+      );
+      if (!response.success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.error ?? 'Échec de l\'authentification'),
+            ),
+          );
+        }
+        return;
+      }
+
+      final ok = await ref
+          .read(authNotifierProvider.notifier)
+          .loginWithBiometricTokens(response.tokens!);
+
+      if (!mounted) return;
+      if (ok) {
+        context.go('/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Échec de la connexion biométrique')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors de l\'authentification biométrique'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _biometricLoading = false);
+    }
+  }
+
+  Future<void> _maybeOfferBiometricEnrollment() async {
+    final svc = ref.read(_biometricServiceProvider);
+    final available = await svc.isAvailable;
+    final alreadyEnrolled = await svc.isEnrolled;
+    if (!available || alreadyEnrolled) return;
+    if (!mounted) return;
+
+    final accept = await showDialog<bool>(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Connexion par empreinte'),
+            content: const Text(
+              'Voulez-vous activer la connexion par empreinte digitale pour les prochaines fois ?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Plus tard'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Activer'),
+              ),
+            ],
+          ),
+    );
+    if (accept != true) return;
+
+    final accessToken = ref.read(authNotifierProvider.notifier).lastAccessToken;
+    if (accessToken == null) return;
+
+    final enrolled = await svc.enroll(
+      email: _email.text.trim(),
+      accessToken: accessToken,
+    );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          enrolled
+              ? 'Connexion par empreinte activée'
+              : 'Échec de l\'activation de l\'empreinte',
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +150,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Gradient & Abstract Shapes
           _buildBackground(),
-
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -45,20 +163,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           _buildHeader(l10n),
                           const SizedBox(height: 40),
 
-                          // Phone Input
-                          _buildInputLabel(l10n.phoneHint, context),
+                          _buildInputLabel(l10n.emailLabel, context),
                           const SizedBox(height: 8),
                           Focus(
                             onFocusChange:
-                                (v) => setState(() => _isPhoneFocused = v),
+                                (v) => setState(() => _isEmailFocused = v),
                             child: NeumorphicContainer(
-                              isPressed: _isPhoneFocused,
+                              isPressed: _isEmailFocused,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                               ),
                               child: TextField(
-                                controller: _phone,
-                                keyboardType: TextInputType.phone,
+                                controller: _email,
+                                keyboardType: TextInputType.emailAddress,
                                 decoration: const InputDecoration(
                                   border: InputBorder.none,
                                 ),
@@ -68,7 +185,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                           const SizedBox(height: 24),
 
-                          // Password Input
                           _buildInputLabel(l10n.passwordHint, context),
                           const SizedBox(height: 8),
                           Focus(
@@ -91,8 +207,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                           const SizedBox(height: 40),
 
-                          // Login Button
                           _buildLoginButton(l10n, auth.isLoading),
+
+                          if (_isBiometricAvailable) ...[
+                            const SizedBox(height: 26),
+                            _buildBiometricButton(),
+                          ],
 
                           const SizedBox(height: 20),
 
@@ -108,7 +228,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ).animate().fadeIn(delay: 700.ms),
 
                           const SizedBox(height: 12),
-                          _buildErrorMessage(auth, l10n),
                         ],
                       ),
                     )
@@ -121,6 +240,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildBiometricButton() {
+    return OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.primary,
+        side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(56)),
+      ),
+      onPressed: _biometricLoading ? null : _handleBiometric,
+      label:
+          _biometricLoading
+              ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              )
+              : const Icon(Icons.fingerprint_rounded, size: 28),
+    ).animate().fadeIn(delay: 650.ms).slideY(begin: 0.2);
   }
 
   Widget _buildBackground() {
@@ -233,38 +375,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _handleLogin() async {
     final messenger = ScaffoldMessenger.of(context);
-    final l10n = AppLocalizations.of(context);
+    final email = _email.text.trim();
+    final password = _password.text.trim();
 
-    final ok = await ref
-        .read(authNotifierProvider.notifier)
-        .login(_phone.text.trim(), _password.text.trim());
+    try {
+      final ok = await ref
+          .read(authNotifierProvider.notifier)
+          .login(email, password);
 
-    if (!mounted) return;
-    if (ok) {
-      final user = ref.read(authNotifierProvider).value;
-      if (user?.internalProfile.status == ProfileStatus.VALIDATED) {
+      if (!mounted) return;
+      if (ok) {
+        await _maybeOfferBiometricEnrollment();
+        if (!mounted) return;
         context.go('/home');
       } else {
-        messenger.showSnackBar(SnackBar(content: Text(l10n.accountPending)));
-        context.go('/home');
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Email ou mot de passe incorrect')),
+        );
       }
+    } catch (_) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Erreur de connexion, veuillez réessayer'),
+        ),
+      );
     }
-  }
-
-  Widget _buildErrorMessage(AsyncValue auth, AppLocalizations l10n) {
-    return auth.when(
-      data: (_) => const SizedBox.shrink(),
-      loading: () => const SizedBox.shrink(),
-      error:
-          (e, s) =>
-              Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Text(
-                  '${l10n.errorPrefix}${e.toString()}',
-                  style: const TextStyle(color: Colors.red, fontSize: 13),
-                  textAlign: TextAlign.center,
-                ),
-              ).animate().shake(),
-    );
   }
 }

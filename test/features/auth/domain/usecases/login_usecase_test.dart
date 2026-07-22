@@ -4,12 +4,12 @@ import 'package:diaspora_app/features/auth/domain/repositories/auth_repository.d
 
 class _FakeRepo implements IAuthRepository {
   @override
-  Future<Map<String, dynamic>> login(String phone, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password) async {
     return {
       'user': {
         'id': 'u1',
         'name': 'Test',
-        'phone': phone,
+        'email': email,
         'userType': 'BOURSIER',
         'status': 'validated',
       },
@@ -17,26 +17,36 @@ class _FakeRepo implements IAuthRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> register(
-    String phone,
-    String password,
-    String userType,
-  ) async {
+  Future<Map<String, dynamic>> register({
+    required String phone,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required String email,
+    required DateTime dateOfBirth,
+    required String userType,
+  }) async {
     throw UnimplementedError();
   }
 
   @override
-  Future<bool> verifyPhone(String phone, String otp) async {
+  Future<bool> verifyEmail(String email, String code) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<void> logout() async {}
+
+  @override
+  Future<bool> ensureAuthenticated() async => false;
 }
 
 void main() {
   test('LoginUseCase returns user map when repo succeeds', () async {
     final usecase = LoginUseCase(_FakeRepo());
-    final res = await usecase.call('+22812345678', 'pwd');
+    final res = await usecase.call('test@email.com', 'pwd');
 
     expect(res, isA<Map<String, dynamic>>());
-    expect(res['user']['phone'], '+22812345678');
+    expect(res['user']['email'], 'test@email.com');
   });
 }

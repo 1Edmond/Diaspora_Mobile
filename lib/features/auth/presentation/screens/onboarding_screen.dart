@@ -41,18 +41,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
           _buildBackground(),
-          PageView.builder(
-            controller: _controller,
-            onPageChanged: (v) => setState(() => _currentPage = v),
-            itemCount: _pages.length,
-            itemBuilder: (context, index) => _buildPage(_pages[index]),
+          SafeArea(
+            child: Stack(
+              children: [
+                PageView.builder(
+                  controller: _controller,
+                  onPageChanged: (v) => setState(() => _currentPage = v),
+                  itemCount: _pages.length,
+                  itemBuilder: (context, index) => _buildPage(_pages[index]),
+                ),
+                _buildBottomControls(),
+              ],
+            ),
           ),
-          _buildBottomControls(),
         ],
       ),
     );

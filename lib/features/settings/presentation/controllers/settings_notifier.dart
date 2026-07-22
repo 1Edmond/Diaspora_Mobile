@@ -41,7 +41,7 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsEntity>> {
   Future<void> toggleDarkMode() async {
     final current = state.value;
     if (current != null) {
-      final updated = current.copyWith(darkMode: !current.darkMode);
+      final updated = current.copyWith(theme: current.darkMode ? 'light' : 'dark');
       state = AsyncValue.data(updated);
       try {
         await repository.updateSettings(updated);

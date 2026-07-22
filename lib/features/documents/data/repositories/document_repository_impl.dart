@@ -1,143 +1,150 @@
-import '../../domain/entities/document.dart';
-import '../../domain/entities/document_category.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import '../../../../core/network/paged_response.dart';
+import '../../data/models/document_dto_model.dart';
 import '../../domain/repositories/document_repository.dart';
-import '../../../../core/network/dio_client.dart';
 
 class DocumentRepositoryImpl implements IDocumentRepository {
-  final DioClient _client;
+  final Dio _dio;
 
-  DocumentRepositoryImpl({DioClient? client}) : _client = client ?? DioClient();
+  DocumentRepositoryImpl({required Dio dio}) : _dio = dio;
+
+  DocumentDtoModel _parseDocumentItem(Map<String, dynamic> json) {
+    return DocumentDtoModel.fromJson(json);
+  }
 
   @override
-  Future<List<Document>> getDocuments(
-    String userId, {
-    DocumentCategory? category,
+  Future<PagedResponse<DocumentDtoModel>> getDocuments({
+    required int profileType,
+    required String profileId,
+    int pageNumber = 1,
+    int pageSize = 20,
   }) async {
-    try {
-      final queryParams = {'userId': userId};
-      if (category != null) {
-        queryParams['category'] = category.value;
-      }
-
-      final res = await _client.get<List<dynamic>>(
-        '/documents',
-        queryParameters: queryParams,
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/document/profile/$profileType/$profileId',
+      queryParameters: {
+        'pageNumber': pageNumber,
+        'pageSize': pageSize,
+      },
+    );
+    if (res.statusCode != 200 || res.data == null) {
+      throw DioException(
+        requestOptions: res.requestOptions,
+        response: res,
+        message: 'fetchDocuments failed: ${res.statusCode}',
       );
-
-      return res
-          .map((e) => Document.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-    } catch (e) {
+    }
+    try {
+      return PagedResponse.fromJson(res.data!, _parseDocumentItem);
+    } catch (e, st) {
+      if (kDebugMode) {
+        print('Erreur de parsing PagedResponse<DocumentDtoModel>: $e');
+        print(st);
+      }
       rethrow;
     }
   }
 
   @override
-  Future<Document?> getDocumentById(String documentId) async {
+  Future<DocumentDtoModel?> getDocumentById(String documentId) async {
     try {
-      final res = await _client.get<Map<String, dynamic>>(
-        '/documents/$documentId',
+      final res = await _dio.get<Map<String, dynamic>>(
+        '/document/$documentId',
       );
-      return Document.fromJson(res);
+      if (res.statusCode != 200 || res.data == null) {
+        throw DioException(
+          requestOptions: res.requestOptions,
+          response: res,
+          message: 'fetchDocumentDetail failed: ${res.statusCode}',
+        );
+      }
+      return DocumentDtoModel.fromJson(res.data!);
     } catch (e) {
       return null;
     }
   }
 
   @override
-  Future<Document> uploadDocument({
-    required String userId,
+  Future<DocumentDtoModel> uploadDocument({
+    required String profileId,
+    required String documentTypeId,
     required String filePath,
-    required String title,
-    required DocumentCategory category,
-    String? description,
+    String? fileName,
     DateTime? expiresAt,
+    DateTime? issuedAt,
+    String? issuedBy,
   }) async {
-    try {
-      final payload = {
-        'userId': userId,
-        'title': title,
-        'category': category.value,
-        'description': description,
-        'expiresAt': expiresAt?.toIso8601String(),
-        'filePath': filePath,
-      };
+    final formData = FormData.fromMap({
+      'ProfileId': profileId,
+      'DocumentTypeId': documentTypeId,
+      'File': await MultipartFile.fromFile(filePath, filename: fileName),
+      if (expiresAt != null) 'ExpiresAt': expiresAt.toIso8601String(),
+      if (issuedAt != null) 'IssuedAt': issuedAt.toIso8601String(),
+      if (issuedBy != null) 'IssuedBy': issuedBy,
+    });
 
-      final res = await _client.post<Map<String, dynamic>>(
-        '/documents/upload',
-        data: payload,
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/documents/upload', // Match typical backend route or old mock route
+      data: formData,
+    );
+    if (res.statusCode == null || res.statusCode! < 200 || res.statusCode! >= 300) {
+      throw DioException(
+        requestOptions: res.requestOptions,
+        response: res,
+        message: 'uploadDocument failed: ${res.statusCode}',
       );
-
-      return Document.fromJson(res);
-    } catch (e) {
-      rethrow;
     }
+    
+    final data = res.data!;
+    return DocumentDtoModel(
+      id: (data['DocumentId'] ?? data['documentId']).toString(),
+      profileId: profileId,
+      documentTypeId: documentTypeId,
+      fileName: (data['FileName'] ?? data['fileName']) as String?,
+      uploadedAt: DateTime.now(),
+    );
   }
 
   @override
   Future<void> deleteDocument(String documentId) async {
-    try {
-      await _client.delete<Map<String, dynamic>>('/documents/$documentId');
-    } catch (e) {
-      rethrow;
+    final res = await _dio.delete<Map<String, dynamic>>(
+      '/document/$documentId',
+    );
+    if (res.statusCode == null || res.statusCode! < 200 || res.statusCode! >= 300) {
+      throw DioException(
+        requestOptions: res.requestOptions,
+        response: res,
+        message: 'deleteDocument failed: ${res.statusCode}',
+      );
     }
   }
 
   @override
-  Future<List<Document>> searchDocuments(String userId, String query) async {
-    try {
-      final res = await _client.get<List<dynamic>>(
-        '/documents/search',
-        queryParameters: {'userId': userId, 'query': query},
+  Future<DocumentDtoModel> extractTextFromDocument(String documentId) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/document/$documentId/extract-text',
+    );
+    if (res.statusCode != 200 || res.data == null) {
+      throw DioException(
+        requestOptions: res.requestOptions,
+        response: res,
+        message: 'extractText failed: ${res.statusCode}',
       );
-
-      return res
-          .map((e) => Document.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-    } catch (e) {
-      rethrow;
     }
-  }
-
-  @override
-  Future<Document> extractTextFromDocument(String documentId) async {
-    try {
-      final res = await _client.post<Map<String, dynamic>>(
-        '/documents/$documentId/extract-text',
-        data: {},
-      );
-
-      return Document.fromJson(res);
-    } catch (e) {
-      rethrow;
-    }
+    return DocumentDtoModel.fromJson(res.data!);
   }
 
   @override
   Future<void> verifyDocument(String documentId) async {
-    try {
-      await _client.put<Map<String, dynamic>>(
-        '/documents/$documentId/verify',
-        data: {},
+    final res = await _dio.put<Map<String, dynamic>>(
+      '/document/$documentId/verify',
+    );
+    if (res.statusCode == null || res.statusCode! < 200 || res.statusCode! >= 300) {
+      throw DioException(
+        requestOptions: res.requestOptions,
+        response: res,
+        message: 'verifyDocument failed: ${res.statusCode}',
       );
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @override
-  Future<List<Document>> getExpiredDocuments(String userId) async {
-    try {
-      final res = await _client.get<List<dynamic>>(
-        '/documents/expired',
-        queryParameters: {'userId': userId},
-      );
-
-      return res
-          .map((e) => Document.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-    } catch (e) {
-      rethrow;
     }
   }
 }

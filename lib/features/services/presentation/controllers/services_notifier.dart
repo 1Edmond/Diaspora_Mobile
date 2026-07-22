@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
-import '../../../../data/mock/mock_services.dart';
 import '../../data/models/service_model.dart';
 import '../../domain/entities/service.dart';
 import '../../domain/repositories/service_repository.dart';
+import '../../data/repositories/service_repository_impl.dart';
 import '../../../../shared/services/notification_service.dart';
 
 final servicesProvider =
@@ -22,11 +22,8 @@ final servicesProvider =
 class ServicesNotifier extends StateNotifier<AsyncValue<List<ServiceModel>>> {
   final IServiceRepository _repository;
 
-  /// If no repository is provided and GetIt isn't configured (common in tests),
-  /// fall back to a tiny MockApi-backed implementation so the notifier remains
-  /// usable in isolation.
   ServicesNotifier({IServiceRepository? repository})
-    : _repository = repository ?? _MockServiceRepository(),
+    : _repository = repository ?? ServiceRepositoryImpl(),
       super(const AsyncValue.loading()) {
     fetch();
   }
@@ -118,38 +115,5 @@ class ServicesNotifier extends StateNotifier<AsyncValue<List<ServiceModel>>> {
         'body': approved ? 'Votre service est en ligne.' : 'Service refusé.',
       });
     } catch (_) {}
-  }
-}
-
-// Updated Mock Repository
-class _MockServiceRepository implements IServiceRepository {
-  final List<Service> _localStore = [];
-
-  @override
-  Future<List<Service>> getServices(String profileId) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    return [...mockServices, ..._localStore];
-  }
-
-  @override
-  Future<void> createService(Service service) async {
-    _localStore.add(service);
-  }
-
-  @override
-  Future<void> approveService(
-    String serviceId,
-    ServiceScope scope,
-    List<String>? allowedDepartments,
-  ) async {
-    final index = _localStore.indexWhere((s) => s.id == serviceId);
-    if (index != -1) {
-      // Logic to update status would go here, immutable replace
-    }
-  }
-
-  @override
-  Future<void> rejectService(String serviceId, String reason) async {
-    // Logic
   }
 }

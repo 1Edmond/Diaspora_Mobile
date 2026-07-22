@@ -37,8 +37,8 @@ class DioClient {
 
   static BaseOptions _defaultOptions() => BaseOptions(
     baseUrl: AppConfig.apiBaseUrl,
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
+    connectTimeout: const Duration(seconds: 50),
+    receiveTimeout: const Duration(seconds: 50),
     headers: {'Content-Type': 'application/json'},
   );
 
@@ -188,7 +188,9 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
-      // Auth (keep existing mock coverage)
+      // Auth routes are NOT mocked — they go to the real API
+      // (handled by AuthRepositoryImpl's own Dio instance)
+
       if (method == 'GET' && _matches(path, r'^/users')) {
         final page = options.queryParameters['page'] as int? ?? 1;
         final data = await MockApi.users(page: page);
@@ -197,47 +199,22 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
-      if (method == 'POST' && _matches(path, r'^/auth/register')) {
-        final body = options.data as Map<String, dynamic>? ?? {};
-        final res = await MockApi.register(
-          body['phone'] as String,
-          body['password'] as String,
-          body['userType'] as String,
-        );
-        return handler.resolve(
-          Response(requestOptions: options, data: res, statusCode: 201),
-        );
-      }
-
-      if (method == 'POST' && _matches(path, r'^/auth/login')) {
-        final body = options.data as Map<String, dynamic>? ?? {};
-        final res = await MockApi.login(
-          body['phone'] as String,
-          body['password'] as String,
-        );
-        return handler.resolve(
-          Response(requestOptions: options, data: res, statusCode: 200),
-        );
-      }
-
-      if (method == 'POST' && _matches(path, r'^/auth/verify')) {
-        final body = options.data as Map<String, dynamic>? ?? {};
-        final ok = await MockApi.verifyPhone(
-          body['phone'] as String,
-          body['otp'] as String,
-        );
-        return handler.resolve(
-          Response(
-            requestOptions: options,
-            data: {'ok': ok},
-            statusCode: ok ? 200 : 400,
-          ),
-        );
-      }
-
-      // Procedures
+      // Procedures (paginated)
       if (method == 'GET' && _matches(path, r'^/procedures')) {
-        final data = await MockApi.procedures();
+        final rawPage = options.queryParameters['pageNumber'];
+        final rawPageSize = options.queryParameters['pageSize'];
+        final page = rawPage is int
+            ? rawPage
+            : int.tryParse(rawPage?.toString() ?? '') ?? 1;
+        final pageSize = rawPageSize is int
+            ? rawPageSize
+            : int.tryParse(rawPageSize?.toString() ?? '') ?? 20;
+        final data = await MockApi.procedures(
+          page: page,
+          pageSize: pageSize,
+          profileType: options.queryParameters['profileType'] as String?,
+          profileTypeId: options.queryParameters['profileTypeId'] as String?,
+        );
         return handler.resolve(
           Response(requestOptions: options, data: data, statusCode: 200),
         );
@@ -562,13 +539,31 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
-      // Documents: list by user
+      // Document types
+      if (method == 'GET' && _matches(path, r'^/document-types$')) {
+        final data = await MockApi.documentTypes();
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // Documents: paginated list
       if (method == 'GET' && _matches(path, r'^/documents$')) {
-        final userId = options.queryParameters['userId'] as String? ?? 'u_test';
-        final category = options.queryParameters['category'] as String?;
+        final rawPage = options.queryParameters['pageNumber'];
+        final rawPageSize = options.queryParameters['pageSize'];
+        final page = rawPage is int
+            ? rawPage
+            : int.tryParse(rawPage?.toString() ?? '') ?? 1;
+        final pageSize = rawPageSize is int
+            ? rawPageSize
+            : int.tryParse(rawPageSize?.toString() ?? '') ?? 20;
+        final profileType = options.queryParameters['profileType'] as int?;
+        final profileId = options.queryParameters['profileId'] as String?;
         final data = await MockApi.documents(
-          userId: userId,
-          category: category,
+          page: page,
+          pageSize: pageSize,
+          profileType: profileType,
+          profileId: profileId,
         );
         return handler.resolve(
           Response(requestOptions: options, data: data, statusCode: 200),
@@ -579,28 +574,6 @@ class _MockInterceptor extends Interceptor {
       if (method == 'GET' && _matches(path, r'^/documents/[^/]+$')) {
         final documentId = path.split('/').last;
         final data = await MockApi.documentDetail(documentId);
-        return handler.resolve(
-          Response(requestOptions: options, data: data, statusCode: 200),
-        );
-      }
-
-      // Documents: search
-      if (method == 'GET' && _matches(path, r'^/documents/search$')) {
-        final userId = options.queryParameters['userId'] as String? ?? 'u_test';
-        final query = options.queryParameters['query'] as String? ?? '';
-        final data = await MockApi.searchDocuments(
-          userId: userId,
-          query: query,
-        );
-        return handler.resolve(
-          Response(requestOptions: options, data: data, statusCode: 200),
-        );
-      }
-
-      // Documents: expired
-      if (method == 'GET' && _matches(path, r'^/documents/expired$')) {
-        final userId = options.queryParameters['userId'] as String? ?? 'u_test';
-        final data = await MockApi.expiredDocuments(userId: userId);
         return handler.resolve(
           Response(requestOptions: options, data: data, statusCode: 200),
         );
