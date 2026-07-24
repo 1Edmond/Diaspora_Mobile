@@ -21,11 +21,8 @@ class DocumentRepositoryImpl implements IDocumentRepository {
     int pageSize = 20,
   }) async {
     final res = await _dio.get<Map<String, dynamic>>(
-      '/document/profile/$profileType/$profileId',
-      queryParameters: {
-        'pageNumber': pageNumber,
-        'pageSize': pageSize,
-      },
+      '/documents/profile/$profileId',
+      queryParameters: {'pageNumber': pageNumber, 'pageSize': pageSize},
     );
     if (res.statusCode != 200 || res.data == null) {
       throw DioException(
@@ -49,7 +46,7 @@ class DocumentRepositoryImpl implements IDocumentRepository {
   Future<DocumentDtoModel?> getDocumentById(String documentId) async {
     try {
       final res = await _dio.get<Map<String, dynamic>>(
-        '/document/$documentId',
+        '/documents/$documentId',
       );
       if (res.statusCode != 200 || res.data == null) {
         throw DioException(
@@ -87,14 +84,16 @@ class DocumentRepositoryImpl implements IDocumentRepository {
       '/documents/upload', // Match typical backend route or old mock route
       data: formData,
     );
-    if (res.statusCode == null || res.statusCode! < 200 || res.statusCode! >= 300) {
+    if (res.statusCode == null ||
+        res.statusCode! < 200 ||
+        res.statusCode! >= 300) {
       throw DioException(
         requestOptions: res.requestOptions,
         response: res,
         message: 'uploadDocument failed: ${res.statusCode}',
       );
     }
-    
+
     final data = res.data!;
     return DocumentDtoModel(
       id: (data['DocumentId'] ?? data['documentId']).toString(),
@@ -108,9 +107,11 @@ class DocumentRepositoryImpl implements IDocumentRepository {
   @override
   Future<void> deleteDocument(String documentId) async {
     final res = await _dio.delete<Map<String, dynamic>>(
-      '/document/$documentId',
+      '/documents/$documentId',
     );
-    if (res.statusCode == null || res.statusCode! < 200 || res.statusCode! >= 300) {
+    if (res.statusCode == null ||
+        res.statusCode! < 200 ||
+        res.statusCode! >= 300) {
       throw DioException(
         requestOptions: res.requestOptions,
         response: res,
@@ -122,7 +123,7 @@ class DocumentRepositoryImpl implements IDocumentRepository {
   @override
   Future<DocumentDtoModel> extractTextFromDocument(String documentId) async {
     final res = await _dio.post<Map<String, dynamic>>(
-      '/document/$documentId/extract-text',
+      '/documents/$documentId/extract-text',
     );
     if (res.statusCode != 200 || res.data == null) {
       throw DioException(
@@ -137,9 +138,11 @@ class DocumentRepositoryImpl implements IDocumentRepository {
   @override
   Future<void> verifyDocument(String documentId) async {
     final res = await _dio.put<Map<String, dynamic>>(
-      '/document/$documentId/verify',
+      '/documents/$documentId/verify',
     );
-    if (res.statusCode == null || res.statusCode! < 200 || res.statusCode! >= 300) {
+    if (res.statusCode == null ||
+        res.statusCode! < 200 ||
+        res.statusCode! >= 300) {
       throw DioException(
         requestOptions: res.requestOptions,
         response: res,

@@ -31,10 +31,7 @@ class ProfileService {
     ]);
 
   Future<List<Profile>> fetchProfiles() async {
-    final res = await _dio.get<List<dynamic>>('/profiles/me');
-
-    debugPrint('=== /api/profile RESPONSE ===');
-    debugPrint(res.data.toString());
+    final res = await _dio.get<Map<String, dynamic>>('/profiles/me');
 
     if (res.statusCode != 200 || res.data == null) {
       throw DioException(
@@ -44,7 +41,8 @@ class ProfileService {
       );
     }
 
-    return res.data!
+    final rawList = res.data!['profiles'] as List<dynamic>? ?? [];
+    return rawList
         .map((e) => Profile.fromJson(e as Map<String, dynamic>))
         .toList();
   }
