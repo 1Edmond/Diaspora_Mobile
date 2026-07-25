@@ -13,6 +13,7 @@ class ProcedureModel {
   final List<LocationModel> locations;
   final List<String> dependencyIds;
   final List<String> requiredDocumentTypeIds;
+  final List<String> outputDocumentType;
   final DateTime createdAt;
   final int userProgress;
 
@@ -29,6 +30,7 @@ class ProcedureModel {
     this.locations = const [],
     this.dependencyIds = const [],
     this.requiredDocumentTypeIds = const [],
+    this.outputDocumentType = const [],
     required this.createdAt,
     this.userProgress = 0,
   });
@@ -55,6 +57,7 @@ class ProcedureModel {
       locations: locations ?? this.locations,
       dependencyIds: dependencyIds,
       requiredDocumentTypeIds: requiredDocumentTypeIds,
+      outputDocumentType: outputDocumentType,
       createdAt: createdAt,
       userProgress: userProgress ?? this.userProgress,
     );
@@ -64,6 +67,7 @@ class ProcedureModel {
     final locationsJson = json['locations'] as List<dynamic>?;
     final dependencyIdsJson = json['dependencyIds'] as List<dynamic>?;
     final requiredDocumentTypeIdsJson = json['requiredDocumentTypeIds'] as List<dynamic>?;
+    final outputDocumentTypeJson = json['outputDocumentType'] as List<dynamic>?;
     return ProcedureModel(
       id: json['id'] as String,
       title: json['title'] as String,
@@ -82,6 +86,9 @@ class ProcedureModel {
           : [],
       requiredDocumentTypeIds: requiredDocumentTypeIdsJson != null
           ? requiredDocumentTypeIdsJson.map((e) => e as String).toList()
+          : [],
+      outputDocumentType: outputDocumentTypeJson != null
+          ? outputDocumentTypeJson.map((e) => e as String).toList()
           : [],
       createdAt: DateTime.parse(json['createdAt'] as String),
     );

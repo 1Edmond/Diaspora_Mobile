@@ -4,7 +4,7 @@ class AppConfig {
 
   static const String _localApiUrl = 'http://localhost:3000/api';
   static const String _prodApiUrl =
-      'https://b1ab-194-71-130-44.ngrok-free.app/api';
+      'https://6271-194-71-130-44.ngrok-free.app/api';
 
   static const String apiBaseUrl = useMockData ? _localApiUrl : _prodApiUrl;
   static const String realApiBaseUrl = _prodApiUrl;

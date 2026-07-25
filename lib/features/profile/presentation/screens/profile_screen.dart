@@ -19,7 +19,10 @@ class ProfileScreen extends ConsumerWidget {
     final profilesAsync = ref.watch(profileListProvider);
     final profiles = profilesAsync.valueOrNull ?? [];
 
-    final name = activeProfile?.fullName ?? user?.email?.split('@').first ?? 'Utilisateur';
+    final name =
+        activeProfile?.fullName ??
+        user?.email?.split('@').first ??
+        'Utilisateur';
     final email = user?.email ?? '';
     final phone = user?.togolesePhoneNumber ?? '';
     final profileType = activeProfile?.profileType ?? '—';
@@ -93,13 +96,13 @@ class ProfileScreen extends ConsumerWidget {
                         _ProfileTile(
                           icon: Icons.person_outline_rounded,
                           label: 'Détails du compte',
-                          onTap: () => context.go('/settings'),
+                          onTap: () => context.push('/settings'),
                         ),
                         const Divider(height: 1, indent: 52),
                         _ProfileTile(
                           icon: Icons.email_outlined,
                           label: 'Email et Contact',
-                          onTap: () => context.go('/settings'),
+                          onTap: () => context.push('/settings'),
                         ),
                       ],
                     ),
@@ -112,13 +115,13 @@ class ProfileScreen extends ConsumerWidget {
                         _ProfileTile(
                           icon: Icons.lock_outline_rounded,
                           label: 'Changer le mot de passe',
-                          onTap: () => context.go('/settings'),
+                          onTap: () => context.push('/settings'),
                         ),
                         const Divider(height: 1, indent: 52),
                         _ProfileTile(
                           icon: Icons.fingerprint_rounded,
                           label: 'Biométrie',
-                          onTap: () => context.go('/settings'),
+                          onTap: () => context.push('/settings'),
                         ),
                       ],
                     ),
@@ -137,7 +140,7 @@ class ProfileScreen extends ConsumerWidget {
                         _ProfileTile(
                           icon: Icons.language_rounded,
                           label: 'Langue',
-                          onTap: () => context.go('/settings'),
+                          onTap: () => context.push('/settings'),
                         ),
                       ],
                     ),
@@ -216,7 +219,10 @@ class ProfileScreen extends ConsumerWidget {
             return ListTile(
               leading: Icon(
                 p.isInternal ? Icons.person_rounded : Icons.public_rounded,
-                color: isActive ? AppColors.primary : AppColors.getTextSecondary(context),
+                color:
+                    isActive
+                        ? AppColors.primary
+                        : AppColors.getTextSecondary(context),
                 size: 22,
               ),
               title: Text(
@@ -234,10 +240,18 @@ class ProfileScreen extends ConsumerWidget {
                   color: AppColors.getTextSecondary(context),
                 ),
               ),
-              trailing: isActive
-                  ? Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20)
-                  : Icon(Icons.radio_button_unchecked_rounded,
-                      color: AppColors.getTextSecondary(context), size: 20),
+              trailing:
+                  isActive
+                      ? Icon(
+                        Icons.check_circle_rounded,
+                        color: AppColors.primary,
+                        size: 20,
+                      )
+                      : Icon(
+                        Icons.radio_button_unchecked_rounded,
+                        color: AppColors.getTextSecondary(context),
+                        size: 20,
+                      ),
               onTap: isActive ? null : () => context.push('/profiles'),
             );
           }),
@@ -276,7 +290,17 @@ class ProfileScreen extends ConsumerWidget {
             Icons.arrow_back_rounded,
             color: AppColors.getTextMain(context),
           ),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            try {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/home');
+              }
+            } catch (_) {
+              context.go('/home');
+            }
+          },
         ),
         const Spacer(),
         Text(

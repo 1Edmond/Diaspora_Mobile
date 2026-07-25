@@ -70,6 +70,7 @@ class DocumentRepositoryImpl implements IDocumentRepository {
     DateTime? expiresAt,
     DateTime? issuedAt,
     String? issuedBy,
+    bool forProcedure = false,
   }) async {
     final formData = FormData.fromMap({
       'ProfileId': profileId,
@@ -81,7 +82,7 @@ class DocumentRepositoryImpl implements IDocumentRepository {
     });
 
     final res = await _dio.post<Map<String, dynamic>>(
-      '/documents/upload', // Match typical backend route or old mock route
+      forProcedure ? '/documents/upload-for-proc' : '/documents/upload',
       data: formData,
     );
     if (res.statusCode == null ||
@@ -100,7 +101,7 @@ class DocumentRepositoryImpl implements IDocumentRepository {
       profileId: profileId,
       documentTypeId: documentTypeId,
       fileName: (data['FileName'] ?? data['fileName']) as String?,
-      uploadedAt: DateTime.now(),
+      createdAt: DateTime.now(),
     );
   }
 

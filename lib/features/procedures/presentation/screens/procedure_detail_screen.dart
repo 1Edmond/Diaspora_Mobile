@@ -10,6 +10,10 @@ import '../../data/models/procedure_model.dart';
 import '../../data/models/location_model.dart';
 import '../../data/models/day_schedule_model.dart';
 import '../controllers/procedures_notifier.dart';
+import '../controllers/procedure_completion_notifier.dart';
+import '../widgets/procedure_output_documents_sheet.dart';
+import '../../../documents/presentation/controllers/document_providers.dart';
+import '../../../documents/data/models/document_type_model.dart';
 
 class ProcedureDetailScreen extends ConsumerWidget {
   final String procedureId;
@@ -46,14 +50,16 @@ class ProcedureDetailScreen extends ConsumerWidget {
     final dependencies = _resolveDependencies(state.items, procedure);
     final isCompleted = state.completedProcedureIds.contains(procedure.id);
 
-    return _buildContent(context, ref, procedure, dependencies, isCompleted);
+    final docTypesAsync = ref.watch(documentTypesProvider);
+
+    return _buildContent(context, ref, procedure, dependencies, isCompleted, docTypesAsync);
   }
 
   List<ProcedureModel> _resolveDependencies(List<ProcedureModel> allItems, ProcedureModel proc) {
     return allItems.where((p) => proc.dependencyIds.contains(p.id)).toList();
   }
 
-Widget _buildContent(BuildContext context, WidgetRef ref, ProcedureModel procedure, List<ProcedureModel> dependencies, bool isCompleted) {
+Widget _buildContent(BuildContext context, WidgetRef ref, ProcedureModel procedure, List<ProcedureModel> dependencies, bool isCompleted, AsyncValue<List<DocumentTypeModel>> docTypesAsync) {
     final isOverdue = procedure.deadline != null && procedure.deadline!.isBefore(DateTime.now());
     final state = ref.read(proceduresProvider);
     final completedIds = state.completedProcedureIds;
@@ -74,7 +80,7 @@ Widget _buildContent(BuildContext context, WidgetRef ref, ProcedureModel procedu
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildHeaderCard(context, ref, procedure, isOverdue, isCompleted, isStarted, isBlocked),
+                      _buildHeaderCard(context, ref, procedure, isOverdue, isCompleted, isStarted, isBlocked, docTypesAsync),
                       if (dependencies.isNotEmpty) ...[
                         const SizedBox(height: 24),
                         _buildDependencyTimeline(context, dependencies, completedIds),
@@ -148,7 +154,7 @@ Widget _buildContent(BuildContext context, WidgetRef ref, ProcedureModel procedu
     );
   }
 
-  Widget _buildHeaderCard(BuildContext context, WidgetRef ref, ProcedureModel p, bool isOverdue, bool isCompleted, bool isStarted, bool isBlocked) {
+  Widget _buildHeaderCard(BuildContext context, WidgetRef ref, ProcedureModel p, bool isOverdue, bool isCompleted, bool isStarted, bool isBlocked, AsyncValue<List<DocumentTypeModel>> docTypesAsync) {
     return NeumorphicContainer(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -207,19 +213,23 @@ Widget _buildContent(BuildContext context, WidgetRef ref, ProcedureModel procedu
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _buildProcedureToggle(context, ref, p.id, isCompleted, isStarted, isBlocked)),
+              Expanded(child: _buildProcedureToggle(context, ref, p, isCompleted, isStarted, isBlocked)),
             ],
           ),
           if (p.requiredDocumentTypeIds.isNotEmpty) ...[
             const SizedBox(height: 12),
-            _buildRequiredDocuments(context, p.requiredDocumentTypeIds),
+            _buildRequiredDocuments(context, p.requiredDocumentTypeIds, docTypesAsync),
           ],
         ],
       ),
     ).animate().fadeIn().slideY(begin: 0.1);
   }
 
-  Widget _buildProcedureToggle(BuildContext context, WidgetRef ref, String procedureId, bool isCompleted, bool isStarted, bool isBlocked) {
+  Widget _buildProcedureToggle(BuildContext context, WidgetRef ref, ProcedureModel procedure, bool isCompleted, bool isStarted, bool isBlocked) {
+    final procedureId = procedure.id;
+    final outputDocumentType = procedure.outputDocumentType;
+    final state = ref.watch(proceduresProvider);
+
     if (isBlocked && !isCompleted) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -269,8 +279,35 @@ Widget _buildContent(BuildContext context, WidgetRef ref, ProcedureModel procedu
     }
 
     if (isStarted) {
+      final isLoading = state.loadingProcedureIds.contains(procedureId);
       return InkWell(
-        onTap: () => ref.read(proceduresProvider.notifier).completeProcedure(procedureId),
+        onTap: isLoading
+            ? null
+            : () async {
+                if (outputDocumentType.isNotEmpty) {
+                  final notifier = ref.read(procedureCompletionProvider(outputDocumentType).notifier);
+                  final existingIds = await notifier.checkExistingDocuments();
+                  if (existingIds != null) {
+                    ref.read(proceduresProvider.notifier).completeProcedure(
+                      procedureId,
+                      uploadedDocumentIds: existingIds,
+                    );
+                  } else {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => ProcedureOutputDocumentsSheet(
+                        procedureId: procedureId,
+                        procedure: procedure,
+                        docTypeIds: outputDocumentType,
+                      ),
+                    );
+                  }
+                } else {
+                  ref.read(proceduresProvider.notifier).completeProcedure(procedureId);
+                }
+              },
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -279,23 +316,59 @@ Widget _buildContent(BuildContext context, WidgetRef ref, ProcedureModel procedu
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.secondary.withValues(alpha: 0.5), width: 1),
           ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.task_alt_rounded, size: 20, color: AppColors.secondary),
-              SizedBox(width: 10),
-              Text(
-                'Marquer comme terminée',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.secondary),
-              ),
-            ],
-          ),
+          child: isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.secondary,
+                  ),
+                )
+              : const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.task_alt_rounded, size: 20, color: AppColors.secondary),
+                    SizedBox(width: 10),
+                    Text(
+                      'Marquer comme terminée',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.secondary),
+                    ),
+                  ],
+                ),
         ),
       );
     }
 
+    final requiredDocTypeIds = procedure.requiredDocumentTypeIds;
+
+    final isLoading = state.loadingProcedureIds.contains(procedureId);
     return InkWell(
-      onTap: () => ref.read(proceduresProvider.notifier).startProcedure(procedureId),
+      onTap: isLoading
+          ? null
+          : () async {
+              if (requiredDocTypeIds.isNotEmpty) {
+                final notifier = ref.read(procedureCompletionProvider(requiredDocTypeIds).notifier);
+                final existingIds = await notifier.checkExistingDocuments();
+                if (existingIds != null) {
+                  ref.read(proceduresProvider.notifier).startProcedure(procedureId);
+                } else {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => ProcedureOutputDocumentsSheet(
+                      procedureId: procedureId,
+                      procedure: procedure,
+                      mode: ProcedureDocMode.start,
+                      docTypeIds: requiredDocTypeIds,
+                    ),
+                  );
+                }
+              } else {
+                ref.read(proceduresProvider.notifier).startProcedure(procedureId);
+              }
+            },
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -304,17 +377,26 @@ Widget _buildContent(BuildContext context, WidgetRef ref, ProcedureModel procedu
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
         ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.play_arrow_rounded, size: 20, color: AppColors.primary),
-            SizedBox(width: 10),
-            Text(
-              'Commencer',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.primary),
-            ),
-          ],
-        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              )
+            : const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.play_arrow_rounded, size: 20, color: AppColors.primary),
+                  SizedBox(width: 10),
+                  Text(
+                    'Commencer',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.primary),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -365,7 +447,12 @@ Widget _buildContent(BuildContext context, WidgetRef ref, ProcedureModel procedu
     );
   }
 
-  Widget _buildRequiredDocuments(BuildContext context, List<String> docIds) {
+  Widget _buildRequiredDocuments(BuildContext context, List<String> docIds, AsyncValue<List<DocumentTypeModel>> docTypesAsync) {
+    final docTypes = docTypesAsync.valueOrNull ?? [];
+    final typeMap = {for (final t in docTypes) t.id: t.name};
+
+    String resolveLabel(String id) => typeMap[id] ?? _docLabel(id);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -380,7 +467,7 @@ Widget _buildContent(BuildContext context, WidgetRef ref, ProcedureModel procedu
             children: [
               const Icon(Icons.description_outlined, size: 16, color: AppColors.primary),
               const SizedBox(width: 8),
-              Expanded(child: Text(_docLabel(docIds[i]), style: const TextStyle(fontSize: 13))),
+              Expanded(child: Text(resolveLabel(docIds[i]), style: const TextStyle(fontSize: 13))),
             ],
           ),
         )),

@@ -52,6 +52,7 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Document uploadé avec succès')),
             );
+            ref.read(documentsListProvider.notifier).refresh();
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) context.pop();
             });

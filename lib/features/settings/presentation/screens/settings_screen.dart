@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/settings_notifier.dart';
+import '../../../../core/theme/design_system.dart';
 import '../../../../core/theme/theme_provider.dart';
+import '../../../../core/services/biometric_service.dart';
 import '../widgets/theme_selector.dart';
 import '../widgets/language_selector.dart';
 import '../widgets/privacy_level_selector.dart';
@@ -20,6 +22,11 @@ class SettingsScreen extends ConsumerWidget {
       length: 4,
       child: Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios_new_rounded,
+                color: AppColors.getTextMain(context)),
+            onPressed: () => context.pop(),
+          ),
           title: const Text('Paramètres'),
           bottom: const TabBar(
             tabs: [
@@ -218,22 +225,67 @@ class _NotificationsTab extends StatelessWidget {
   }
 }
 
-class _SecurityTab extends StatelessWidget {
+class _SecurityTab extends ConsumerWidget {
   final SettingsEntity settings;
   final SettingsNotifier notifier;
 
   const _SecurityTab(this.settings, this.notifier);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       children: [
         SwitchListTile(
           title: const Text('Authentification biométrique'),
           subtitle: const Text('Utiliser Face ID ou empreinte digitale'),
           value: settings.biometricAuthEnabled,
-          onChanged: (_) {
-            notifier.toggleBiometricAuth();
+          onChanged: (newValue) async {
+            if (newValue == true && !settings.biometricAuthEnabled) {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Activer la biométrie'),
+                  content: const Text(
+                    'Veuillez vous authentifier avec votre empreinte digitale '
+                    'pour activer cette fonctionnalité.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Annuler'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('Continuer'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirmed == true) {
+                final bioService = BiometricService();
+                final result = await bioService.authenticate(
+                  reason:
+                      'Authentifiez-vous pour activer la connexion par empreinte',
+                );
+
+                if (result == BiometricResult.success && context.mounted) {
+                  notifier.toggleBiometricAuth();
+                } else if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        result == BiometricResult.canceled
+                            ? 'Authentification annulée'
+                            : 'Échec de l\'authentification biométrique',
+                      ),
+                    ),
+                  );
+                }
+              }
+            } else if (newValue == false && settings.biometricAuthEnabled) {
+              notifier.toggleBiometricAuth();
+            }
           },
         ),
         const Divider(),

@@ -20,7 +20,6 @@ import 'core/theme/theme_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase if configured.
   try {
     await Firebase.initializeApp();
   } catch (e) {
@@ -46,7 +45,6 @@ void main() async {
     );
   }
 
-  // Initialize deep link service
   final deepLinkService = DeepLinkService();
   await deepLinkService.initialize();
   getIt.registerSingleton<DeepLinkService>(deepLinkService);
@@ -82,7 +80,6 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       if (mounted) _handleDeepLink(uri);
     });
 
-    // Try to restore existing session on startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         ref.read(authNotifierProvider.notifier).restoreSession();

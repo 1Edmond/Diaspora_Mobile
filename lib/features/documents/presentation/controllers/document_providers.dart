@@ -22,6 +22,10 @@ final documentTypesProvider = FutureProvider<List<DocumentTypeModel>>((
   return repo.getDocumentTypes();
 });
 
+// ==================== Document sort ====================
+
+enum DocumentSortField { date, name, status, size }
+
 // ==================== Paginated documents list ====================
 
 class DocumentsListState {
@@ -31,6 +35,10 @@ class DocumentsListState {
   final int totalCount;
   final Object? error;
   final StackTrace? stackTrace;
+  final String searchQuery;
+  final String? selectedDocTypeId;
+  final DocumentSortField sortField;
+  final bool sortAscending;
 
   const DocumentsListState({
     this.items = const [],
@@ -39,7 +47,48 @@ class DocumentsListState {
     this.totalCount = 0,
     this.error,
     this.stackTrace,
+    this.searchQuery = '',
+    this.selectedDocTypeId,
+    this.sortField = DocumentSortField.date,
+    this.sortAscending = false,
   });
+
+  List<DocumentDtoModel> get processedItems {
+    var result = items.where((d) {
+      if (searchQuery.isNotEmpty) {
+        final q = searchQuery.toLowerCase();
+        final name = d.documentTypeName?.toLowerCase() ?? '';
+        final fileName = d.fileName?.toLowerCase() ?? '';
+        final code = d.documentTypeCode?.toLowerCase() ?? '';
+        if (!name.contains(q) && !fileName.contains(q) && !code.contains(q)) {
+          return false;
+        }
+      }
+      if (selectedDocTypeId != null &&
+          d.documentTypeId != selectedDocTypeId) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    result.sort((a, b) {
+      int cmp;
+      switch (sortField) {
+        case DocumentSortField.name:
+          cmp = (a.documentTypeName ?? a.fileName ?? '')
+              .compareTo(b.documentTypeName ?? b.fileName ?? '');
+        case DocumentSortField.status:
+          cmp = a.status.index.compareTo(b.status.index);
+        case DocumentSortField.size:
+          cmp = a.fileSize.compareTo(b.fileSize);
+        case DocumentSortField.date:
+          cmp = b.createdAt.compareTo(a.createdAt);
+      }
+      return sortAscending ? cmp : -cmp;
+    });
+
+    return result;
+  }
 
   DocumentsListState copyWith({
     List<DocumentDtoModel>? items,
@@ -48,6 +97,10 @@ class DocumentsListState {
     int? totalCount,
     Object? error,
     StackTrace? stackTrace,
+    String? searchQuery,
+    String? selectedDocTypeId,
+    DocumentSortField? sortField,
+    bool? sortAscending,
   }) {
     return DocumentsListState(
       items: items ?? this.items,
@@ -56,6 +109,10 @@ class DocumentsListState {
       totalCount: totalCount ?? this.totalCount,
       error: error,
       stackTrace: stackTrace,
+      searchQuery: searchQuery ?? this.searchQuery,
+      selectedDocTypeId: selectedDocTypeId ?? this.selectedDocTypeId,
+      sortField: sortField ?? this.sortField,
+      sortAscending: sortAscending ?? this.sortAscending,
     );
   }
 }
@@ -101,6 +158,10 @@ class DocumentsListNotifier extends StateNotifier<DocumentsListState> {
         isLoading: false,
         hasNext: paged.hasNext,
         totalCount: paged.totalCount,
+        searchQuery: state.searchQuery,
+        selectedDocTypeId: state.selectedDocTypeId,
+        sortField: state.sortField,
+        sortAscending: state.sortAscending,
       );
     } catch (e, st) {
       state = DocumentsListState(error: e, stackTrace: st);
@@ -139,6 +200,24 @@ class DocumentsListNotifier extends StateNotifier<DocumentsListState> {
     }
   }
 
+  void setSearchQuery(String query) {
+    state = state.copyWith(searchQuery: query);
+  }
+
+  void setDocTypeFilter(String? docTypeId) {
+    state = state.copyWith(
+      selectedDocTypeId: state.selectedDocTypeId == docTypeId ? null : docTypeId,
+    );
+  }
+
+  void setSortField(DocumentSortField field) {
+    if (state.sortField == field) {
+      state = state.copyWith(sortAscending: !state.sortAscending);
+    } else {
+      state = state.copyWith(sortField: field, sortAscending: false);
+    }
+  }
+
   String? _resolveProfileId() {
     final activeProfile = _ref.read(activeProfileProvider);
     return activeProfile?.id;
@@ -170,6 +249,7 @@ class DocumentUploadNotifier
     DateTime? expiresAt,
     DateTime? issuedAt,
     String? issuedBy,
+    bool forProcedure = false,
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -181,6 +261,7 @@ class DocumentUploadNotifier
         expiresAt: expiresAt,
         issuedAt: issuedAt,
         issuedBy: issuedBy,
+        forProcedure: forProcedure,
       );
       state = AsyncValue.data(document);
     } catch (e, st) {

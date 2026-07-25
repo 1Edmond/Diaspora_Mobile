@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/design_system.dart';
+import '../../../../shared/widgets/containers/neumorphic_container.dart';
 import '../../data/models/document_dto_model.dart';
 import '../../data/models/document_status.dart';
 
@@ -56,82 +58,22 @@ class DocumentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ListTile(
-        onTap: onTap,
-        leading: _buildIcon(),
-        title: Text(
-          document.documentTypeName ?? document.fileName ?? 'Document',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            DocumentStatusBadge(status: document.status),
-            const SizedBox(height: 4),
-            Text(
-              '${document.formattedFileSize} • ${_formatDate(document.uploadedAt)}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            if (document.isExpired)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  'Expiré',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.red.shade700,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              )
-            else if (document.expiresAt != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  'Expire dans ${document.expiresInDays} jours',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: document.expiresInDays <= 30 ? Colors.orange : Colors.green,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        trailing: PopupMenuButton(
-          itemBuilder: (context) => [
-            if (document.isVerified)
-              const PopupMenuItem(
-                enabled: false,
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 16),
-                    SizedBox(width: 8),
-                    Text('Vérifié'),
-                  ],
-                ),
-              ),
-            PopupMenuItem(
-              onTap: onDelete,
-              child: const Row(
-                children: [
-                  Icon(Icons.delete, color: Colors.red, size: 16),
-                  SizedBox(width: 8),
-                  Text('Supprimer'),
-                ],
-              ),
-            ),
-          ],
-        ),
+    return NeumorphicContainer(
+      onTap: onTap,
+      padding: const EdgeInsets.all(16),
+      borderRadius: 16,
+      child: Row(
+        children: [
+          _buildFileIcon(context),
+          const SizedBox(width: 14),
+          Expanded(child: _buildInfo(context)),
+          if (onDelete != null) _buildMenu(context),
+        ],
       ),
     );
   }
 
-  Widget _buildIcon() {
+  Widget _buildFileIcon(BuildContext context) {
     IconData icon;
     Color color;
 
@@ -143,16 +85,109 @@ class DocumentCard extends StatelessWidget {
       color = Colors.blue;
     } else {
       icon = Icons.file_present;
-      color = Colors.grey;
+      color = AppColors.getTextSecondary(context);
     }
 
     return Container(
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
-      padding: const EdgeInsets.all(8),
-      child: Icon(icon, color: color),
+      child: Icon(icon, color: color, size: 22),
+    );
+  }
+
+  Widget _buildInfo(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                document.documentTypeName ?? document.fileName ?? 'Document',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.getTextMain(context),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            DocumentStatusBadge(status: document.status),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '${document.formattedFileSize} • ${_formatDate(document.createdAt)}',
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.getTextSecondary(context),
+          ),
+        ),
+        if (document.isExpired)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Expiré',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.red.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          )
+        else if (document.expiresAt != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              document.expiresInDays <= 0
+                  ? 'Expire aujourd\'hui'
+                  : 'Expire dans ${document.expiresInDays} jours',
+              style: TextStyle(
+                fontSize: 12,
+                color: document.expiresInDays <= 30 ? Colors.orange : Colors.green,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMenu(BuildContext context) {
+    return PopupMenuButton(
+      padding: EdgeInsets.zero,
+      icon: Icon(Icons.more_vert_rounded,
+          size: 18, color: AppColors.getTextSecondary(context)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      itemBuilder: (context) => [
+        if (document.status == DocumentStatus.active)
+          const PopupMenuItem(
+            enabled: false,
+            child: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 16),
+                SizedBox(width: 8),
+                Text('Vérifié'),
+              ],
+            ),
+          ),
+        PopupMenuItem(
+          onTap: onDelete,
+          child: const Row(
+            children: [
+              Icon(Icons.delete, color: Colors.red, size: 16),
+              SizedBox(width: 8),
+              Text('Supprimer'),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -161,7 +196,7 @@ class DocumentCard extends StatelessWidget {
     final difference = now.difference(date);
 
     if (difference.inDays == 0) {
-      return 'Aujourd\'hui';
+      return "Aujourd'hui";
     } else if (difference.inDays == 1) {
       return 'Hier';
     } else if (difference.inDays < 7) {
@@ -183,26 +218,37 @@ class DocumentEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.file_present, size: 64, color: Colors.grey.shade300),
+          Icon(Icons.file_present, size: 64,
+              color: AppColors.getTextSecondary(context).withValues(alpha: 0.3)),
           const SizedBox(height: 16),
           Text(
             'Aucun document',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              color: AppColors.getTextMain(context),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Ajoutez vos documents importants',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.getTextSecondary(context),
+            ),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: onAddDocument,
             icon: const Icon(Icons.add),
             label: const Text('Ajouter un document'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
           ),
         ],
       ),

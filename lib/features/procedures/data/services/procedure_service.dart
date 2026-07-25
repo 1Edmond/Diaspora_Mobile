@@ -6,6 +6,7 @@ import '../../../../core/network/paged_response.dart';
 import '../models/procedure_model.dart';
 import '../models/location_model.dart';
 import '../models/day_schedule_model.dart';
+import '../models/user_procedure_model.dart';
 
 class ProcedureService {
   final Dio _dio;
@@ -96,6 +97,38 @@ class ProcedureService {
     }
   }
 
+  Future<List<UserProcedureModel>> fetchUserProcedures({
+    required String profileId,
+  }) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/user-procedures/profile/$profileId',
+      queryParameters: {'pageNumber': 1, 'pageSize': 100},
+    );
+
+    if (res.statusCode != 200 || res.data == null) {
+      throw DioException(
+        requestOptions: res.requestOptions,
+        response: res,
+        message: 'fetchUserProcedures failed: ${res.statusCode}',
+      );
+    }
+
+    try {
+      final paged = PagedResponse.fromJson(res.data!, _parseUserProcedureItem);
+      return paged.items;
+    } catch (e, st) {
+      if (kDebugMode) {
+        print('Erreur de parsing UserProcedureModel: $e');
+        print(st);
+      }
+      rethrow;
+    }
+  }
+
+  UserProcedureModel _parseUserProcedureItem(Map<String, dynamic> json) {
+    return UserProcedureModel.fromJson(json);
+  }
+
   ProcedureModel _parseProcedureItem(Map<String, dynamic> json) {
     final id = (json['Id'] ?? json['id']) as String? ?? '';
     final title = (json['Title'] ?? json['title']) as String? ?? '';
@@ -112,6 +145,11 @@ class ProcedureService {
       json,
       'RequiredDocumentTypeIds',
       'requiredDocumentTypeIds',
+    );
+    final outputDocumentType = _parseStringList(
+      json,
+      'OutputDocumentType',
+      'outputDocumentType',
     );
 
     return ProcedureModel(
@@ -135,6 +173,7 @@ class ProcedureService {
       locations: locations,
       dependencyIds: dependencyIds,
       requiredDocumentTypeIds: requiredDocumentTypeIds,
+      outputDocumentType: outputDocumentType,
       createdAt:
           _parseDateTime(json, 'CreatedAt', 'createdAt') ?? DateTime.now(),
       userProgress: (json['UserProgress'] ?? json['userProgress'] ?? 0) as int,
@@ -205,7 +244,7 @@ class ProcedureService {
     );
   }
 
-  Future<void> startProcedure({
+  Future<String> startProcedure({
     required String profileId,
     required String procedureId,
   }) async {
@@ -222,18 +261,20 @@ class ProcedureService {
         message: 'startProcedure failed: ${res.statusCode}',
       );
     }
+    return (res.data?['Id'] ?? res.data?['id'] ?? '') as String;
   }
 
   Future<void> completeProcedure({
-    required String procedureId,
+    required String userProcedureId,
     required String profileId,
-    required bool isInternal,
+    List<String> uploadedDocumentIds = const [],
   }) async {
-    final body = isInternal
-        ? {'InternalProfileId': profileId, 'Notes': ''}
-        : {'ExternalProfileId': profileId, 'Notes': ''};
+    final body = <String, dynamic>{'ProfileId': profileId, 'Notes': ''};
+    if (uploadedDocumentIds.isNotEmpty) {
+      body['UploadedDocumentIds'] = uploadedDocumentIds;
+    }
     final res = await _dio.post<Map<String, dynamic>>(
-      '/user-procedures/$procedureId/complete',
+      '/user-procedures/$userProcedureId/complete',
       data: body,
     );
     if (res.statusCode == null ||

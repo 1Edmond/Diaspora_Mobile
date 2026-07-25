@@ -5,16 +5,18 @@ class DocumentDtoModel {
   final String profileId;
   final String documentTypeId;
   final String? documentTypeName;
+  final String? documentTypeCode;
   final String? fileName;
-  final String? fileUrl;
-  final int fileSizeBytes;
+  final int fileSize;
   final String? mimeType;
+  final String? filePath;
   final DocumentStatus status;
-  final DateTime uploadedAt;
+  final DateTime createdAt;
   final DateTime? expiresAt;
   final DateTime? issuedAt;
   final String? issuedBy;
-  final bool isVerified;
+  final String? rejectionReason;
+  final DateTime? validatedAt;
   final String? extractedText;
 
   DocumentDtoModel({
@@ -22,16 +24,18 @@ class DocumentDtoModel {
     required this.profileId,
     required this.documentTypeId,
     this.documentTypeName,
+    this.documentTypeCode,
     this.fileName,
-    this.fileUrl,
-    this.fileSizeBytes = 0,
+    this.fileSize = 0,
     this.mimeType,
+    this.filePath,
     this.status = DocumentStatus.pending,
-    required this.uploadedAt,
+    required this.createdAt,
     this.expiresAt,
     this.issuedAt,
     this.issuedBy,
-    this.isVerified = false,
+    this.rejectionReason,
+    this.validatedAt,
     this.extractedText,
   });
 
@@ -43,50 +47,65 @@ class DocumentDtoModel {
           (json['DocumentTypeId'] ?? json['documentTypeId'] ?? '') as String,
       documentTypeName:
           (json['DocumentTypeName'] ?? json['documentTypeName']) as String?,
+      documentTypeCode:
+          (json['DocumentTypeCode'] ?? json['documentTypeCode']) as String?,
       fileName: (json['FileName'] ?? json['fileName']) as String?,
-      fileUrl: (json['FileUrl'] ?? json['fileUrl']) as String?,
-      fileSizeBytes:
-          (json['FileSizeBytes'] ?? json['fileSizeBytes'] ?? 0) as int,
+      fileSize: ((json['FileSize'] ?? json['fileSize'] ?? 0) as num).toInt(),
       mimeType: (json['MimeType'] ?? json['mimeType']) as String?,
+      filePath: (json['FilePath'] ?? json['filePath']) as String?,
       status: DocumentStatus.fromValue(
         (json['Status'] ?? json['status'] ?? 0) as int,
       ),
-      uploadedAt: _parseDateTime(json, 'UploadedAt', 'uploadedAt') ?? DateTime.now(),
+      createdAt: _parseDateTime(json, 'CreatedAt', 'createdAt') ?? DateTime.now(),
       expiresAt: _parseDateTime(json, 'ExpiresAt', 'expiresAt'),
       issuedAt: _parseDateTime(json, 'IssuedAt', 'issuedAt'),
       issuedBy: (json['IssuedBy'] ?? json['issuedBy']) as String?,
-      isVerified: (json['IsVerified'] ?? json['isVerified'] ?? false) as bool,
+      rejectionReason:
+          (json['RejectionReason'] ?? json['rejectionReason']) as String?,
+      validatedAt: _parseDateTime(json, 'ValidatedAt', 'validatedAt'),
       extractedText: (json['ExtractedText'] ?? json['extractedText']) as String?,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'profileId': profileId,
-    'documentTypeId': documentTypeId,
-    'documentTypeName': documentTypeName,
-    'fileName': fileName,
-    'fileUrl': fileUrl,
-    'fileSizeBytes': fileSizeBytes,
-    'mimeType': mimeType,
-    'status': status.value,
-    'uploadedAt': uploadedAt.toIso8601String(),
-    'expiresAt': expiresAt?.toIso8601String(),
-    'issuedAt': issuedAt?.toIso8601String(),
-    'issuedBy': issuedBy,
-    'isVerified': isVerified,
-    'extractedText': extractedText,
+    'Id': id,
+    'ProfileId': profileId,
+    'DocumentTypeId': documentTypeId,
+    'DocumentTypeName': documentTypeName,
+    'DocumentTypeCode': documentTypeCode,
+    'FileName': fileName,
+    'FileSize': fileSize,
+    'MimeType': mimeType,
+    'FilePath': filePath,
+    'Status': status.value,
+    'CreatedAt': createdAt.toIso8601String(),
+    'ExpiresAt': expiresAt?.toIso8601String(),
+    'IssuedAt': issuedAt?.toIso8601String(),
+    'IssuedBy': issuedBy,
+    'RejectionReason': rejectionReason,
+    'ValidatedAt': validatedAt?.toIso8601String(),
   };
 
   String get formattedFileSize {
     const suffixes = ['B', 'KB', 'MB', 'GB'];
-    var bytes = fileSizeBytes.toDouble();
+    var bytes = fileSize.toDouble();
     var suffixIndex = 0;
     while (bytes >= 1024 && suffixIndex < suffixes.length - 1) {
       bytes /= 1024;
       suffixIndex++;
     }
     return '${bytes.toStringAsFixed(2)} ${suffixes[suffixIndex]}';
+  }
+
+  String get formattedMimeType {
+    if (mimeType == null) return '';
+    return _formatMimeType(mimeType!);
+  }
+
+  static String _formatMimeType(String raw) {
+    final sub = raw.split('/').last; // "application/pdf" → "pdf"
+    if (sub.isEmpty) return raw.toUpperCase();
+    return sub.toUpperCase();
   }
 
   bool get isExpired {
@@ -102,7 +121,7 @@ class DocumentDtoModel {
 
   bool get isPdf =>
       mimeType?.contains('pdf') == true ||
-      (fileUrl?.toLowerCase().endsWith('.pdf') ?? false);
+      (filePath?.toLowerCase().endsWith('.pdf') ?? false);
 
   bool get isImage => mimeType?.startsWith('image/') == true;
 

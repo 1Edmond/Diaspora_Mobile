@@ -51,3 +51,5 @@ analysis_results.txt
 analysis.log
 temp_last200.txt
 build_failure_log*.txt
+
+# Flutter

@@ -17,6 +17,7 @@ abstract class IDocumentRepository {
     DateTime? expiresAt,
     DateTime? issuedAt,
     String? issuedBy,
+    bool forProcedure = false,
   });
   Future<void> deleteDocument(String documentId);
   Future<DocumentDtoModel> extractTextFromDocument(String documentId);
