@@ -27,6 +27,8 @@ import '../../features/chat/presentation/screens/conversation_list_screen.dart';
 import '../../features/chat/presentation/screens/create_conversation_screen.dart';
 import '../../features/chat/presentation/screens/select_contacts_screen.dart';
 import '../../features/chat/presentation/screens/chat_profile_screen.dart';
+import '../../features/chat/presentation/screens/story_viewer_screen.dart';
+import '../../features/chat/presentation/screens/add_story_screen.dart';
 
 import '../../features/community/presentation/screens/community_home_screen.dart';
 import '../../features/community/presentation/screens/post_detail_screen.dart';
@@ -199,6 +201,18 @@ class AppRouter {
         path: '/chat/select-contacts',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (c, s) => const SelectContactsScreen(),
+      ),
+      GoRoute(
+        path: '/story/view',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (c, s) => StoryViewerScreen(
+          storyName: s.extra as String? ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/story/add',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (c, s) => const AddStoryScreen(),
       ),
       GoRoute(
         path: '/chat/:id',

@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/containers/glass_container.dart';
 import '../../../../shared/widgets/containers/neumorphic_container.dart';
+import '../../../../shared/widgets/diaspora_app_bar.dart';
 import '../controllers/committee_notifiers.dart';
 
 class CommitteeHomeScreen extends ConsumerWidget {
@@ -151,31 +152,10 @@ class CommitteeHomeScreen extends ConsumerWidget {
   }
 
   Widget _buildAppBar(BuildContext context) {
-    return GlassContainer(
-      borderRadius: 0,
-      padding: const EdgeInsets.fromLTRB(8, 20, 16, 20),
-      child: Row(
-        children: [
-          IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: AppColors.getTextMain(context),
-              size: 20,
-            ),
-            onPressed: () => context.pop(),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Vos Comités',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppColors.getTextMain(context),
-            ),
-          ),
-        ],
-      ),
-    ).animate().fadeIn().slideY(begin: -0.2);
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(4, 8, 16, 0),
+      child: DiasporaAppBar(title: 'Vos Comités'),
+    );
   }
 
   Widget _buildStatusChip(bool isActive, BuildContext context) {

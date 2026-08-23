@@ -55,7 +55,7 @@ class ChatRepositoryImpl implements IChatRepository {
     final msg = Message(
       id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
       conversationId: conversationId,
-      senderId: 'current_user',
+      senderId: 'user_1',
       type: type,
       content: content,
       timestamp: DateTime.now(),

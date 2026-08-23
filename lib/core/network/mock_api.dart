@@ -703,6 +703,7 @@ class MockApi {
     return [
       {
         'id': 'conv_1',
+        'type': 'group',
         'title': 'Groupe Famille',
         'lastMessage': 'Comment ça va tout le monde?',
         'lastMessageTime':
@@ -710,9 +711,15 @@ class MockApi {
         'unreadCount': 2,
         'participants': ['user_1', 'user_2', 'user_3'],
         'avatarUrl': null,
+        'groupMembers': [
+          {'id': 'user_1', 'name': 'Moi', 'role': 'Admin'},
+          {'id': 'user_2', 'name': 'Maman', 'role': 'Membre'},
+          {'id': 'user_3', 'name': 'Papa', 'role': 'Membre'},
+        ],
       },
       {
         'id': 'conv_2',
+        'type': 'direct',
         'title': 'Marie Dupont',
         'lastMessage': 'Merci pour l\'aide!',
         'lastMessageTime':
@@ -723,6 +730,7 @@ class MockApi {
       },
       {
         'id': 'conv_3',
+        'type': 'group',
         'title': 'Groupe Étudiants',
         'lastMessage': 'Réunion demain à 14h',
         'lastMessageTime':
@@ -730,6 +738,12 @@ class MockApi {
         'unreadCount': 1,
         'participants': ['user_1', 'user_5', 'user_6', 'user_7'],
         'avatarUrl': null,
+        'groupMembers': [
+          {'id': 'user_1', 'name': 'Moi', 'role': 'Admin'},
+          {'id': 'user_5', 'name': 'Aminata', 'role': 'Membre'},
+          {'id': 'user_6', 'name': 'Kossi', 'role': 'Membre'},
+          {'id': 'user_7', 'name': 'Efua', 'role': 'Membre'},
+        ],
       },
     ];
   }

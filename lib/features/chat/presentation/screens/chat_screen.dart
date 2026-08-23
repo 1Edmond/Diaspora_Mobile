@@ -6,6 +6,7 @@ import '../controllers/chat_notifier.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_input.dart';
 import '../../../../core/constants/enums.dart';
+import '../../domain/entities/conversation.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final String conversationId;
@@ -23,11 +24,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(chatNotifierProvider.notifier).selectConversation(widget.conversationId);
+      ref
+          .read(chatNotifierProvider.notifier)
+          .selectConversation(widget.conversationId);
     });
     _scrollCtrl.addListener(() {
       final atBottom = _scrollCtrl.position.pixels <= 100;
-      if (atBottom == _showScrollBtn) setState(() => _showScrollBtn = !atBottom);
+      if (atBottom == _showScrollBtn) {
+        setState(() => _showScrollBtn = !atBottom);
+      }
     });
   }
 
@@ -38,18 +43,29 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   void _scrollToBottom() {
-    _scrollCtrl.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+    _scrollCtrl.animateTo(0,
+        duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
   }
 
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(chatNotifierProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    bool isGroup = false;
+    chatState.whenData((state) {
+      final convs =
+          state.conversations.where((c) => c.id == widget.conversationId);
+      if (convs.isNotEmpty) isGroup = convs.first.isGroup;
+    });
 
     return Scaffold(
-      backgroundColor: AppColors.getBackground(context),
+      backgroundColor: isDark
+          ? const Color(0xFF0E1621)
+          : const Color(0xFFEFEFEF),
       body: Column(
         children: [
-          _buildAppBar(chatState),
+          _buildAppBar(chatState, isDark),
           Expanded(
             child: Stack(
               children: [
@@ -60,9 +76,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.chat_outlined, size: 48, color: AppColors.getTextSecondary(context)),
+                            Icon(Icons.chat_outlined,
+                                size: 48,
+                                color: AppColors.getTextSecondary(context)),
                             const SizedBox(height: 12),
-                            Text('Aucun message', style: TextStyle(color: AppColors.getTextSecondary(context))),
+                            Text('Aucun message',
+                                style: TextStyle(
+                                    color:
+                                        AppColors.getTextSecondary(context))),
                           ],
                         ),
                       );
@@ -70,40 +91,69 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     return ListView.builder(
                       controller: _scrollCtrl,
                       reverse: true,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 8),
                       itemCount: state.messages.length,
                       itemBuilder: (context, index) {
-                        final msg = state.messages[state.messages.length - 1 - index];
+                        final msg = state
+                            .messages[state.messages.length - 1 - index];
                         final isLast = index == state.messages.length - 1;
                         final showDate = isLast ||
-                            msg.timestamp.day != state.messages[state.messages.length - 2 - index].timestamp.day ||
-                            msg.timestamp.month != state.messages[state.messages.length - 2 - index].timestamp.month ||
-                            msg.timestamp.year != state.messages[state.messages.length - 2 - index].timestamp.year;
+                            (index < state.messages.length - 1 &&
+                                (msg.timestamp.day !=
+                                        state.messages[state.messages.length -
+                                                2 -
+                                                index]
+                                            .timestamp.day ||
+                                    msg.timestamp.month !=
+                                        state.messages[state.messages.length -
+                                                2 -
+                                                index]
+                                            .timestamp.month ||
+                                    msg.timestamp.year !=
+                                        state.messages[state.messages.length -
+                                                2 -
+                                                index]
+                                            .timestamp.year));
                         return Column(
                           children: [
-                            if (showDate)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                child: _DateChip(date: msg.timestamp),
-                              ),
-                            MessageBubble(message: msg, showSender: false),
+                            if (showDate) _DateChip(date: msg.timestamp),
+                            MessageBubble(message: msg, showSender: isGroup, isGroupChat: isGroup),
                           ],
                         );
                       },
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                   error: (e, s) => Center(child: Text('Erreur: $e')),
                 ),
                 if (_showScrollBtn)
                   Positioned(
                     right: 16,
                     bottom: 16,
-                    child: FloatingActionButton.small(
-                      heroTag: null,
-                      backgroundColor: AppColors.getBackground(context),
-                      onPressed: _scrollToBottom,
-                      child: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primary),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.1)
+                            : Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: AppColors.getTextMain(context),
+                        ),
+                        onPressed: _scrollToBottom,
+                      ),
                     ),
                   ),
               ],
@@ -118,71 +168,147 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Widget _buildAppBar(AsyncValue chatState) {
+  Widget _buildAppBar(AsyncValue chatState, bool isDark) {
     return Container(
-      padding: EdgeInsets.fromLTRB(4, MediaQuery.of(context).padding.top + 4, 4, 8),
+      padding: EdgeInsets.fromLTRB(
+          4, MediaQuery.of(context).padding.top + 4, 8, 8),
       decoration: BoxDecoration(
-        color: AppColors.getBackground(context),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        color: isDark ? const Color(0xFF17212B) : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: SafeArea(
-        top: false,
-        bottom: false,
-        child: Row(
-          children: [
-            IconButton(
-              icon: Icon(Icons.arrow_back_rounded, color: AppColors.getTextMain(context)),
-              onPressed: () => context.pop(),
-            ),
-            chatState.maybeWhen(
-              data: (state) {
-                final convs = state.conversations.where((c) => c.id == widget.conversationId);
-                final conv = convs.isEmpty ? null : convs.first;
-                return Expanded(
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: AppColors.primary,
-                        child: Text(conv?.title[0].toUpperCase() ?? '?', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => _showProfileInfo(context, conv),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                conv?.title ?? 'Chat',
-                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: AppColors.getTextMain(context)),
-                              ),
-                              Text(
-                                'vu il y a quelques minutes',
-                                style: TextStyle(fontSize: 12, color: AppColors.getTextSecondary(context)),
-                              ),
-                            ],
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(Icons.arrow_back_rounded,
+                color: AppColors.getTextMain(context)),
+            onPressed: () => context.pop(),
+          ),
+          chatState.maybeWhen(
+            data: (state) {
+              final convs = state.conversations
+                  .where((c) => c.id == widget.conversationId);
+              final conv = convs.isEmpty ? null : convs.first;
+              final color = conv?.avatarColor ?? AppColors.primary;
+              return GestureDetector(
+                onTap: () => _showProfileInfo(context, conv),
+                child: Row(
+                  children: [
+                    Stack(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: color.withValues(alpha: 0.15),
                           ),
+                          child: conv?.avatarUrl != null
+                              ? ClipOval(
+                                  child: Image.network(
+                                    conv!.avatarUrl!,
+                                    width: 42,
+                                    height: 42,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        _buildAvatarFallback(conv, color),
+                                  ),
+                                )
+                              : _buildAvatarFallback(conv, color),
                         ),
-                      ),
-                    ],
+                        if (conv?.isOnline == true)
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: AppColors.accent,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isDark
+                                      ? const Color(0xFF17212B)
+                                      : Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+            orElse: () => const SizedBox.shrink(),
+          ),
+          const Spacer(),
+          chatState.maybeWhen(
+            data: (state) {
+              final convs = state.conversations
+                  .where((c) => c.id == widget.conversationId);
+              final conv = convs.isEmpty ? null : convs.first;
+              return Column(
+                children: [
+                  Text(
+                    conv?.title ?? 'Chat',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: AppColors.getTextMain(context),
+                    ),
                   ),
-                );
-              },
-              orElse: () => const Expanded(child: Text('Chat', style: TextStyle(fontWeight: FontWeight.bold))),
+                  Text(
+                    conv?.isOnline == true
+                        ? 'en ligne'
+                        : 'dernière vue récemment',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: conv?.isOnline == true
+                          ? AppColors.accent
+                          : AppColors.getTextSecondary(context),
+                    ),
+                  ),
+                ],
+              );
+            },
+            orElse: () => Text(
+              'Chat',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.getTextMain(context),
+              ),
             ),
-            IconButton(icon: Icon(Icons.search_rounded, color: AppColors.getTextSecondary(context)), onPressed: () => _showSearch(context)),
-            PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert_rounded, color: AppColors.getTextSecondary(context)),
-              onSelected: (v) => _handleMenuAction(context, v),
-              itemBuilder: (c) => [
-                const PopupMenuItem(value: 'profile', child: Text('Voir le profil')),
-                const PopupMenuItem(value: 'media', child: Text('Fichiers et médias')),
-                const PopupMenuItem(value: 'mute', child: Text('Ne plus déranger')),
-                const PopupMenuItem(value: 'block', child: Text('Bloquer')),
-              ],
-            ),
-          ],
+          ),
+          const Spacer(),
+          IconButton(
+            icon: Icon(Icons.search_rounded,
+                color: AppColors.getTextSecondary(context)),
+            onPressed: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatarFallback(dynamic conv, Color color) {
+    final initial =
+        conv?.title != null && conv!.title.isNotEmpty
+            ? conv.title[0].toUpperCase()
+            : '?';
+    return Center(
+      child: Text(
+        initial,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
         ),
       ),
     );
@@ -190,26 +316,126 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _showProfileInfo(BuildContext context, dynamic conv) {
     if (conv == null) return;
-    final others = conv.participants.where((String id) => id != 'user_1');
-    final contactId = others.isNotEmpty ? others.first : conv.participants.first;
-    context.push('/contact-profile/$contactId', extra: conv.title);
-  }
-
-  void _showSearch(BuildContext context) {
-    showSearch(context: context, delegate: _ChatSearchDelegate());
-  }
-
-  void _handleMenuAction(BuildContext context, String value) {
-    if (value == 'profile') {
-      final convs = ref.read(chatNotifierProvider).valueOrNull?.conversations.where((c) => c.id == widget.conversationId);
-      _showProfileInfo(context, convs != null && convs.isNotEmpty ? convs.first : null);
+    final conversation = conv as Conversation;
+    if (conversation.isGroup) {
+      _showGroupDetails(context, conversation);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Action: $value')));
+      final others =
+          conversation.participants.where((String id) => id != 'user_1');
+      final contactId =
+          others.isNotEmpty ? others.first : conversation.participants.first;
+      context.push('/contact-profile/$contactId', extra: conversation.title);
     }
   }
 
-  void _sendMessage(String content, MessageType type, {String? mediaUrl, int? duration}) {
-    ref.read(chatNotifierProvider.notifier).sendMessage(widget.conversationId, content, type, mediaUrl: mediaUrl, duration: duration);
+  void _showGroupDetails(BuildContext context, Conversation conv) {
+    final members = conv.groupMembers ?? [];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E2A3A) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              conv.title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.getTextMain(context),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${conv.participants.length} membres',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.getTextSecondary(context),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: members.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Aucun membre affiché',
+                        style: TextStyle(
+                          color: AppColors.getTextSecondary(context),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: members.length,
+                      itemBuilder: (ctx, index) {
+                        final member = members[index];
+                        final name = member['name'] as String? ?? 'Membre';
+                        final initial =
+                            name.isNotEmpty ? name[0].toUpperCase() : '?';
+                        final color = conv.avatarColor ?? AppColors.primary;
+                        return ListTile(
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: color.withValues(alpha: 0.15),
+                            ),
+                            child: Center(
+                              child: Text(
+                                initial,
+                                style: TextStyle(
+                                  color: color,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            name,
+                            style: TextStyle(
+                              color: AppColors.getTextMain(context),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          subtitle: Text(
+                            member['role'] as String? ?? 'Membre',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.getTextSecondary(context),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _sendMessage(String content, MessageType type,
+      {String? mediaUrl, int? duration}) {
+    ref.read(chatNotifierProvider.notifier).sendMessage(
+        widget.conversationId, content, type,
+        mediaUrl: mediaUrl, duration: duration);
   }
 }
 
@@ -220,35 +446,34 @@ class _DateChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final label = date.day == now.day && date.month == now.month && date.year == now.year
+    final label = date.day == now.day &&
+            date.month == now.month &&
+            date.year == now.year
         ? "Aujourd'hui"
-        : date.day == now.day - 1 && date.month == now.month && date.year == now.year
+        : date.day == now.day - 1 &&
+                date.month == now.month &&
+                date.year == now.year
             ? 'Hier'
             : '${date.day}/${date.month}/${date.year}';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.getTextSecondary(context).withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 12, color: AppColors.getTextSecondary(context), fontWeight: FontWeight.w500),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       ),
     );
   }
-}
-
-class _ChatSearchDelegate extends SearchDelegate {
-  @override
-  List<Widget>? buildActions(BuildContext context) => [IconButton(icon: const Icon(Icons.close), onPressed: () => close(context, null))];
-
-  @override
-  Widget? buildLeading(BuildContext context) => IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => close(context, null));
-
-  @override
-  Widget buildResults(BuildContext context) => buildSuggestions(context);
-
-  @override
-  Widget buildSuggestions(BuildContext context) => const Center(child: Text('Recherche dans la conversation...'));
 }

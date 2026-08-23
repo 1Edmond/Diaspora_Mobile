@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/containers/neumorphic_container.dart';
+import '../../../../shared/widgets/diaspora_app_bar.dart';
 import '../controllers/wallet_notifier.dart';
 import '../../domain/entities/wallet.dart';
 
@@ -73,34 +74,20 @@ class WalletScreen extends ConsumerWidget {
   }
 
   Widget _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      floating: true,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      leading: IconButton(
-        icon: Icon(
-          Icons.arrow_back_ios_rounded,
-          color: AppColors.getTextMain(context),
-        ),
-        onPressed: () => context.pop(),
-      ),
-      title: Text(
-        'Portefeuille',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: AppColors.getTextMain(context),
-        ),
-      ),
-      actions: [
-        IconButton(
-          icon: Icon(
-            Icons.history_rounded,
-            color: AppColors.getTextMain(context),
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(4, 8, 16, 0),
+        child: DiasporaAppBar(
+          title: 'Portefeuille',
+          trailing: IconButton(
+            icon: Icon(
+              Icons.history_rounded,
+              color: AppColors.getTextMain(context),
+            ),
+            onPressed: () {},
           ),
-          onPressed: () {},
         ),
-      ],
+      ),
     );
   }
 

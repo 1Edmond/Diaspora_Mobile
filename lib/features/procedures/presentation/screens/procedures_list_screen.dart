@@ -3,8 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/design_system.dart';
-import '../../../../shared/widgets/containers/glass_container.dart';
 import '../../../../shared/widgets/containers/neumorphic_container.dart';
+import '../../../../shared/widgets/diaspora_app_bar.dart';
 import '../controllers/procedures_notifier.dart';
 import '../../data/models/procedure_model.dart';
 
@@ -260,31 +260,10 @@ class ProceduresListScreen extends ConsumerWidget {
   }
 
   Widget _buildAppBar(BuildContext context) {
-    return GlassContainer(
-      borderRadius: 0,
-      padding: const EdgeInsets.fromLTRB(8, 20, 16, 20),
-      child: Row(
-        children: [
-          IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: AppColors.getTextMain(context),
-              size: 20,
-            ),
-            onPressed: () => context.pop(),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Mes Démarches',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppColors.getTextMain(context),
-            ),
-          ),
-        ],
-      ),
-    ).animate().fadeIn().slideY(begin: -0.2);
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(4, 8, 16, 0),
+      child: DiasporaAppBar(title: 'Mes Démarches'),
+    );
   }
 
   bool _hasUnfulfilledDependencies(ProcedureModel p, Set<String> completedIds) {

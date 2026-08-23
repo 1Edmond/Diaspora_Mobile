@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/design_system.dart';
-import '../../../../shared/widgets/containers/glass_container.dart';
 import '../../../../shared/widgets/containers/neumorphic_container.dart';
+import '../../../../shared/widgets/diaspora_app_bar.dart';
 import '../../../auth/presentation/controllers/auth_notifier.dart';
 import '../../../../core/realtime/sse_reconnect_service.dart';
 import '../providers/notifications_providers.dart';
@@ -107,60 +106,39 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   Widget _buildAppBar(BuildContext context, SseConnectionState connState, String unreadLabel) {
-    return GlassContainer(
-      borderRadius: 0,
-      padding: const EdgeInsets.fromLTRB(8, 20, 16, 20),
-      child: Row(
-        children: [
-          IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: AppColors.getTextMain(context),
-              size: 20,
-            ),
-            onPressed: () => context.pop(),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Notifications$unreadLabel',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppColors.getTextMain(context),
-            ),
-          ),
-          const Spacer(),
-          if (connState != SseConnectionState.connected)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Icon(
-                Icons.cloud_off_rounded,
-                size: 18,
-                color: AppColors.getTextSecondary(context),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 16, 0),
+      child: DiasporaAppBar(
+        title: 'Notifications$unreadLabel',
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (connState != SseConnectionState.connected)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  Icons.cloud_off_rounded,
+                  size: 18,
+                  color: AppColors.getTextSecondary(context),
+                ),
+              ),
+            NeumorphicContainer(
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              child: IconButton(
+                icon: Icon(
+                  Icons.clear_all_rounded,
+                  color: AppColors.getTextMain(context),
+                  size: 20,
+                ),
+                onPressed: () {},
               ),
             ),
-          NeumorphicContainer(
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            child: IconButton(
-              icon: Icon(
-                Icons.clear_all_rounded,
-                color: AppColors.getTextMain(context),
-                size: 20,
-              ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Tout effacer — bientôt disponible'),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ).animate().fadeIn().slideY(begin: -0.2);
+    );
   }
 
   Widget _buildEmptyState(BuildContext context) {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/containers/glass_container.dart';
+import '../../../../shared/widgets/diaspora_app_bar.dart';
 import '../../domain/entities/service.dart';
 import '../controllers/services_notifier.dart';
 import '../../data/models/service_model.dart';
@@ -92,24 +93,18 @@ class _ServicesHomeScreenState extends ConsumerState<ServicesHomeScreen> {
           SafeArea(
             child: CustomScrollView(
               slivers: [
-                SliverAppBar(
-                  floating: true,
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  title: Text(
-                    'E-Services',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.getTextMain(context),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 8, 16, 0),
+                    child: DiasporaAppBar(
+                      title: 'E-Services',
+                      showBackButton: false,
+                      trailing: IconButton(
+                        icon: Icon(Icons.history_rounded, color: AppColors.getTextMain(context)),
+                        onPressed: () => context.push('/services/reservations'),
+                      ),
                     ),
                   ),
-                  actions: [
-                    IconButton(
-                      icon: Icon(Icons.history_rounded, color: AppColors.getTextMain(context)),
-                      onPressed: () => context.push('/services/reservations'),
-                    ),
-                  ],
                 ),
                 SliverToBoxAdapter(
                   child: Padding(

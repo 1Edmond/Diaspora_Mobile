@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/containers/glass_container.dart';
 import '../../../../shared/widgets/containers/neumorphic_container.dart';
+import '../../../../shared/widgets/diaspora_app_bar.dart';
 import '../controllers/community_notifier.dart';
 import '../widgets/post_card.dart';
 
@@ -90,32 +91,20 @@ class _CommunityHomeScreenState extends ConsumerState<CommunityHomeScreen>
   }
 
   Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      floating: true,
-      pinned: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      elevation: 0,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.getTextMain(context), size: 20),
-        onPressed: () => context.pop(),
-      ),
-      title: Text(
-        'Communauté',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: AppColors.getTextMain(context),
-        ),
-      ),
-      actions: [
-        IconButton(
-          icon: Icon(
-            Icons.notifications_none_rounded,
-            color: AppColors.getTextMain(context),
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(4, 8, 16, 0),
+        child: DiasporaAppBar(
+          title: 'Communauté',
+          trailing: IconButton(
+            icon: Icon(
+              Icons.notifications_none_rounded,
+              color: AppColors.getTextMain(context),
+            ),
+            onPressed: () {},
           ),
-          onPressed: () {},
         ),
-      ],
+      ),
     );
   }
 

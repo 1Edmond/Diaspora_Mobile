@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import '../../../../core/constants/enums.dart';
 
 class Profile {
@@ -20,11 +22,19 @@ class Profile {
   final String? localAddress;
   final String? localPhoneNumber;
   final DateTime? arrivalDate;
+  final Color? profileColor;
 
   String get fullName => '$firstName $lastName';
 
   bool get isInternal => profileType == 'Internal';
   bool get isExternal => profileType == 'External';
+
+  Color get effectiveColor {
+    if (profileColor != null) return profileColor!;
+    return isInternal
+        ? const Color(0xFF0033A0)
+        : const Color(0xFF006B3F);
+  }
 
   Profile({
     required this.id,
@@ -44,6 +54,7 @@ class Profile {
     this.localAddress,
     this.localPhoneNumber,
     this.arrivalDate,
+    this.profileColor,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -101,7 +112,17 @@ class Profile {
           : json['arrivalDate'] != null
               ? DateTime.parse(json['arrivalDate'] as String)
               : null,
+      profileColor: _parseColor(
+        json['ProfileColor'] as String? ?? json['profileColor'] as String?,
+      ),
     );
+  }
+
+  static Color? _parseColor(String? hex) {
+    if (hex == null || hex.isEmpty) return null;
+    final cleaned = hex.replaceFirst('#', '');
+    if (cleaned.length != 6 && cleaned.length != 8) return null;
+    return Color(int.parse('FF$cleaned', radix: 16));
   }
 
   static ProfileStatus _parseStatus(dynamic val) {
@@ -130,6 +151,7 @@ class Profile {
     String? localAddress,
     String? localPhoneNumber,
     DateTime? arrivalDate,
+    Color? profileColor,
   }) {
     return Profile(
       id: id ?? this.id,
@@ -149,6 +171,7 @@ class Profile {
       localAddress: localAddress ?? this.localAddress,
       localPhoneNumber: localPhoneNumber ?? this.localPhoneNumber,
       arrivalDate: arrivalDate ?? this.arrivalDate,
+      profileColor: profileColor ?? this.profileColor,
     );
   }
 }

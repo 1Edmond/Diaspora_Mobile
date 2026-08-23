@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/containers/glass_container.dart';
+import '../../../../shared/widgets/diaspora_app_bar.dart';
 import '../controllers/document_providers.dart';
 import '../widgets/document_card.dart';
 import '../../data/models/document_type_model.dart';
@@ -65,18 +66,18 @@ class _DocumentsListScreenState extends ConsumerState<DocumentsListScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.getBackground(context),
-      appBar: AppBar(
-        title: const Text('Mes documents'),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
-      body: Column(
-        children: [
-          _buildSearchBar(context),
-          _buildFilterAndSortBar(context, state),
-          Expanded(child: _buildBody(context, state)),
-        ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(4, 8, 16, 0),
+              child: DiasporaAppBar(title: 'Mes documents'),
+            ),
+            _buildSearchBar(context),
+            _buildFilterAndSortBar(context, state),
+            Expanded(child: _buildBody(context, state)),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/documents/upload'),

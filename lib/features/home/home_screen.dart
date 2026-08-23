@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/design_system.dart';
 import '../../shared/widgets/containers/glass_container.dart';
 import '../../shared/widgets/containers/neumorphic_container.dart';
+import '../../shared/widgets/orbital_fab/orbital_data.dart';
+import '../../shared/widgets/orbital_fab/orbital_fab.dart';
 import '../community/presentation/controllers/community_notifier.dart';
 import '../committee/presentation/controllers/committee_notifiers.dart';
 import '../procedures/presentation/controllers/procedures_notifier.dart';
@@ -100,7 +102,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ),
-            const Positioned(bottom: 0, left: 0, right: 0, child: _BottomNav()),
+            Positioned.fill(
+              child: _buildOrbitalFab(),
+            ),
           ],
         ),
       ),
@@ -119,6 +123,76 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           color: AppColors.primary.withValues(alpha: 0.05),
         ),
       ),
+    );
+  }
+
+  Widget _buildOrbitalFab() {
+    return OrbitalFab(
+      items: [
+        OrbitalItem(
+          icon: Icons.account_balance_wallet_rounded,
+          label: 'Portefeuille',
+          color: AppColors.primary,
+          description: 'Gérez votre portefeuille et vos transactions',
+          onTap: () => context.push('/wallet'),
+        ),
+        OrbitalItem(
+          icon: Icons.description_rounded,
+          label: 'Documents',
+          color: AppColors.secondary,
+          description: 'Ajoutez et consultez vos documents administratifs',
+          onTap: () => context.push('/documents'),
+        ),
+        OrbitalItem(
+          icon: Icons.assignment_rounded,
+          label: 'Services',
+          color: AppColors.accent,
+          description: 'Découvrez nos services pour la diaspora',
+          onTap: () => context.push('/services'),
+        ),
+        OrbitalItem(
+          icon: Icons.fact_check_rounded,
+          label: 'Démarches',
+          color: const Color(0xFF8B5CF6),
+          description: 'Accédez à vos démarches administratives',
+          onTap: () => context.push('/procedures'),
+        ),
+        OrbitalItem(
+          icon: Icons.chat_bubble_rounded,
+          label: 'Messagerie',
+          color: const Color(0xFF00BCD4),
+          description: 'Communiquez avec la communauté',
+          onTap: () => context.push('/chat'),
+        ),
+        OrbitalItem(
+          icon: Icons.forum_rounded,
+          label: 'Communauté',
+          color: const Color(0xFFE91E63),
+          description: 'Participez aux discussions de la diaspora',
+          onTap: () => context.push('/community'),
+        ),
+        OrbitalItem(
+          icon: Icons.groups_rounded,
+          label: 'Comités',
+          color: const Color(0xFF4CAF50),
+          description: 'Rejoignez et gérez vos comités',
+          onTap: () => context.push('/committee'),
+        ),
+        OrbitalItem(
+          icon: Icons.person_rounded,
+          label: 'Profil',
+          color: Colors.orange,
+          description: 'Gérez votre profil et paramètres',
+          onTap: () => context.push('/profile'),
+        ),
+      ],
+      fabColor: AppColors.primary,
+      onOpen: () => debugPrint('Orbital opened'),
+      onClose: () => debugPrint('Orbital closed'),
+      onLogout: () async {
+        await ref.read(authNotifierProvider.notifier).logout();
+        if (context.mounted) context.go('/onboarding');
+      },
     );
   }
 }
@@ -536,55 +610,4 @@ class _CommunityFeedSection extends ConsumerWidget {
   }
 }
 
-class _BottomNav extends StatelessWidget {
-  const _BottomNav();
 
-  static const _routes = ['/home', '/community', '/committee', '/profile'];
-
-  int _currentIndexFor(BuildContext context) {
-    final location = GoRouterState.of(context).uri.toString();
-    final index = _routes.indexWhere((r) => location.startsWith(r));
-    return index == -1 ? 0 : index;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.only(bottom: 24, left: 24, right: 24),
-      child: GlassContainer(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        borderRadius: 30,
-        child: BottomNavigationBar(
-          currentIndex: _currentIndexFor(context),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.getTextSecondary(context),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded),
-              label: 'Accueil',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.forum_rounded),
-              label: 'Communauté',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.group_rounded),
-              label: 'Comités',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_rounded),
-              label: 'Profil',
-            ),
-          ],
-          onTap: (index) {
-            if (index == _currentIndexFor(context)) return;
-            context.go(_routes[index]);
-          },
-        ),
-      ),
-    ).animate().slideY(begin: 1.0, curve: Curves.easeOutBack, duration: 800.ms);
-  }
-}

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/profile.dart';
 import '../../presentation/controllers/profile_providers.dart';
+import '../../presentation/controllers/profile_switcher_provider.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../core/constants/enums.dart';
 
@@ -67,7 +68,7 @@ class ProfileListScreen extends ConsumerWidget {
                           return _ProfileCard(
                             profile: profile,
                             isActive: isActive,
-                            onTap: () => _selectProfile(ref, context, profile, isActive),
+                            onTap: () => _selectProfile(ref, context, profile),
                           );
                         },
                       );
@@ -82,31 +83,17 @@ class ProfileListScreen extends ConsumerWidget {
     );
   }
 
-  void _selectProfile(WidgetRef ref, BuildContext context, Profile profile, bool isActive) async {
-    if (isActive) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Changer de profil'),
-        content: Text(
-          'Utiliser le profil "${profile.fullName}" (${profile.profileType}) '
-          'comme profil actif ?',
+  void _selectProfile(WidgetRef ref, BuildContext context, Profile profile) {
+    ref.read(profileSwitcherProvider.notifier).switchToProfile(profile.id);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Profil "${profile.fullName}" activé'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Confirmer'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      ref.read(activeProfileIdProvider.notifier).setActiveProfileId(profile.id);
-      if (context.mounted) Navigator.pop(context);
+      );
     }
   }
 
@@ -157,7 +144,7 @@ class _ProfileCard extends StatelessWidget {
   };
 
   Color _statusColor(ProfileStatus status) => switch (status) {
-    ProfileStatus.VALIDATED => AppColors.accent,
+    ProfileStatus.VALIDATED => AppColors.success,
     ProfileStatus.REJECTED => Colors.red,
     ProfileStatus.PENDING => Colors.orange,
   };
@@ -173,17 +160,18 @@ class _ProfileCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 color: isActive
-                    ? AppColors.primary.withValues(alpha: 0.08)
+                    ? profile.effectiveColor.withValues(alpha: 0.08)
                     : (isDark
                         ? Colors.white.withValues(alpha: 0.06)
                         : Colors.white.withValues(alpha: 0.7)),
                 border: Border.all(
                   color: isActive
-                      ? AppColors.primary.withValues(alpha: 0.4)
+                      ? profile.effectiveColor.withValues(alpha: 0.4)
                       : Colors.white.withValues(alpha: 0.2),
                 ),
               ),
@@ -195,19 +183,22 @@ class _ProfileCard extends StatelessWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: profile.isInternal
-                          ? AppColors.primary.withValues(alpha: 0.1)
-                          : AppColors.accent.withValues(alpha: 0.1),
+                      gradient: LinearGradient(
+                        colors: [
+                          profile.effectiveColor,
+                          profile.effectiveColor.withValues(alpha: 0.7),
+                        ],
+                      ),
                     ),
                     child: Center(
                       child: Text(
                         profile.fullName.isNotEmpty
                             ? profile.fullName[0].toUpperCase()
                             : '?',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 20,
-                          color: profile.isInternal ? AppColors.primary : AppColors.accent,
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -247,7 +238,7 @@ class _ProfileCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${profile.profileType} — ${profile.profileTypeId}',
+                          '${profile.isInternal ? "Interne" : "Externe"}${profile.universityOrCompany != null ? " – ${profile.universityOrCompany}" : ""}',
                           style: TextStyle(
                             fontSize: 13,
                             color: AppColors.getTextSecondary(context),
@@ -260,15 +251,15 @@ class _ProfileCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: profile.effectiveColor,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Actif',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: Colors.white,
                         ),
                       ),
                     ),

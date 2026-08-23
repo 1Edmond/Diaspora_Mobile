@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/settings_notifier.dart';
-import '../../../../core/theme/design_system.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/services/biometric_service.dart';
+import '../../../../shared/widgets/diaspora_app_bar.dart';
 import '../widgets/theme_selector.dart';
 import '../widgets/language_selector.dart';
 import '../widgets/privacy_level_selector.dart';
@@ -21,34 +21,38 @@ class SettingsScreen extends ConsumerWidget {
     return DefaultTabController(
       length: 4,
       child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new_rounded,
-                color: AppColors.getTextMain(context)),
-            onPressed: () => context.pop(),
-          ),
-          title: const Text('Paramètres'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Général'),
-              Tab(text: 'Confidentiel'),
-              Tab(text: 'Notifications'),
-              Tab(text: 'Sécurité'),
-            ],
-          ),
-        ),
-        body: settingsAsync.when(
-          data:
-              (settings) => TabBarView(
-                children: [
-                  _GeneralTab(settings, settingsNotifier),
-                  _PrivacyTab(settings, settingsNotifier),
-                  _NotificationsTab(settings, settingsNotifier),
-                  _SecurityTab(settings, settingsNotifier),
+        body: SafeArea(
+          child: Column(
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(4, 8, 16, 0),
+                child: DiasporaAppBar(title: 'Paramètres'),
+              ),
+              const TabBar(
+                tabs: [
+                  Tab(text: 'Général'),
+                  Tab(text: 'Confidentiel'),
+                  Tab(text: 'Notifications'),
+                  Tab(text: 'Sécurité'),
                 ],
               ),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, st) => Center(child: Text('Erreur: $e')),
+              Expanded(
+                child: settingsAsync.when(
+                  data:
+                      (settings) => TabBarView(
+                        children: [
+                          _GeneralTab(settings, settingsNotifier),
+                          _PrivacyTab(settings, settingsNotifier),
+                          _NotificationsTab(settings, settingsNotifier),
+                          _SecurityTab(settings, settingsNotifier),
+                        ],
+                      ),
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, st) => Center(child: Text('Erreur: $e')),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
