@@ -44,8 +44,14 @@ class OrbitalDescriptionPanel extends StatelessWidget {
             const SizedBox(height: 24),
             _buildDiscoverButton(),
             if (onLogout != null) ...[
-              const SizedBox(height: 12),
-              _buildLogoutButton(),
+              const SizedBox(height: 36),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: _buildLogoutButton(),
+                ),
+              ),
             ],
           ],
         ),
@@ -145,36 +151,20 @@ class OrbitalDescriptionPanel extends StatelessWidget {
   Widget _buildLogoutButton() {
     return GestureDetector(
       onTap: onLogout,
-      child: FittedBox(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFCD0021).withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(
-              color: const Color(0xFFCD0021).withValues(alpha: 0.15),
-              width: 1.5,
-            ),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFCD0021).withValues(alpha: 0.08),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: const Color(0xFFCD0021).withValues(alpha: 0.15),
+            width: 1.5,
           ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.logout_rounded,
-                color: Color(0xFFCD0021),
-                size: 16,
-              ),
-              SizedBox(width: 8),
-              Text(
-                'Déconnexion',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFCD0021),
-                ),
-              ),
-            ],
-          ),
+        ),
+        child: const Icon(
+          Icons.logout_rounded,
+          color: Color(0xFFCD0021),
+          size: 20,
         ),
       ),
     );
