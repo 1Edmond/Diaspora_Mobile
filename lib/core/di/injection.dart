@@ -13,7 +13,8 @@ import '../../features/services/domain/repositories/service_repository.dart';
 import '../../features/wallet/domain/repositories/wallet_repository.dart';
 import '../../features/wallet/data/repositories/wallet_repository_impl.dart';
 
-// Wallet PIN/biometric service
+import '../../features/marketplace/data/repositories/marketplace_repository_impl.dart';
+import '../../features/marketplace/domain/repositories/marketplace_repository.dart';
 import '../../features/wallet/domain/wallet_auth_service.dart';
 import '../../features/wallet/data/wallet_auth_service_impl.dart';
 
@@ -92,6 +93,11 @@ void configureDependencies() {
 
   // Wallet repository (DioClient-backed; mocked endpoints available in MockApi)
   getIt.registerLazySingleton<IWalletRepository>(() => WalletRepositoryImpl());
+
+  // Marketplace repository
+  getIt.registerLazySingleton<IMarketplaceRepository>(
+    () => MarketplaceRepositoryImpl(client: getIt<DioClient>()),
+  );
 
   // Wallet PIN / biometric helper (used by WalletNotifier to guard transfers)
   getIt.registerLazySingleton<IWalletAuthService>(

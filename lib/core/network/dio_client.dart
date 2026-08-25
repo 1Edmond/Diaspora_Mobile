@@ -95,11 +95,13 @@ class DioClient {
   Future<T> delete<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
+    dynamic data,
     Options? options,
   }) async {
     final r = await dio.delete(
       path,
       queryParameters: queryParameters,
+      data: data,
       options: options,
     );
     return r.data as T;
