@@ -22,4 +22,22 @@ class AvailabilitySlotModel {
     'StartTime': startTime,
     'EndTime': endTime,
   };
+
+  String getFormattedTime() {
+    if (startTime.length >= 5) return startTime.substring(0, 5);
+    return startTime;
+  }
+
+  String getEndFormattedTime() {
+    if (endTime.length >= 5) return endTime.substring(0, 5);
+    return endTime;
+  }
+
+  bool get isValid {
+    return day >= 0 &&
+        day <= 6 &&
+        startTime.isNotEmpty &&
+        endTime.isNotEmpty &&
+        startTime != endTime;
+  }
 }

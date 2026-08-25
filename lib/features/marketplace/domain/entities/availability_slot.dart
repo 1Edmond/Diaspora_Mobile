@@ -59,4 +59,8 @@ class AvailabilitySlot {
         endTime.isNotEmpty &&
         startTime != endTime;
   }
+
+  String getFormattedTimeForDisplay() {
+    return '${getFormattedTime(startTime)}-${getFormattedTime(endTime)}';
+  }
 }
