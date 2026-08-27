@@ -81,38 +81,4 @@ class ReviewModel {
     'ProviderReply': providerReply,
     'ProviderRepliedAt': providerRepliedAt?.toIso8601String(),
   };
-
-  String getFormattedDate(BuildContext context) {
-    final now = DateTime.now();
-    final diff = now.difference(createdAt);
-    if (diff.inDays == 0) return "Aujourd'hui";
-    if (diff.inDays == 1) return 'Hier';
-    if (diff.inDays < 7) return 'Il y a ${diff.inDays}j';
-    if (diff.inDays < 30) return 'Il y a ${(diff.inDays / 7).floor()} sem.';
-    return '${createdAt.day}/${createdAt.month}/${createdAt.year}';
-  }
-
-  String getReviewerDisplayName() {
-    return reviewerName.trim().isNotEmpty ? reviewerName : 'Utilisateur';
-  }
-
-  List<Widget> getRatingStars(BuildContext context, {double size = 16}) {
-    return List.generate(5, (index) {
-      return Icon(
-        index < rating ? Icons.star_rounded : Icons.star_border_rounded,
-        color: Colors.amber,
-        size: size,
-      );
-    });
-  }
-
-  bool get hasProviderReply => providerReply != null && providerReply!.isNotEmpty;
-
-  String? getFormattedReplyDate(BuildContext context) {
-    if (providerRepliedAt == null) return null;
-    final diff = DateTime.now().difference(providerRepliedAt!);
-    if (diff.inDays == 0) return "Aujourd'hui";
-    if (diff.inDays == 1) return 'Hier';
-    return '${providerRepliedAt!.day}/${providerRepliedAt!.month}/${providerRepliedAt!.year}';
-  }
 }

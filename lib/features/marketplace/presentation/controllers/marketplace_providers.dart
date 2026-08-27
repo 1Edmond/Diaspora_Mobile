@@ -10,6 +10,7 @@ import '../../data/models/service_request_model.dart';
 import '../../data/models/availability_slot_model.dart';
 import '../../domain/repositories/marketplace_repository.dart';
 import '../../domain/entities/enums.dart';
+import '../../domain/entities/listing.dart';
 
 final marketplaceRepositoryProvider = Provider((ref) {
   return GetIt.instance<IMarketplaceRepository>();
@@ -112,10 +113,11 @@ class MarketplaceState {
 
 class MarketplaceNotifier extends StateNotifier<MarketplaceState> {
   final IMarketplaceRepository _repository;
+  final Ref ref;
   int _currentPage = 1;
   static const _pageSize = 20;
 
-  MarketplaceNotifier({required IMarketplaceRepository repository})
+  MarketplaceNotifier({required IMarketplaceRepository repository, required this.ref})
       : _repository = repository,
         super(const MarketplaceState());
 
@@ -166,7 +168,7 @@ class MarketplaceNotifier extends StateNotifier<MarketplaceState> {
         );
       }
       _currentPage++;
-    } catch (e, st) {
+    } catch (e) {
       state = state.copyWith(
         isLoading: false,
         isLoadingMore: false,
@@ -229,10 +231,247 @@ class MarketplaceNotifier extends StateNotifier<MarketplaceState> {
     );
     fetch(refresh: true);
   }
+
+  void toggleFavorite(String listingId) {
+    final current = ref.read(favoriteIdsProvider);
+    final notifier = ref.read(favoriteIdsProvider.notifier);
+    if (current.contains(listingId)) {
+      notifier.state = {...current}..remove(listingId);
+    } else {
+      notifier.state = {...current}..add(listingId);
+    }
+  }
 }
 
 final marketplaceProvider = StateNotifierProvider<MarketplaceNotifier, MarketplaceState>((ref) {
-  return MarketplaceNotifier(repository: ref.watch(marketplaceRepositoryProvider));
+  return MarketplaceNotifier(repository: ref.watch(marketplaceRepositoryProvider), ref: ref);
+});
+
+// Services Provider (unified in marketplace)
+class ServicesState {
+  final List<ListingSummaryModel> items;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final bool hasNext;
+  final int totalCount;
+  final String? error;
+  final String searchQuery;
+  final ServiceCategory? selectedCategory;
+  final PriceType? selectedPriceType;
+  final ServiceScope? selectedScope;
+  final ListingSortBy sortBy;
+  final String? city;
+  final String? country;
+  final bool availableNow;
+  final double? userLat;
+  final double? userLng;
+  final double? maxDistanceKm;
+
+  const ServicesState({
+    this.items = const [],
+    this.isLoading = false,
+    this.isLoadingMore = false,
+    this.hasNext = true,
+    this.totalCount = 0,
+    this.error,
+    this.searchQuery = '',
+    this.selectedCategory,
+    this.selectedPriceType,
+    this.selectedScope,
+    this.sortBy = ListingSortBy.relevance,
+    this.city,
+    this.country,
+    this.availableNow = false,
+    this.userLat,
+    this.userLng,
+    this.maxDistanceKm,
+  });
+
+  ServicesState copyWith({
+    List<ListingSummaryModel>? items,
+    bool? isLoading,
+    bool? isLoadingMore,
+    bool? hasNext,
+    int? totalCount,
+    String? error,
+    String? searchQuery,
+    ServiceCategory? selectedCategory,
+    PriceType? selectedPriceType,
+    ServiceScope? selectedScope,
+    ListingSortBy? sortBy,
+    String? city,
+    String? country,
+    bool? availableNow,
+    double? userLat,
+    double? userLng,
+    double? maxDistanceKm,
+    bool clearSearchQuery = false,
+    bool clearCategory = false,
+    bool clearPriceType = false,
+    bool clearScope = false,
+    bool clearLocation = false,
+  }) {
+    return ServicesState(
+      items: items ?? this.items,
+      isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasNext: hasNext ?? this.hasNext,
+      totalCount: totalCount ?? this.totalCount,
+      error: error,
+      searchQuery: clearSearchQuery ? '' : (searchQuery ?? this.searchQuery),
+      selectedCategory: clearCategory ? null : (selectedCategory ?? this.selectedCategory),
+      selectedPriceType: clearPriceType ? null : (selectedPriceType ?? this.selectedPriceType),
+      selectedScope: clearScope ? null : (selectedScope ?? this.selectedScope),
+      sortBy: sortBy ?? this.sortBy,
+      city: clearLocation ? null : (city ?? this.city),
+      country: clearLocation ? null : (country ?? this.country),
+      availableNow: availableNow ?? this.availableNow,
+      userLat: userLat ?? this.userLat,
+      userLng: userLng ?? this.userLng,
+      maxDistanceKm: maxDistanceKm ?? this.maxDistanceKm,
+    );
+  }
+
+  bool get hasActiveFilters =>
+      searchQuery.isNotEmpty ||
+      selectedCategory != null ||
+      selectedPriceType != null ||
+      selectedScope != null ||
+      city != null ||
+      country != null ||
+      availableNow;
+}
+
+class ServicesNotifier extends StateNotifier<ServicesState> {
+  final IMarketplaceRepository _repository;
+  final Ref ref;
+  int _currentPage = 1;
+  static const _pageSize = 20;
+
+  ServicesNotifier({required IMarketplaceRepository repository, required this.ref})
+      : _repository = repository,
+        super(const ServicesState());
+
+  Future<void> fetch({bool refresh = false}) async {
+    if (refresh) {
+      _currentPage = 1;
+      state = state.copyWith(isLoading: true, error: null, items: [], hasNext: true);
+    } else if (state.isLoading || state.isLoadingMore || !state.hasNext) {
+      return;
+    } else {
+      state = state.copyWith(isLoadingMore: true, error: null);
+    }
+
+    try {
+      final result = await _repository.getServices(
+        page: _currentPage,
+        pageSize: _pageSize,
+        category: state.selectedCategory,
+        search: state.searchQuery.isEmpty ? null : state.searchQuery,
+        priceType: state.selectedPriceType,
+        scope: state.selectedScope,
+        city: state.city,
+        country: state.country,
+        sortBy: state.sortBy,
+        userLat: state.userLat,
+        userLng: state.userLng,
+        maxDistanceKm: state.maxDistanceKm,
+        availableNow: state.availableNow,
+      );
+
+      if (refresh || _currentPage == 1) {
+        state = state.copyWith(
+          items: result.items,
+          isLoading: false,
+          isLoadingMore: false,
+          hasNext: result.hasNext,
+          totalCount: result.totalCount,
+          error: null,
+        );
+      } else {
+        state = state.copyWith(
+          items: [...state.items, ...result.items],
+          isLoading: false,
+          isLoadingMore: false,
+          hasNext: result.hasNext,
+          totalCount: result.totalCount,
+          error: null,
+        );
+      }
+      _currentPage++;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        isLoadingMore: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  Future<void> loadNextPage() async {
+    if (state.isLoadingMore || !state.hasNext || state.isLoading) return;
+    await fetch();
+  }
+
+  void setSearchQuery(String query) {
+    state = state.copyWith(searchQuery: query, clearCategory: true);
+    fetch(refresh: true);
+  }
+
+  void setCategory(ServiceCategory? category) {
+    state = state.copyWith(selectedCategory: category);
+    fetch(refresh: true);
+  }
+
+  void setPriceType(PriceType? priceType) {
+    state = state.copyWith(selectedPriceType: priceType);
+    fetch(refresh: true);
+  }
+
+  void setScope(ServiceScope? scope) {
+    state = state.copyWith(selectedScope: scope);
+    fetch(refresh: true);
+  }
+
+  void setSortBy(ListingSortBy sortBy) {
+    state = state.copyWith(sortBy: sortBy);
+    fetch(refresh: true);
+  }
+
+  void setLocation(String? city, String? country) {
+    state = state.copyWith(city: city, country: country, clearLocation: city == null && country == null);
+    fetch(refresh: true);
+  }
+
+  void setUserLocation(double lat, double lng, {double? maxDistanceKm}) {
+    state = state.copyWith(userLat: lat, userLng: lng, maxDistanceKm: maxDistanceKm);
+    fetch(refresh: true);
+  }
+
+  void setAvailableNow(bool value) {
+    state = state.copyWith(availableNow: value);
+    fetch(refresh: true);
+  }
+
+  void clearFilters() {
+    state = state.copyWith(
+      clearSearchQuery: true,
+      clearCategory: true,
+      clearPriceType: true,
+      clearScope: true,
+      clearLocation: true,
+      availableNow: false,
+      sortBy: ListingSortBy.relevance,
+      userLat: null,
+      userLng: null,
+      maxDistanceKm: null,
+    );
+    fetch(refresh: true);
+  }
+}
+
+final servicesProvider = StateNotifierProvider<ServicesNotifier, ServicesState>((ref) {
+  return ServicesNotifier(repository: ref.watch(marketplaceRepositoryProvider), ref: ref);
 });
 
 class MyListingsState {
@@ -243,6 +482,7 @@ class MyListingsState {
   final int totalCount;
   final String? error;
   final int? statusFilter;
+  final bool? isStandardServiceFilter;
 
   const MyListingsState({
     this.items = const [],
@@ -252,6 +492,7 @@ class MyListingsState {
     this.totalCount = 0,
     this.error,
     this.statusFilter,
+    this.isStandardServiceFilter,
   });
 
   MyListingsState copyWith({
@@ -262,7 +503,9 @@ class MyListingsState {
     int? totalCount,
     String? error,
     int? statusFilter,
+    bool? isStandardServiceFilter,
     bool clearStatusFilter = false,
+    bool clearServiceFilter = false,
   }) {
     return MyListingsState(
       items: items ?? this.items,
@@ -272,6 +515,7 @@ class MyListingsState {
       totalCount: totalCount ?? this.totalCount,
       error: error,
       statusFilter: clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
+      isStandardServiceFilter: clearServiceFilter ? null : (isStandardServiceFilter ?? this.isStandardServiceFilter),
     );
   }
 }
@@ -300,6 +544,7 @@ class MyListingsNotifier extends StateNotifier<MyListingsState> {
         page: _currentPage,
         pageSize: _pageSize,
         status: state.statusFilter,
+        isStandardService: state.isStandardServiceFilter,
       );
 
       if (refresh || _currentPage == 1) {
@@ -322,7 +567,7 @@ class MyListingsNotifier extends StateNotifier<MyListingsState> {
         );
       }
       _currentPage++;
-    } catch (e, st) {
+    } catch (e) {
       state = state.copyWith(
         isLoading: false,
         isLoadingMore: false,
@@ -338,6 +583,11 @@ class MyListingsNotifier extends StateNotifier<MyListingsState> {
 
   void setStatusFilter(int? status) {
     state = state.copyWith(statusFilter: status, clearStatusFilter: status == null);
+    fetch(refresh: true);
+  }
+
+  void setServiceFilter(bool? isStandardService) {
+    state = state.copyWith(isStandardServiceFilter: isStandardService, clearServiceFilter: isStandardService == null);
     fetch(refresh: true);
   }
 

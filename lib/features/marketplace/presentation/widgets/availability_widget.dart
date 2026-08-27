@@ -13,61 +13,71 @@ class AvailabilityWidget extends StatelessWidget {
     required this.isAvailableNow,
   });
 
+  static const _dayNames = [
+    'Dimanche',
+    'Lundi',
+    'Mardi',
+    'Mercredi',
+    'Jeudi',
+    'Vendredi',
+    'Samedi',
+  ];
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final validSlots = slots.where((s) => s.isValid).toList();
+    final validSlots =
+        slots.where((s) => s.isValid).toList();
 
     if (validSlots.isEmpty) {
-      return _buildEmptyState(context);
+      return _buildEmptyState(isDark);
     }
 
     final byDay = <int, List<AvailabilitySlotModel>>{};
     for (final slot in validSlots) {
       byDay.putIfAbsent(slot.day, () => []).add(slot);
     }
-
-    final daysWithSlots = byDay.keys.toList()..sort();
+    final days = byDay.keys.toList()..sort();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStatusBadge(context),
+        _statusBadge(),
         const SizedBox(height: 12),
-        ...daysWithSlots.map((day) {
-          final daySlots = byDay[day]!..sort((a, b) => a.startTime.compareTo(b.startTime));
-          return _buildDayRow(context, day, daySlots);
-        }),
+        for (final day in days)
+          _dayRow(context, isDark, day, byDay[day]!),
       ],
     );
   }
 
-  Widget _buildStatusBadge(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _statusBadge() {
+    final color = isAvailableNow ? Colors.green : Colors.orange;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: isAvailableNow ? Colors.green.withValues(alpha: 0.15) : Colors.orange.withValues(alpha: 0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isAvailableNow ? Colors.green.withValues(alpha: 0.3) : Colors.orange.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isAvailableNow ? Icons.check_circle_rounded : Icons.schedule_rounded,
+            isAvailableNow
+                ? Icons.check_circle_rounded
+                : Icons.schedule_rounded,
             size: 18,
-            color: isAvailableNow ? Colors.green : Colors.orange,
+            color: color,
           ),
           const SizedBox(width: 8),
           Text(
-            isAvailableNow ? 'Disponible maintenant' : 'Actuellement indisponible',
+            isAvailableNow
+                ? 'Disponible maintenant'
+                : 'Actuellement indisponible',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: isAvailableNow ? Colors.green : Colors.orange,
+              color: color,
             ),
           ),
         ],
@@ -75,10 +85,13 @@ class AvailabilityWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildDayRow(BuildContext context, int day, List<AvailabilitySlotModel> daySlots) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dayName = _getDayName(day);
-    final daySlotsSorted = List<AvailabilitySlotModel>.from(daySlots)
+  Widget _dayRow(
+    BuildContext context,
+    bool isDark,
+    int day,
+    List<AvailabilitySlotModel> daySlots,
+  ) {
+    final sortedSlots = List<AvailabilitySlotModel>.from(daySlots)
       ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     return Container(
@@ -90,11 +103,12 @@ class AvailabilityWidget extends StatelessWidget {
         border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 50,
+          SizedBox(
+            width: 70,
             child: Text(
-              dayName,
+              day >= 0 && day <= 6 ? _dayNames[day] : 'Jour $day',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -107,15 +121,17 @@ class AvailabilityWidget extends StatelessWidget {
             child: Wrap(
               spacing: 8,
               runSpacing: 6,
-              children: daySlotsSorted.map((slot) => _buildTimeChip(context, slot)).toList(),
+              children:
+                  sortedSlots.map((s) => _timeChip(s)).toList(),
             ),
           ),
         ],
-      ).animate().fadeIn(duration: 300.ms).slideX(begin: 0.1, end: 0);
-    }
+      ),
+    ).animate().fadeIn(duration: 300.ms).slideX(begin: 0.1, end: 0);
+  }
 
-  Widget _buildTimeChip(BuildContext context, AvailabilitySlotModel slot) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _timeChip(AvailabilitySlotModel slot) {
+    String short(String t) => t.length >= 5 ? t.substring(0, 5) : t;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -124,24 +140,17 @@ class AvailabilityWidget extends StatelessWidget {
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Text(
-        '${slot.startTime.length >= 5 ? slot.startTime.substring(0, 5) : slot.startTime} - ${slot.endTime.length >= 5 ? slot.endTime.substring(0, 5) : slot.endTime}',
+        '${short(slot.startTime)} - ${short(slot.endTime)}',
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: AppColors.primary,
         ),
       ),
-    ).animate().fadeIn(duration: 300.ms).scale(duration: 200.ms, curve: Curves.easeOutBack);
+    );
   }
 
-  String _getDayName(int day) {
-    const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    if (day >= 0 && day < days.length) return days[day];
-    return 'Jour $day';
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildEmptyState(bool isDark) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -157,7 +166,8 @@ class AvailabilityWidget extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.schedule_rounded, color: AppColors.primary, size: 28),
+            child: Icon(Icons.schedule_rounded,
+                color: AppColors.primary, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -174,14 +184,14 @@ class AvailabilityWidget extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Le prestataire n\'a pas encore défini ses créneaux horaires.',
+                  "Le prestataire n'a pas encore défini ses créneaux horaires.",
                   style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
               ],
             ),
           ),
         ],
-      ).animate().fadeIn().slideX(begin: 0.1, end: 0),
-    );
+      ),
+    ).animate().fadeIn().slideX(begin: 0.1, end: 0);
   }
 }

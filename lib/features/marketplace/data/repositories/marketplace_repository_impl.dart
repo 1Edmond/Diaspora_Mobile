@@ -11,6 +11,7 @@ import '../../data/models/marketplace_dtos.dart';
 import '../../data/models/availability_slot_model.dart';
 import '../../domain/repositories/marketplace_repository.dart';
 import '../../domain/entities/enums.dart';
+import '../../domain/entities/listing.dart';
 import '../../../../core/network/dio_client.dart';
 
 class MarketplaceRepositoryImpl implements IMarketplaceRepository {
@@ -34,6 +35,8 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     double? userLng,
     double? maxDistanceKm,
     bool availableNow = false,
+    bool? isStandardService,
+    ServiceCategory? serviceCategory,
   }) async {
     final queryParams = <String, dynamic>{
       'page': page,
@@ -51,11 +54,53 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     if (userLng != null) queryParams['userLongitude'] = userLng;
     if (maxDistanceKm != null) queryParams['maxDistanceKm'] = maxDistanceKm;
     if (availableNow) queryParams['availableNow'] = true;
+    if (isStandardService != null) queryParams['isStandardService'] = isStandardService;
+    if (serviceCategory != null) queryParams['serviceCategory'] = serviceCategory.name;
 
     final res = await _client.get('/listings', queryParameters: queryParams);
     return PagedResult.fromJson(
       res.data as Map<String, dynamic>,
-      (json) => ListingSummaryModel.fromJson(json as Map<String, dynamic>),
+      (json) => ListingSummaryModel.fromJson(json),
+    );
+  }
+
+  @override
+  Future<PagedResult<ListingSummaryModel>> getServices({
+    int page = 1,
+    int pageSize = 20,
+    ServiceCategory? category,
+    String? search,
+    PriceType? priceType,
+    ServiceScope? scope,
+    String? city,
+    String? country,
+    ListingSortBy sortBy = ListingSortBy.relevance,
+    double? userLat,
+    double? userLng,
+    double? maxDistanceKm,
+    bool availableNow = false,
+  }) async {
+    final queryParams = <String, dynamic>{
+      'page': page,
+      'pageSize': pageSize,
+      'isStandardService': true,
+    };
+    if (category != null) queryParams['serviceCategory'] = category.name;
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (priceType != null) queryParams['priceType'] = priceType.name;
+    if (scope != null) queryParams['serviceScope'] = scope.name;
+    if (city != null && city.isNotEmpty) queryParams['city'] = city;
+    if (country != null && country.isNotEmpty) queryParams['country'] = country;
+    queryParams['sortBy'] = sortBy.index;
+    if (userLat != null) queryParams['userLatitude'] = userLat;
+    if (userLng != null) queryParams['userLongitude'] = userLng;
+    if (maxDistanceKm != null) queryParams['maxDistanceKm'] = maxDistanceKm;
+    if (availableNow) queryParams['availableNow'] = true;
+
+    final res = await _client.get('/listings', queryParameters: queryParams);
+    return PagedResult.fromJson(
+      res.data as Map<String, dynamic>,
+      (json) => ListingSummaryModel.fromJson(json),
     );
   }
 
@@ -70,17 +115,19 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     int page = 1,
     int pageSize = 20,
     int? status,
+    bool? isStandardService,
   }) async {
     final queryParams = <String, dynamic>{
       'page': page,
       'pageSize': pageSize,
     };
     if (status != null) queryParams['status'] = status;
+    if (isStandardService != null) queryParams['isStandardService'] = isStandardService;
 
     final res = await _client.get('/listings/my', queryParameters: queryParams);
     return PagedResult.fromJson(
       res.data as Map<String, dynamic>,
-      (json) => ListingSummaryModel.fromJson(json as Map<String, dynamic>),
+      (json) => ListingSummaryModel.fromJson(json),
     );
   }
 
@@ -96,7 +143,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     final res = await _client.get('/listings/pending', queryParameters: queryParams);
     return PagedResult.fromJson(
       res.data as Map<String, dynamic>,
-      (json) => ListingSummaryModel.fromJson(json as Map<String, dynamic>),
+      (json) => ListingSummaryModel.fromJson(json),
     );
   }
 
@@ -166,7 +213,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     );
     return PagedResult.fromJson(
       res.data as Map<String, dynamic>,
-      (json) => ReviewModel.fromJson(json as Map<String, dynamic>),
+      (json) => ReviewModel.fromJson(json),
     );
   }
 
@@ -217,7 +264,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     final res = await _client.get('/favorites/my', queryParameters: queryParams);
     return PagedResult.fromJson(
       res.data as Map<String, dynamic>,
-      (json) => ListingSummaryModel.fromJson(json as Map<String, dynamic>),
+      (json) => ListingSummaryModel.fromJson(json),
     );
   }
 
@@ -239,7 +286,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     final res = await _client.get('/service-requests/my', queryParameters: queryParams);
     return PagedResult.fromJson(
       res.data as Map<String, dynamic>,
-      (json) => ServiceRequestModel.fromJson(json as Map<String, dynamic>),
+      (json) => ServiceRequestModel.fromJson(json),
     );
   }
 
@@ -255,7 +302,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     final res = await _client.get('/service-requests/received', queryParameters: queryParams);
     return PagedResult.fromJson(
       res.data as Map<String, dynamic>,
-      (json) => ServiceRequestModel.fromJson(json as Map<String, dynamic>),
+      (json) => ServiceRequestModel.fromJson(json),
     );
   }
 
@@ -320,7 +367,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     final res = await _client.get('/reports/pending', queryParameters: queryParams);
     return PagedResult.fromJson(
       res.data as Map<String, dynamic>,
-      (json) => ReportModel.fromJson(json as Map<String, dynamic>),
+      (json) => ReportModel.fromJson(json),
     );
   }
 

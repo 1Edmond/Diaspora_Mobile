@@ -618,6 +618,827 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
+      // ==================== MARKETPLACE ROUTES ====================
+
+      // GET /listings/:id (detail) - must come before /listings collection
+      if (method == 'GET' && _matches(path, r'^/listings/[^/]+$')) {
+        final id = path.split('/').last;
+        final data = await MockApi.getListing(id);
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // GET /listings (search with filters) - exact match
+      if (method == 'GET' && _matches(path, r'^/listings(?:\\/?)?$')) {
+        final data = await MockApi.searchListings(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+          categoryId: options.queryParameters['categoryId'] as String?,
+          search: options.queryParameters['search'] as String?,
+          paymentMode: options.queryParameters['paymentMode'] as int?,
+          minPrice: options.queryParameters['minPrice'] as double?,
+          maxPrice: options.queryParameters['maxPrice'] as double?,
+          city: options.queryParameters['city'] as String?,
+          country: options.queryParameters['country'] as String?,
+          sortBy: options.queryParameters['sortBy'] as int?,
+          userLat: options.queryParameters['userLatitude'] as double?,
+          userLng: options.queryParameters['userLongitude'] as double?,
+          maxDistanceKm: options.queryParameters['maxDistanceKm'] as double?,
+          availableNow: options.queryParameters['availableNow'] == 'true',
+          isStandardService: options.queryParameters['isStandardService'] == 'true',
+          serviceCategory: options.queryParameters['serviceCategory'] as String?,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /listings (create)
+      if (method == 'POST' && _matches(path, r'^/listings(?:\\/?)?$')) {
+        final data = await MockApi.createListing(
+          options.data as Map<String, dynamic>? ?? {},
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 201),
+        );
+      }
+
+      // PUT /listings/:id (update)
+      if (method == 'PUT' && _matches(path, r'^/listings/[^/]+$')) {
+        final id = path.split('/').last;
+        final data = await MockApi.updateListing(
+          id,
+          options.data as Map<String, dynamic>? ?? {},
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // DELETE /listings/:id
+      if (method == 'DELETE' && _matches(path, r'^/listings/[^/]+$')) {
+        await MockApi.deleteListing(path.split('/').last);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 204),
+        );
+      }
+
+      // POST /listings/:id/approve
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/approve')) {
+        await MockApi.approveListing(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /listings/:id/reject
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/reject')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.rejectListing(id, body['reason'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /listings/:id/suspend
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/suspend')) {
+        await MockApi.suspendListing(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /listings/:id/images
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/images')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.addListingImage(id, body['imagePath'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // DELETE /listings/:id/images
+      if (method == 'DELETE' && _matches(path, r'^/listings/[^/]+/images')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.removeListingImage(id, body['imagePath'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // PUT /listings/:id/availability
+      if (method == 'PUT' && _matches(path, r'^/listings/[^/]+/availability')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.setAvailability(
+          id,
+          (body['slots'] as List? ?? []).cast<Map<String, dynamic>>(),
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // GET /listings/:id/reviews
+      if (method == 'GET' && _matches(path, r'^/listings/[^/]+/reviews')) {
+        final listingId = path.split('/')[2];
+        final data = await MockApi.getListingReviews(
+          listingId: listingId,
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /listings/:id/reviews
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/reviews(?:\\/?)?$')) {
+        final listingId = path.split('/')[2];
+        final data = await MockApi.createReview(
+          listingId,
+          options.data as Map<String, dynamic>? ?? {},
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 201),
+        );
+      }
+
+      // PUT /listings/:id/reviews/:reviewId
+      if (method == 'PUT' && _matches(path, r'^/listings/[^/]+/reviews/[^/]+$')) {
+        final parts = path.split('/');
+        final listingId = parts[2];
+        final reviewId = parts[4];
+        final data = await MockApi.updateReview(
+          listingId,
+          reviewId,
+          options.data as Map<String, dynamic>? ?? {},
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // DELETE /listings/:id/reviews/:reviewId
+      if (method == 'DELETE' && _matches(path, r'^/listings/[^/]+/reviews/[^/]+$')) {
+        final parts = path.split('/');
+        final listingId = parts[2];
+        final reviewId = parts[4];
+        await MockApi.deleteReview(listingId, reviewId);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 204),
+        );
+      }
+
+      // POST /listings/:id/reviews/:reviewId/reply
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/reviews/[^/]+/reply')) {
+        final parts = path.split('/');
+        final listingId = parts[2];
+        final reviewId = parts[4];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.replyToReview(
+          listingId,
+          reviewId,
+          body['replyText'] as String? ?? '',
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /listings/:id/favorite
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/favorite')) {
+        await MockApi.addFavorite(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // DELETE /listings/:id/favorite
+      if (method == 'DELETE' && _matches(path, r'^/listings/[^/]+/favorite')) {
+        await MockApi.removeFavorite(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // GET /favorites/my
+      if (method == 'GET' && _matches(path, r'^/favorites/my')) {
+        final data = await MockApi.getMyFavorites(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests
+      if (method == 'POST' && _matches(path, r'^/service-requests(?:\\/?)?$')) {
+        final data = await MockApi.createServiceRequest(
+          options.data as Map<String, dynamic>? ?? {},
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 201),
+        );
+      }
+
+      // GET /service-requests/my (sent)
+      if (method == 'GET' && _matches(path, r'^/service-requests/my(?:\\/?)?$')) {
+        final data = await MockApi.getMySentRequests(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // GET /service-requests/received
+      if (method == 'GET' && _matches(path, r'^/service-requests/received(?:\\/?)?$')) {
+        final data = await MockApi.getMyReceivedRequests(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // GET /service-requests/:id
+      if (method == 'GET' && _matches(path, r'^/service-requests/[^/]+$')) {
+        final id = path.split('/').last;
+        final data = await MockApi.getServiceRequest(id);
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/accept
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/accept')) {
+        await MockApi.acceptServiceRequest(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/decline
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/decline')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.declineServiceRequest(id, body['reason'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/complete
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/complete')) {
+        await MockApi.completeServiceRequest(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/cancel
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/cancel')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.cancelServiceRequest(id, body['reason'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/chat-thread
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/chat-thread')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.linkChatThread(id, body['chatThreadId'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // GET /listings/my
+      if (method == 'GET' && _matches(path, r'^/listings/my(?:\\/?)?$')) {
+        final data = await MockApi.getMyListings(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+          status: options.queryParameters['status'] as int?,
+          isStandardService: options.queryParameters['isStandardService'] == 'true',
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // GET /listings/pending
+      if (method == 'GET' && _matches(path, r'^/listings/pending(?:\\/?)?$')) {
+        final data = await MockApi.getPendingListings(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /listings/:id/images
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/images(?:\\/?)?$')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.addListingImage(id, body['imagePath'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // DELETE /listings/:id/images
+      if (method == 'DELETE' && _matches(path, r'^/listings/[^/]+/images(?:\\/?)?$')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.removeListingImage(id, body['imagePath'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // PUT /listings/:id/availability
+      if (method == 'PUT' && _matches(path, r'^/listings/[^/]+/availability(?:\\/?)?$')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.setAvailability(
+          id,
+          (body['slots'] as List? ?? []).cast<Map<String, dynamic>>(),
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // GET /listings/:id/reviews
+      if (method == 'GET' && _matches(path, r'^/listings/[^/]+/reviews(?:\\/?)?$')) {
+        final listingId = path.split('/')[2];
+        final data = await MockApi.getListingReviews(
+          listingId: listingId,
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /listings/:id/reviews
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/reviews(?:\\/?)?$')) {
+        final listingId = path.split('/')[2];
+        final data = await MockApi.createReview(
+          listingId,
+          options.data as Map<String, dynamic>? ?? {},
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 201),
+        );
+      }
+
+      // PUT /listings/:id/reviews/:reviewId
+      if (method == 'PUT' && _matches(path, r'^/listings/[^/]+/reviews/[^/]+$')) {
+        final parts = path.split('/');
+        final listingId = parts[2];
+        final reviewId = parts[4];
+        final data = await MockApi.updateReview(
+          listingId,
+          reviewId,
+          options.data as Map<String, dynamic>? ?? {},
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // DELETE /listings/:id/reviews/:reviewId
+      if (method == 'DELETE' && _matches(path, r'^/listings/[^/]+/reviews/[^/]+$')) {
+        final parts = path.split('/');
+        final listingId = parts[2];
+        final reviewId = parts[4];
+        await MockApi.deleteReview(listingId, reviewId);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 204),
+        );
+      }
+
+      // POST /listings/:id/reviews/:reviewId/reply
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/reviews/[^/]+/reply')) {
+        final parts = path.split('/');
+        final listingId = parts[2];
+        final reviewId = parts[4];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.replyToReview(
+          listingId,
+          reviewId,
+          body['replyText'] as String? ?? '',
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /listings/:id/favorite
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/favorite(?:\\/?)?$')) {
+        await MockApi.addFavorite(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // DELETE /listings/:id/favorite
+      if (method == 'DELETE' && _matches(path, r'^/listings/[^/]+/favorite(?:\\/?)?$')) {
+        await MockApi.removeFavorite(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // GET /favorites/my
+      if (method == 'GET' && _matches(path, r'^/favorites/my(?:\\/?)?$')) {
+        final data = await MockApi.getMyFavorites(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests
+      if (method == 'POST' && _matches(path, r'^/service-requests(?:\\/?)?$')) {
+        final data = await MockApi.createServiceRequest(
+          options.data as Map<String, dynamic>? ?? {},
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 201),
+        );
+      }
+
+      // GET /service-requests/my
+      if (method == 'GET' && _matches(path, r'^/service-requests/my(?:\\/?)?$')) {
+        final data = await MockApi.getMySentRequests(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // GET /service-requests/received
+      if (method == 'GET' && _matches(path, r'^/service-requests/received(?:\\/?)?$')) {
+        final data = await MockApi.getMyReceivedRequests(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // GET /service-requests/:id
+      if (method == 'GET' && _matches(path, r'^/service-requests/[^/]+$')) {
+        final id = path.split('/').last;
+        final data = await MockApi.getServiceRequest(id);
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/accept
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/accept')) {
+        await MockApi.acceptServiceRequest(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/decline
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/decline')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.declineServiceRequest(id, body['reason'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/complete
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/complete')) {
+        await MockApi.completeServiceRequest(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/cancel
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/cancel')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.cancelServiceRequest(id, body['reason'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/chat-thread
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/chat-thread')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.linkChatThread(id, body['chatThreadId'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // GET /listings/my
+      if (method == 'GET' && _matches(path, r'^/listings/my(?:\\/?)?$')) {
+        final data = await MockApi.getMyListings(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+          status: options.queryParameters['status'] as int?,
+          isStandardService: options.queryParameters['isStandardService'] == 'true',
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // GET /listings/pending
+      if (method == 'GET' && _matches(path, r'^/listings/pending(?:\\/?)?$')) {
+        final data = await MockApi.getPendingListings(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /listings/:id/approve
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/approve')) {
+        await MockApi.approveListing(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /listings/:id/reject
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/reject')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.rejectListing(id, body['reason'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /listings/:id/suspend
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/suspend')) {
+        await MockApi.suspendListing(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // GET /listings/:id/reviews
+      if (method == 'GET' && _matches(path, r'^/listings/[^/]+/reviews(?:\\/?)?$')) {
+        final listingId = path.split('/')[2];
+        final data = await MockApi.getListingReviews(
+          listingId: listingId,
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /listings/:id/reviews
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/reviews(?:\\/?)?$')) {
+        final listingId = path.split('/')[2];
+        final data = await MockApi.createReview(
+          listingId,
+          options.data as Map<String, dynamic>? ?? {},
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 201),
+        );
+      }
+
+      // PUT /listings/:id/reviews/:reviewId
+      if (method == 'PUT' && _matches(path, r'^/listings/[^/]+/reviews/[^/]+$')) {
+        final parts = path.split('/');
+        final listingId = parts[2];
+        final reviewId = parts[4];
+        final data = await MockApi.updateReview(
+          listingId,
+          reviewId,
+          options.data as Map<String, dynamic>? ?? {},
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // DELETE /listings/:id/reviews/:reviewId
+      if (method == 'DELETE' && _matches(path, r'^/listings/[^/]+/reviews/[^/]+$')) {
+        final parts = path.split('/');
+        final listingId = parts[2];
+        final reviewId = parts[4];
+        await MockApi.deleteReview(listingId, reviewId);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 204),
+        );
+      }
+
+      // POST /listings/:id/reviews/:reviewId/reply
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/reviews/[^/]+/reply')) {
+        final parts = path.split('/');
+        final listingId = parts[2];
+        final reviewId = parts[4];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.replyToReview(
+          listingId,
+          reviewId,
+          body['replyText'] as String? ?? '',
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /listings/:id/favorite
+      if (method == 'POST' && _matches(path, r'^/listings/[^/]+/favorite(?:\\/?)?$')) {
+        await MockApi.addFavorite(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // DELETE /listings/:id/favorite
+      if (method == 'DELETE' && _matches(path, r'^/listings/[^/]+/favorite(?:\\/?)?$')) {
+        await MockApi.removeFavorite(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // GET /favorites/my
+      if (method == 'GET' && _matches(path, r'^/favorites/my(?:\\/?)?$')) {
+        final data = await MockApi.getMyFavorites(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests
+      if (method == 'POST' && _matches(path, r'^/service-requests(?:\\/?)?$')) {
+        final data = await MockApi.createServiceRequest(
+          options.data as Map<String, dynamic>? ?? {},
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 201),
+        );
+      }
+
+      // GET /service-requests/my
+      if (method == 'GET' && _matches(path, r'^/service-requests/my(?:\\/?)?$')) {
+        final data = await MockApi.getMySentRequests(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // GET /service-requests/received
+      if (method == 'GET' && _matches(path, r'^/service-requests/received(?:\\/?)?$')) {
+        final data = await MockApi.getMyReceivedRequests(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // GET /service-requests/:id
+      if (method == 'GET' && _matches(path, r'^/service-requests/[^/]+$')) {
+        final id = path.split('/').last;
+        final data = await MockApi.getServiceRequest(id);
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/accept
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/accept')) {
+        await MockApi.acceptServiceRequest(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/decline
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/decline')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.declineServiceRequest(id, body['reason'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/complete
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/complete')) {
+        await MockApi.completeServiceRequest(path.split('/')[2]);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/cancel
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/cancel')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.cancelServiceRequest(id, body['reason'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // POST /service-requests/:id/chat-thread
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/chat-thread')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.linkChatThread(id, body['chatThreadId'] as String? ?? '');
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
+      // GET /listings/stats/my
+      if (method == 'GET' && _matches(path, r'^/listings/stats/my')) {
+        final data = await MockApi.getMyProviderStats();
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /reports
+      if (method == 'POST' && _matches(path, r'^/reports(?:\\/?)?$')) {
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.createReport(
+          targetType: body['targetType'] as int? ?? 0,
+          targetId: body['targetId'] as String? ?? '',
+          reason: body['reason'] as String? ?? '',
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 201),
+        );
+      }
+
+      // GET /reports/pending
+      if (method == 'GET' && _matches(path, r'^/reports/pending(?:\\/?)?$')) {
+        final data = await MockApi.getPendingReports(
+          page: options.queryParameters['page'] as int? ?? 1,
+          pageSize: options.queryParameters['pageSize'] as int? ?? 20,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // POST /reports/:id/resolve
+      if (method == 'POST' && _matches(path, r'^/reports/[^/]+/resolve')) {
+        final id = path.split('/')[2];
+        final body = options.data as Map<String, dynamic>? ?? {};
+        await MockApi.resolveReport(
+          id,
+          body['status'] as int? ?? 0,
+          body['notes'] as String?,
+        );
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 200),
+        );
+      }
+
       // If no mock matched, continue to real network (or fail if baseUrl is empty)
       return handler.next(options);
     } catch (e, st) {

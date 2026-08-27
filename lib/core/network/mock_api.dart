@@ -1877,4 +1877,591 @@ class MockApi {
       },
     ];
   }
+
+  // ==================== MARKETPLACE MOCK ENDPOINTS ====================
+
+  // Helper to convert Listing to Map for API responses
+  static Map<String, dynamic> _listingToMap(Listing l) {
+    return {
+      'Id': l.id,
+      'ProviderId': l.providerId,
+      'ProviderName': l.providerName,
+      'CategoryId': l.categoryId,
+      'CategoryName': l.categoryName,
+      'Title': l.title,
+      'Description': l.description,
+      'ContactInfo': l.contactInfo,
+      'PaymentMode': l.paymentMode,
+      'Price': l.price,
+      'Currency': l.currency,
+      'Status': l.status,
+      'IsActive': l.isActive,
+      'ImageUrls': l.imageUrls,
+      'AverageRating': l.averageRating,
+      'ReviewCount': l.reviewCount,
+      'ViewCount': l.viewCount,
+      'CreatedAt': l.createdAt.toIso8601String(),
+      'City': l.city,
+      'Country': l.country,
+      'Latitude': l.latitude,
+      'Longitude': l.longitude,
+      'AvailabilitySlots': l.availabilitySlots.map((e) => {
+        'Day': e.day,
+        'StartTime': e.startTime,
+        'EndTime': e.endTime,
+        'IsValid': e.isValid,
+      }).toList(),
+      'IsAvailableNow': l.isAvailableNow,
+      'DistanceKm': l.distanceKm,
+      'ServiceCategory': l.serviceCategory?.name,
+      'PriceType': l.priceType?.name,
+      'ServiceScope': l.serviceScope?.name,
+      'AllowedDepartments': l.allowedDepartments,
+      'IsStandardService': l.isStandardService,
+    };
+  }
+
+  static List<Map<String, dynamic>> _getFilteredListings({
+    String? categoryId,
+    String? search,
+    int? paymentMode,
+    double? minPrice,
+    double? maxPrice,
+    String? city,
+    String? country,
+    bool? isStandardService,
+    String? serviceCategory,
+    int? status,
+    String? providerId,
+  }) {
+    var results = mockListings.where((l) {
+      if (categoryId != null && categoryId.isNotEmpty && l.categoryId != categoryId) {
+        return false;
+      }
+      if (search != null && search.isNotEmpty) {
+        final q = search.toLowerCase();
+        if (!l.title.toLowerCase().contains(q) &&
+            !l.description.toLowerCase().contains(q)) {
+          return false;
+        }
+      }
+      if (paymentMode != null && l.paymentMode != paymentMode) {
+        return false;
+      }
+      if (minPrice != null && (l.price ?? 0) < minPrice) {
+        return false;
+      }
+      if (maxPrice != null && (l.price ?? double.infinity) > maxPrice) {
+        return false;
+      }
+      if (city != null && city.isNotEmpty && l.city != city) {
+        return false;
+      }
+      if (country != null && country.isNotEmpty && l.country != country) {
+        return false;
+      }
+      if (isStandardService != null && l.isStandardService != isStandardService) {
+        return false;
+      }
+      if (serviceCategory != null &&
+          l.serviceCategory?.name != serviceCategory) {
+        return false;
+      }
+      if (status != null && l.status != status) {
+        return false;
+      }
+      if (providerId != null && l.providerId != providerId) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    // Sort by relevance (could be improved with actual sortBy)
+    results.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return results.map(_listingToMap).toList();
+  }
+
+  // GET /listings - Search listings with filters
+  static Future<Map<String, dynamic>> searchListings({
+    int page = 1,
+    int pageSize = 20,
+    String? categoryId,
+    String? search,
+    int? paymentMode,
+    double? minPrice,
+    double? maxPrice,
+    String? city,
+    String? country,
+    int? sortBy, // ListingSortBy index
+    double? userLat,
+    double? userLng,
+    double? maxDistanceKm,
+    bool availableNow = false,
+    bool? isStandardService,
+    String? serviceCategory,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    final items = _getFilteredListings(
+      categoryId: categoryId,
+      search: search,
+      paymentMode: paymentMode,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      city: city,
+      country: country,
+      isStandardService: isStandardService,
+      serviceCategory: serviceCategory,
+    );
+
+    final totalCount = items.length;
+    final totalPages = (totalCount / pageSize).ceil();
+    final start = (page - 1) * pageSize;
+    final end = start + pageSize;
+    final paginatedItems = start < items.length
+        ? items.sublist(start, end > items.length ? items.length : end)
+        : <Map<String, dynamic>>[];
+
+    return {
+      'items': paginatedItems,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': totalCount,
+      'totalPages': totalPages,
+      'hasPrevious': page > 1,
+      'hasNext': page < totalPages,
+    };
+  }
+
+  // GET /listings/:id - Get listing detail
+  static Future<Map<String, dynamic>> getListing(String id) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final listing = mockListings.firstWhere(
+      (l) => l.id == id,
+      orElse: () => throw Exception('Listing not found'),
+    );
+    return _listingToMap(listing);
+  }
+
+  // GET /listings/my - Get my listings
+  static Future<Map<String, dynamic>> getMyListings({
+    int page = 1,
+    int pageSize = 20,
+    int? status,
+    bool? isStandardService,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 350));
+    final items = _getFilteredListings(
+      providerId: 'u_current',
+      status: status,
+      isStandardService: isStandardService,
+    );
+
+    final totalCount = items.length;
+    final totalPages = (totalCount / pageSize).ceil();
+    final start = (page - 1) * pageSize;
+    final end = start + pageSize;
+    final paginatedItems = start < items.length
+        ? items.sublist(start, end > items.length ? items.length : end)
+        : <Map<String, dynamic>>[];
+
+    return {
+      'items': paginatedItems,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': totalCount,
+      'totalPages': totalPages,
+      'hasPrevious': page > 1,
+      'hasNext': page < totalPages,
+    };
+  }
+
+  // GET /listings/pending - Get pending listings (admin)
+  static Future<Map<String, dynamic>> getPendingListings({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 350));
+    final items = _getFilteredListings(status: 0); // 0 = pending
+
+    final totalCount = items.length;
+    final totalPages = (totalCount / pageSize).ceil();
+    final start = (page - 1) * pageSize;
+    final end = start + pageSize;
+    final paginatedItems = start < items.length
+        ? items.sublist(start, end > items.length ? items.length : end)
+        : <Map<String, dynamic>>[];
+
+    return {
+      'items': paginatedItems,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': totalCount,
+      'totalPages': totalPages,
+      'hasPrevious': page > 1,
+      'hasNext': page < totalPages,
+    };
+  }
+
+  // POST /listings - Create listing
+  static Future<Map<String, dynamic>> createListing(Map<String, dynamic> data) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    final now = DateTime.now().toIso8601String();
+    final id = 'lst_${DateTime.now().millisecondsSinceEpoch}';
+    return {
+      'Id': id,
+      'ProviderId': 'u_current',
+      'ProviderName': 'Utilisateur Test',
+      'CategoryId': data['CategoryId'] ?? 'general',
+      'CategoryName': data['CategoryName'] ?? 'General',
+      'Title': data['Title'] ?? '',
+      'Description': data['Description'] ?? '',
+      'ContactInfo': data['ContactInfo'],
+      'PaymentMode': data['PaymentMode'] ?? 0,
+      'Price': data['Price'],
+      'Currency': data['Currency'] ?? 'XOF',
+      'Status': 0, // Pending
+      'IsActive': false,
+      'ImageUrls': data['ImagePaths'] ?? [],
+      'AverageRating': 0.0,
+      'ReviewCount': 0,
+      'ViewCount': 0,
+      'CreatedAt': now,
+      'City': data['City'],
+      'Country': data['Country'],
+      'Latitude': data['Latitude'],
+      'Longitude': data['Longitude'],
+      'AvailabilitySlots': data['AvailabilitySlots'] ?? [],
+      'IsAvailableNow': false,
+      'ServiceCategory': data['ServiceCategory'],
+      'PriceType': data['PriceType'],
+      'ServiceScope': data['ServiceScope'],
+      'AllowedDepartments': data['AllowedDepartments'],
+      'IsStandardService': data['IsStandardService'] ?? false,
+    };
+  }
+
+  // PUT /listings/:id - Update listing
+  static Future<Map<String, dynamic>> updateListing(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    final existing = mockListings.firstWhere((l) => l.id == id);
+    return {
+      'Id': id,
+      'ProviderId': existing.providerId,
+      'ProviderName': existing.providerName,
+      'CategoryId': data['CategoryId'] ?? existing.categoryId,
+      'CategoryName': data['CategoryName'] ?? existing.categoryName,
+      'Title': data['Title'] ?? existing.title,
+      'Description': data['Description'] ?? existing.description,
+      'ContactInfo': data['ContactInfo'] ?? existing.contactInfo,
+      'PaymentMode': data['PaymentMode'] ?? existing.paymentMode,
+      'Price': data['Price'] ?? existing.price,
+      'Currency': data['Currency'] ?? existing.currency,
+      'Status': data['Status'] ?? existing.status,
+      'IsActive': data['IsActive'] ?? existing.isActive,
+      'ImageUrls': data['ImagePaths'] ?? existing.imageUrls,
+      'AverageRating': existing.averageRating,
+      'ReviewCount': existing.reviewCount,
+      'ViewCount': existing.viewCount,
+      'CreatedAt': existing.createdAt.toIso8601String(),
+      'City': data['City'] ?? existing.city,
+      'Country': data['Country'] ?? existing.country,
+      'Latitude': data['Latitude'] ?? existing.latitude,
+      'Longitude': data['Longitude'] ?? existing.longitude,
+      'AvailabilitySlots': data['AvailabilitySlots'] ?? existing.availabilitySlots.map((e) => {
+        'Day': e.day,
+        'StartTime': e.startTime,
+        'EndTime': e.endTime,
+        'IsValid': e.isValid,
+      }).toList(),
+      'IsAvailableNow': existing.isAvailableNow,
+      'ServiceCategory': data['ServiceCategory'] ?? existing.serviceCategory?.name,
+      'PriceType': data['PriceType'] ?? existing.priceType?.name,
+      'ServiceScope': data['ServiceScope'] ?? existing.serviceScope?.name,
+      'AllowedDepartments': data['AllowedDepartments'] ?? existing.allowedDepartments,
+      'IsStandardService': data['IsStandardService'] ?? existing.isStandardService,
+    };
+  }
+
+  // DELETE /listings/:id
+  static Future<void> deleteListing(String id) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    // In mock, we don't actually remove from the list
+  }
+
+  // POST /listings/:id/approve
+  static Future<void> approveListing(String id) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  // POST /listings/:id/reject
+  static Future<void> rejectListing(String id, String reason) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  // POST /listings/:id/suspend
+  static Future<void> suspendListing(String id) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  // POST /listings/:id/images
+  static Future<void> addListingImage(String id, String imagePath) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+  }
+
+  // DELETE /listings/:id/images
+  static Future<void> removeListingImage(String id, String imagePath) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+  }
+
+  // PUT /listings/:id/availability
+  static Future<void> setAvailability(
+    String id,
+    List<Map<String, dynamic>> slots,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+  }
+
+  // GET /listings/:id/reviews
+  static Future<Map<String, dynamic>> getListingReviews({
+    required String listingId,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final reviews = mockReviews[listingId] ?? [];
+    final totalCount = reviews.length;
+    final totalPages = (totalCount / pageSize).ceil();
+    final start = (page - 1) * pageSize;
+    final end = start + pageSize;
+    final items = start < reviews.length
+        ? reviews.sublist(start, end > reviews.length ? reviews.length : end)
+        : <Map<String, dynamic>>[];
+
+    return {
+      'items': items,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': totalCount,
+      'totalPages': totalPages,
+      'hasPrevious': page > 1,
+      'hasNext': page < totalPages,
+    };
+  }
+
+  // POST /listings/:id/reviews
+  static Future<Map<String, dynamic>> createReview(
+    String listingId,
+    Map<String, dynamic> data,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return {
+      'id': 'rev_${DateTime.now().millisecondsSinceEpoch}',
+      'listingId': listingId,
+      'userId': 'u_current',
+      'userName': 'Utilisateur Test',
+      'userAvatar': null,
+      'rating': data['Rating'],
+      'comment': data['Comment'],
+      'createdAt': DateTime.now().toIso8601String(),
+      'reply': null,
+    };
+  }
+
+  // PUT /listings/:id/reviews/:reviewId
+  static Future<Map<String, dynamic>> updateReview(
+    String listingId,
+    String reviewId,
+    Map<String, dynamic> data,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return {
+      'id': reviewId,
+      'listingId': listingId,
+      'userId': 'u_current',
+      'rating': data['Rating'],
+      'comment': data['Comment'],
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+  }
+
+  // DELETE /listings/:id/reviews/:reviewId
+  static Future<void> deleteReview(String listingId, String reviewId) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  // POST /listings/:id/reviews/:reviewId/reply
+  static Future<void> replyToReview(
+    String listingId,
+    String reviewId,
+    String replyText,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  // POST /listings/:id/favorite
+  static Future<void> addFavorite(String listingId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+  }
+
+  // DELETE /listings/:id/favorite
+  static Future<void> removeFavorite(String listingId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+  }
+
+  // GET /favorites/my
+  static Future<Map<String, dynamic>> getMyFavorites({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final items = mockListings
+        .where((l) => mockFavoriteIds.contains(l.id))
+        .map(_listingToMap)
+        .toList();
+
+    return {
+      'items': items,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': items.length,
+      'totalPages': 1,
+      'hasPrevious': false,
+      'hasNext': false,
+    };
+  }
+
+  // POST /service-requests
+  static Future<Map<String, dynamic>> createServiceRequest(
+    Map<String, dynamic> data,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return {
+      'id': 'req_${DateTime.now().millisecondsSinceEpoch}',
+      'listingId': data['ListingId'],
+      'listingTitle': mockListings.firstWhere((l) => l.id == data['ListingId']).title,
+      'providerId': mockListings.firstWhere((l) => l.id == data['ListingId']).providerId,
+      'requesterId': 'u_current',
+      'message': data['Message'],
+      'status': 0, // pending
+      'createdAt': DateTime.now().toIso8601String(),
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+  }
+
+  // GET /service-requests/my (sent)
+  static Future<Map<String, dynamic>> getMySentRequests({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final items = mockServiceRequests
+        .where((r) => r['requesterId'] == 'u_current')
+        .toList();
+
+    return {
+      'items': items,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': items.length,
+      'totalPages': 1,
+      'hasPrevious': false,
+      'hasNext': false,
+    };
+  }
+
+  // GET /service-requests/received
+  static Future<Map<String, dynamic>> getMyReceivedRequests({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final items = mockServiceRequests
+        .where((r) => r['providerId'] == 'u_current' || r['providerId'] == 'u_mock')
+        .toList();
+
+    return {
+      'items': items,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': items.length,
+      'totalPages': 1,
+      'hasPrevious': false,
+      'hasNext': false,
+    };
+  }
+
+  // GET /service-requests/:id
+  static Future<Map<String, dynamic>> getServiceRequest(String id) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    return mockServiceRequests.firstWhere(
+      (r) => r['id'] == id,
+      orElse: () => throw Exception('Request not found'),
+    );
+  }
+
+  // POST /service-requests/:id/accept
+  static Future<void> acceptServiceRequest(String id) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  // POST /service-requests/:id/decline
+  static Future<void> declineServiceRequest(String id, String reason) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  // POST /service-requests/:id/complete
+  static Future<void> completeServiceRequest(String id) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  // POST /service-requests/:id/cancel
+  static Future<void> cancelServiceRequest(String id, String reason) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  // POST /service-requests/:id/chat-thread
+  static Future<void> linkChatThread(String requestId, String chatThreadId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+  }
+
+  // GET /listings/stats/my
+  static Future<Map<String, dynamic>> getMyProviderStats() async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return mockProviderStats;
+  }
+
+  // POST /reports
+  static Future<void> createReport({
+    required int targetType,
+    required String targetId,
+    required String reason,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+  }
+
+  // GET /reports/pending
+  static Future<Map<String, dynamic>> getPendingReports({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return {
+      'items': mockPendingReports,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': mockPendingReports.length,
+      'totalPages': 1,
+      'hasPrevious': false,
+      'hasNext': false,
+    };
+  }
+
+  // POST /reports/:id/resolve
+  static Future<void> resolveReport(String id, int status, String? notes) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
 }

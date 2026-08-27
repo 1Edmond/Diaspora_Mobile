@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'package:diaspora_app/features/settings/presentation/screens/providers_config_screen.dart';
+import 'package:diaspora_app/features/wallet/presentation/screens/send_money_screen.dart';
+import 'package:diaspora_app/features/wallet/presentation/screens/wallet_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,14 +13,6 @@ import '../../features/home/home_screen.dart';
 import '../../features/procedures/presentation/screens/procedures_list_screen.dart';
 import '../../features/procedures/presentation/screens/procedure_detail_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
-import '../../features/services/presentation/screens/services_home_screen.dart';
-import '../../features/services/presentation/screens/service_detail_screen.dart';
-import '../../features/services/presentation/screens/create_service_screen.dart';
-import '../../features/services/presentation/screens/services_shell.dart';
-import '../../features/services/presentation/screens/reservations_screen.dart';
-import '../../features/services/presentation/screens/my_services_screen.dart';
-import '../../features/services/presentation/screens/service_settings_screen.dart';
-import '../../features/services/presentation/screens/reservation_detail_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/chat/presentation/screens/chat_shell.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
@@ -29,7 +24,6 @@ import '../../features/chat/presentation/screens/select_contacts_screen.dart';
 import '../../features/chat/presentation/screens/chat_profile_screen.dart';
 import '../../features/chat/presentation/screens/story_viewer_screen.dart';
 import '../../features/chat/presentation/screens/add_story_screen.dart';
-
 import '../../features/community/presentation/screens/community_home_screen.dart';
 import '../../features/community/presentation/screens/post_detail_screen.dart';
 import '../../features/community/presentation/screens/create_post_screen.dart';
@@ -44,9 +38,14 @@ import '../../features/documents/presentation/screens/document_detail_screen.dar
 import '../../features/documents/presentation/screens/upload_document_screen.dart';
 
 import '../../features/settings/presentation/screens/settings_screen.dart';
-import '../../features/settings/presentation/screens/providers_config_screen.dart';
-import '../../features/wallet/presentation/screens/wallet_screen.dart';
-import '../../features/wallet/presentation/screens/send_money_screen.dart';
+import '../../features/marketplace/presentation/screens/marketplace_shell.dart';
+import '../../features/marketplace/presentation/screens/marketplace_home_screen.dart';
+import '../../features/marketplace/presentation/screens/favorites_screen.dart';
+import '../../features/marketplace/presentation/screens/my_listings_screen.dart';
+import '../../features/marketplace/presentation/screens/provider_dashboard_screen.dart';
+import '../../features/marketplace/presentation/screens/create_listing_screen.dart';
+import '../../features/marketplace/presentation/screens/listing_detail_screen.dart';
+
 import '../realtime/realtime_debug_screen.dart';
 import '../../features/auth/presentation/controllers/pending_verification_provider.dart';
 import '../../features/profile/presentation/screens/profile_list_screen.dart';
@@ -77,7 +76,10 @@ class AppRouter {
             path: 'verify',
             builder: (c, s) {
               final extra = s.extra;
-              final email = extra is String ? extra : (extra as Map?)?['email'] as String?;
+              final email =
+                  extra is String
+                      ? extra
+                      : (extra as Map?)?['email'] as String?;
               final code = (extra is Map ? extra['code'] : null) as String?;
               return PhoneVerificationScreen(email: email, code: code);
             },
@@ -85,58 +87,8 @@ class AppRouter {
         ],
       ),
       GoRoute(path: '/home', builder: (c, s) => const HomeScreen()),
-      GoRoute(
-        path: '/profile',
-        builder: (c, s) => const ProfileScreen(),
-      ),
-      GoRoute(
-        path: '/profiles',
-        builder: (c, s) => const ProfileListScreen(),
-      ),
-      StatefulShellRoute.indexedStack(
-        builder: (c, s, navigationShell) => ServicesShell(navigationShell: navigationShell),
-        branches: [
-          StatefulShellBranch(
-            routes: [
-              GoRoute(path: '/services', builder: (c, s) => const ServicesHomeScreen()),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(path: '/services/reservations', builder: (c, s) => const ReservationsScreen()),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(path: '/services/mine', builder: (c, s) => const MyServicesScreen()),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(path: '/services/settings', builder: (c, s) => const ServiceSettingsScreen()),
-            ],
-          ),
-        ],
-      ),
-      GoRoute(
-        path: '/services/create',
-        builder: (c, s) => const CreateServiceScreen(),
-      ),
-      GoRoute(
-        path: '/services/:id',
-        builder: (c, s) => ServiceDetailScreen(
-          serviceId: s.pathParameters['id']!,
-          isOwn: (s.extra as Map?)?['isOwn'] == true,
-        ),
-      ),
-      GoRoute(
-        path: '/services/:id/edit',
-        builder: (c, s) => CreateServiceScreen(editServiceId: s.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/reservations/:id',
-        builder: (c, s) => ReservationDetailScreen(reservationId: s.pathParameters['id']!),
-      ),
+      GoRoute(path: '/profile', builder: (c, s) => const ProfileScreen()),
+      GoRoute(path: '/profiles', builder: (c, s) => const ProfileListScreen()),
       GoRoute(
         path: '/procedures',
         builder: (c, s) => const ProceduresListScreen(),
@@ -154,7 +106,9 @@ class AppRouter {
         builder: (c, s) => const NotificationsScreen(),
       ),
       StatefulShellRoute.indexedStack(
-        builder: (c, s, navigationShell) => ChatShell(navigationShell: navigationShell),
+        builder:
+            (c, s, navigationShell) =>
+                ChatShell(navigationShell: navigationShell),
         branches: [
           StatefulShellBranch(
             routes: [
@@ -205,9 +159,8 @@ class AppRouter {
       GoRoute(
         path: '/story/view',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (c, s) => StoryViewerScreen(
-          storyName: s.extra as String? ?? '',
-        ),
+        builder:
+            (c, s) => StoryViewerScreen(storyName: s.extra as String? ?? ''),
       ),
       GoRoute(
         path: '/story/add',
@@ -222,10 +175,11 @@ class AppRouter {
       GoRoute(
         path: '/contact-profile/:id',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (c, s) => ContactProfileScreen(
-          contactId: s.pathParameters['id']!,
-          contactName: s.extra as String?,
-        ),
+        builder:
+            (c, s) => ContactProfileScreen(
+              contactId: s.pathParameters['id']!,
+              contactName: s.extra as String?,
+            ),
       ),
       GoRoute(
         path: '/community',
@@ -296,6 +250,70 @@ class AppRouter {
       GoRoute(
         path: '/debug/realtime',
         builder: (c, s) => const RealtimeDebugScreen(),
+      ),
+      // Marketplace routes - StatefulShellRoute for bottom nav
+      StatefulShellRoute.indexedStack(
+        builder:
+            (context, state, navigationShell) =>
+                MarketplaceShell(navigationShell: navigationShell),
+        branches: [
+          // Branch 0: Home/Explorer
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/marketplace',
+                builder: (context, state) => const MarketplaceHomeScreen(),
+              ),
+            ],
+          ),
+          // Branch 1: Favorites
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/marketplace/favorites',
+                builder: (context, state) => const FavoritesScreen(),
+              ),
+            ],
+          ),
+          // Branch 2: My Listings
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/marketplace/mine',
+                builder: (context, state) => const MyListingsScreen(),
+              ),
+            ],
+          ),
+          // Branch 3: Provider Dashboard
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/marketplace/provider-dashboard',
+                builder: (context, state) => const ProviderDashboardScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
+      // Marketplace leaf routes (pushed on root navigator - full screen, bottom nav hidden)
+      GoRoute(
+        path: '/marketplace/create',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const CreateListingScreen(),
+      ),
+      GoRoute(
+        path: '/marketplace/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder:
+            (context, state) =>
+                ListingDetailScreen(listingId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/marketplace/:id/edit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder:
+            (context, state) =>
+                CreateListingScreen(editListingId: state.pathParameters['id']!),
       ),
     ],
   );

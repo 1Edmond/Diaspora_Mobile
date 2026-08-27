@@ -4,12 +4,25 @@ import '../../data/models/review_model.dart';
 
 class ReviewWidget extends StatelessWidget {
   final ReviewModel review;
+  final VoidCallback? onReply;
 
-  const ReviewWidget({super.key, required this.review});
+  const ReviewWidget({super.key, required this.review, this.onReply});
+
+  String _formatDate(DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inDays == 0) return "Aujourd'hui";
+    if (diff.inDays == 1) return 'Hier';
+    if (diff.inDays < 7) return 'Il y a ${diff.inDays}j';
+    if (diff.inDays < 30) return 'Il y a ${(diff.inDays / 7).floor()} sem.';
+    return '${date.day}/${date.month}/${date.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasReply = review.providerReply != null &&
+        review.providerReply!.trim().isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -27,7 +40,9 @@ class ReviewWidget extends StatelessWidget {
                 radius: 18,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.15),
                 child: Text(
-                  review.reviewerName.isNotEmpty ? review.reviewerName[0].toUpperCase() : 'U',
+                  review.reviewerName.isNotEmpty
+                      ? review.reviewerName[0].toUpperCase()
+                      : 'U',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -42,31 +57,43 @@ class ReviewWidget extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          review.reviewerName.isNotEmpty ? review.reviewerName : 'Utilisateur',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                        Flexible(
+                          child: Text(
+                            review.reviewerName.isNotEmpty
+                                ? review.reviewerName
+                                : 'Utilisateur',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  isDark ? Colors.white : const Color(0xFF1A1A1A),
+                            ),
                           ),
                         ),
                         if (review.isVerified) ...[
                           const SizedBox(width: 6),
-                          Icon(Icons.verified_rounded, size: 14, color: Colors.blue[600]),
+                          Icon(Icons.verified_rounded,
+                              size: 14, color: Colors.blue[600]),
                         ],
                       ],
                     ),
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        ...List.generate(5, (index) => Icon(
-                          index < review.rating ? Icons.star_rounded : Icons.star_border_rounded,
-                          size: 14,
-                          color: Colors.amber[600],
-                        )),
+                        ...List.generate(
+                          5,
+                          (index) => Icon(
+                            index < review.rating
+                                ? Icons.star_rounded
+                                : Icons.star_border_rounded,
+                            size: 14,
+                            color: Colors.amber[600],
+                          ),
+                        ),
                         const SizedBox(width: 8),
                         Text(
-                          review.getFormattedDate(context),
+                          _formatDate(review.createdAt),
                           style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                         ),
                       ],
@@ -85,51 +112,55 @@ class ReviewWidget extends StatelessWidget {
               color: isDark ? Colors.white70 : Colors.grey[700],
             ),
           ),
-          if (review.hasProviderReply) ...[
+          if (hasReply) ...[
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.reply_rounded, size: 14, color: AppColors.primary),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Réponse du prestataire',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (review.providerRepliedAt != null)
-                        Text(
-                          review.getFormattedReplyDate(context)!,
-                          style: TextStyle(fontSize: 10, color: Colors.grey[500]),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    review.providerReply!,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? Colors.white70 : Colors.grey[700],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _providerReply(context, isDark),
           ],
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _providerReply(BuildContext context, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.reply_rounded, size: 14, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Text(
+                'Réponse du prestataire',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+              const Spacer(),
+              if (review.providerRepliedAt != null)
+                Text(
+                  _formatDate(review.providerRepliedAt!),
+                  style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            review.providerReply!,
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? Colors.white70 : Colors.grey[700],
+            ),
+          ),
+        ],
       ),
     );
   }

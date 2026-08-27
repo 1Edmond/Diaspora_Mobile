@@ -8,6 +8,7 @@ import '../../data/models/service_request_model.dart';
 import '../../data/models/marketplace_dtos.dart';
 import '../../data/models/availability_slot_model.dart';
 import '../../domain/entities/enums.dart';
+import '../../domain/entities/listing.dart';
 
 abstract class IMarketplaceRepository {
   Future<PagedResult<ListingSummaryModel>> searchListings({
@@ -25,6 +26,8 @@ abstract class IMarketplaceRepository {
     double? userLng,
     double? maxDistanceKm,
     bool availableNow = false,
+    bool? isStandardService,
+    ServiceCategory? serviceCategory,
   });
 
   Future<ListingModel> getListing(String id);
@@ -33,6 +36,7 @@ abstract class IMarketplaceRepository {
     int page = 1,
     int pageSize = 20,
     int? status,
+    bool? isStandardService,
   });
 
   Future<PagedResult<ListingSummaryModel>> getPendingListings({
@@ -79,6 +83,23 @@ abstract class IMarketplaceRepository {
   Future<PagedResult<ListingSummaryModel>> getMyFavorites({
     int page = 1,
     int pageSize = 20,
+  });
+
+  // Service-specific methods (unified in marketplace)
+  Future<PagedResult<ListingSummaryModel>> getServices({
+    int page = 1,
+    int pageSize = 20,
+    ServiceCategory? category,
+    String? search,
+    PriceType? priceType,
+    ServiceScope? scope,
+    String? city,
+    String? country,
+    ListingSortBy sortBy = ListingSortBy.relevance,
+    double? userLat,
+    double? userLng,
+    double? maxDistanceKm,
+    bool availableNow = false,
   });
 
   Future<ServiceRequestModel> createRequest(CreateServiceRequestDto dto);

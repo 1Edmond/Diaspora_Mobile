@@ -1,4 +1,5 @@
 import 'availability_slot_model.dart';
+import '../../domain/entities/listing.dart';
 
 class CreateListingDto {
   final String categoryId;
@@ -15,6 +16,13 @@ class CreateListingDto {
   final String? city;
   final String? country;
 
+  // Service-specific fields
+  final ServiceCategory? serviceCategory;
+  final PriceType? priceType;
+  final ServiceScope? serviceScope;
+  final List<String>? allowedDepartments;
+  final bool isStandardService;
+
   const CreateListingDto({
     required this.categoryId,
     required this.title,
@@ -29,6 +37,11 @@ class CreateListingDto {
     this.longitude,
     this.city,
     this.country,
+    this.serviceCategory,
+    this.priceType,
+    this.serviceScope,
+    this.allowedDepartments,
+    this.isStandardService = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -45,6 +58,11 @@ class CreateListingDto {
     'Longitude': longitude,
     'City': city,
     'Country': country,
+    'ServiceCategory': serviceCategory?.name,
+    'PriceType': priceType?.name,
+    'ServiceScope': serviceScope?.name,
+    'AllowedDepartments': allowedDepartments,
+    'IsStandardService': isStandardService,
   };
 }
 
@@ -62,6 +80,13 @@ class UpdateListingDto {
   final String? city;
   final String? country;
 
+  // Service-specific fields
+  final ServiceCategory? serviceCategory;
+  final PriceType? priceType;
+  final ServiceScope? serviceScope;
+  final List<String>? allowedDepartments;
+  final bool? isStandardService;
+
   const UpdateListingDto({
     this.title,
     this.description,
@@ -75,6 +100,11 @@ class UpdateListingDto {
     this.longitude,
     this.city,
     this.country,
+    this.serviceCategory,
+    this.priceType,
+    this.serviceScope,
+    this.allowedDepartments,
+    this.isStandardService,
   });
 
   Map<String, dynamic> toJson() {
@@ -93,6 +123,11 @@ class UpdateListingDto {
     if (longitude != null) map['Longitude'] = longitude;
     if (city != null) map['City'] = city;
     if (country != null) map['Country'] = country;
+    if (serviceCategory != null) map['ServiceCategory'] = serviceCategory!.name;
+    if (priceType != null) map['PriceType'] = priceType!.name;
+    if (serviceScope != null) map['ServiceScope'] = serviceScope!.name;
+    if (allowedDepartments != null) map['AllowedDepartments'] = allowedDepartments;
+    if (isStandardService != null) map['IsStandardService'] = isStandardService;
     return map;
   }
 }

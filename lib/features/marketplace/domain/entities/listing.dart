@@ -1,6 +1,22 @@
 import 'package:flutter/material.dart';
 import 'availability_slot.dart';
 
+enum ServiceCategory {
+  housing,
+  transport,
+  translation,
+  administrativeHelp,
+  groceries,
+  tutoring,
+  cleaning,
+  repair,
+  other,
+}
+
+enum PriceType { fixed, perHour, negotiable }
+
+enum ServiceScope { cityOnly, departmentList, countryWide }
+
 class Listing {
   final String id;
   final String providerId;
@@ -28,6 +44,13 @@ class Listing {
   final bool isAvailableNow;
   final double? distanceKm;
 
+  // Service-specific fields (optional - for unified marketplace/service model)
+  final ServiceCategory? serviceCategory;
+  final PriceType? priceType;
+  final ServiceScope? serviceScope;
+  final List<String>? allowedDepartments;
+  final bool isStandardService;
+
   const Listing({
     required this.id,
     required this.providerId,
@@ -54,6 +77,11 @@ class Listing {
     required this.availabilitySlots,
     required this.isAvailableNow,
     this.distanceKm,
+    this.serviceCategory,
+    this.priceType,
+    this.serviceScope,
+    this.allowedDepartments,
+    this.isStandardService = false,
   });
 
   Listing copyWith({
@@ -82,6 +110,11 @@ class Listing {
     List<AvailabilitySlot>? availabilitySlots,
     bool? isAvailableNow,
     double? distanceKm,
+    ServiceCategory? serviceCategory,
+    PriceType? priceType,
+    ServiceScope? serviceScope,
+    List<String>? allowedDepartments,
+    bool? isStandardService,
   }) {
     return Listing(
       id: id ?? this.id,
@@ -109,7 +142,112 @@ class Listing {
       availabilitySlots: availabilitySlots ?? this.availabilitySlots,
       isAvailableNow: isAvailableNow ?? this.isAvailableNow,
       distanceKm: distanceKm ?? this.distanceKm,
+      serviceCategory: serviceCategory ?? this.serviceCategory,
+      priceType: priceType ?? this.priceType,
+      serviceScope: serviceScope ?? this.serviceScope,
+      allowedDepartments: allowedDepartments ?? this.allowedDepartments,
+      isStandardService: isStandardService ?? this.isStandardService,
     );
+  }
+
+  factory Listing.fromService({
+    required String id,
+    required String providerId,
+    required String providerName,
+    required String title,
+    required String description,
+    required double price,
+    required String currency,
+    required PriceType priceType,
+    required ServiceCategory category,
+    required List<String> images,
+    required ServiceScope scope,
+    List<String>? allowedDepartments,
+    required double rating,
+    required int reviewCount,
+    required String status,
+    required DateTime createdAt,
+    String? city,
+    String? country,
+  }) {
+    return Listing(
+      id: id,
+      providerId: providerId,
+      providerName: providerName,
+      categoryId: category.name.toLowerCase(),
+      categoryName: _categoryDisplayName(category),
+      title: title,
+      description: description,
+      paymentMode: _priceTypeToPaymentMode(priceType),
+      price: price,
+      currency: currency,
+      status: _statusToInt(status),
+      isActive: status.toUpperCase() == 'ACTIVE' || status.toUpperCase() == 'APPROVED',
+      imageUrls: images,
+      averageRating: rating,
+      reviewCount: reviewCount,
+      viewCount: 0,
+      createdAt: createdAt,
+      city: city,
+      country: country,
+      availabilitySlots: [],
+      isAvailableNow: true,
+      serviceCategory: category,
+      priceType: priceType,
+      serviceScope: scope,
+      allowedDepartments: allowedDepartments,
+      isStandardService: true,
+    );
+  }
+
+  static int _priceTypeToPaymentMode(PriceType type) {
+    switch (type) {
+      case PriceType.fixed:
+        return 1;
+      case PriceType.perHour:
+        return 1;
+      case PriceType.negotiable:
+        return 2;
+    }
+  }
+
+  static int _statusToInt(String status) {
+    switch (status.toUpperCase()) {
+      case 'PENDING':
+        return 0;
+      case 'ACTIVE':
+      case 'APPROVED':
+        return 1;
+      case 'REJECTED':
+        return 2;
+      case 'SUSPENDED':
+        return 3;
+      default:
+        return 0;
+    }
+  }
+
+  static String _categoryDisplayName(ServiceCategory category) {
+    switch (category) {
+      case ServiceCategory.housing:
+        return 'Logement';
+      case ServiceCategory.transport:
+        return 'Transport';
+      case ServiceCategory.translation:
+        return 'Traduction';
+      case ServiceCategory.administrativeHelp:
+        return 'Aide administrative';
+      case ServiceCategory.groceries:
+        return 'Courses';
+      case ServiceCategory.tutoring:
+        return 'Soutien scolaire';
+      case ServiceCategory.cleaning:
+        return 'Ménage';
+      case ServiceCategory.repair:
+        return 'Réparation';
+      case ServiceCategory.other:
+        return 'Autre';
+    }
   }
 
   String getFormattedPrice(BuildContext context) {
@@ -189,5 +327,29 @@ class Listing {
 
   String getProviderDisplayName() {
     return providerName.trim().isNotEmpty ? providerName : 'Prestataire';
+  }
+
+  String getPriceTypeLabel() {
+    if (!isStandardService || priceType == null) return '';
+    switch (priceType!) {
+      case PriceType.fixed:
+        return 'Prix fixe';
+      case PriceType.perHour:
+        return 'Par heure';
+      case PriceType.negotiable:
+        return 'Négociable';
+    }
+  }
+
+  String getServiceScopeLabel() {
+    if (!isStandardService || serviceScope == null) return '';
+    switch (serviceScope!) {
+      case ServiceScope.cityOnly:
+        return 'Ville uniquement';
+      case ServiceScope.departmentList:
+        return 'Départements sélectionnés';
+      case ServiceScope.countryWide:
+        return 'Tout le pays';
+    }
   }
 }

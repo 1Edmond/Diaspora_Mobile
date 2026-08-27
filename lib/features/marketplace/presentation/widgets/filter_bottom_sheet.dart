@@ -300,7 +300,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       subtitle: const Text('Afficher seulement les prestataires disponibles immédiatement'),
       value: _availableNow,
       onChanged: (v) => setState(() => _availableNow = v),
-      activeColor: AppColors.primary,
+      activeThumbColor: AppColors.primary,
       contentPadding: EdgeInsets.zero,
     );
   }

@@ -106,7 +106,6 @@ class ListingCard extends StatelessWidget {
   }
 
   Widget _buildImageSection(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Stack(
       children: [
         ClipRRect(

@@ -144,11 +144,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onTap: () => context.push('/documents'),
         ),
         OrbitalItem(
-          icon: Icons.assignment_rounded,
-          label: 'Services',
+          icon: Icons.storefront_rounded,
+          label: 'Marketplace',
           color: AppColors.accent,
-          description: 'Découvrez nos services pour la diaspora',
-          onTap: () => context.push('/services'),
+          description: 'Découvrez services et annonces de la diaspora',
+          onTap: () => context.push('/marketplace'),
         ),
         OrbitalItem(
           icon: Icons.fact_check_rounded,
@@ -294,8 +294,6 @@ class _MenuItem {
 class _MenuGridSection extends StatelessWidget {
   const _MenuGridSection();
 
-  // Couleurs identiques à l'original (y compris celles hors palette,
-  // non modifiées faute de confirmation).
   static const _items = [
     _MenuItem(
       Icons.wallet_rounded,
@@ -310,9 +308,9 @@ class _MenuGridSection extends StatelessWidget {
       AppColors.secondary,
     ),
     _MenuItem(
-      Icons.assignment_rounded,
-      'Services',
-      '/services',
+      Icons.storefront_rounded,
+      'Marketplace',
+      '/marketplace',
       AppColors.accent,
     ),
     _MenuItem(
