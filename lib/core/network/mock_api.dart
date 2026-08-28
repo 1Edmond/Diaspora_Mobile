@@ -1,5 +1,7 @@
 // In-app mock API used by repository implementations. Returns canned responses with artificial delay.
 import 'dart:async';
+import '../../features/marketplace/domain/entities/listing.dart';
+import '../../data/mock/mock_marketplace.dart';
 
 class MockApi {
   static Future<Map<String, dynamic>> register({
@@ -1882,6 +1884,7 @@ class MockApi {
 
   // Helper to convert Listing to Map for API responses
   static Map<String, dynamic> _listingToMap(Listing l) {
+    final firstImage = l.imageUrls.isNotEmpty ? l.imageUrls.first : null;
     return {
       'Id': l.id,
       'ProviderId': l.providerId,
@@ -1897,6 +1900,7 @@ class MockApi {
       'Status': l.status,
       'IsActive': l.isActive,
       'ImageUrls': l.imageUrls,
+      'ThumbnailUrl': firstImage,  // Add thumbnail URL for summary model
       'AverageRating': l.averageRating,
       'ReviewCount': l.reviewCount,
       'ViewCount': l.viewCount,

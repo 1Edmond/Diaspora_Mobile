@@ -146,6 +146,7 @@ class MarketplaceNotifier extends StateNotifier<MarketplaceState> {
         userLng: state.userLng,
         maxDistanceKm: state.maxDistanceKm,
         availableNow: state.availableNow,
+        isStandardService: false, // Only show annonces (non-services)
       );
 
       if (refresh || _currentPage == 1) {

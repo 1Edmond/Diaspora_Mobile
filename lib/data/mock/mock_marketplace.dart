@@ -2,6 +2,7 @@
 // Uses the unified Listing model with ServiceCategory/PriceType/ServiceScope for standard services
 
 import '../../features/marketplace/domain/entities/listing.dart';
+import '../../features/marketplace/domain/entities/availability_slot.dart';
 
 final mockListings = <Listing>[
   // --- STANDARD SERVICES (isStandardService = true) ---
@@ -30,9 +31,9 @@ final mockListings = <Listing>[
     latitude: 48.8566,
     longitude: 2.3522,
     availabilitySlots: [
-      AvailabilitySlot(day: 1, startTime: '09:00:00', endTime: '12:00:00', isValid: true),
-      AvailabilitySlot(day: 3, startTime: '14:00:00', endTime: '18:00:00', isValid: true),
-      AvailabilitySlot(day: 5, startTime: '10:00:00', endTime: '16:00:00', isValid: true),
+      AvailabilitySlot(day: 1, startTime: '09:00:00', endTime: '12:00:00'),
+      AvailabilitySlot(day: 3, startTime: '14:00:00', endTime: '18:00:00'),
+      AvailabilitySlot(day: 5, startTime: '10:00:00', endTime: '16:00:00'),
     ],
     isAvailableNow: true,
     distanceKm: 2.5,
@@ -67,11 +68,11 @@ final mockListings = <Listing>[
     latitude: 48.8606,
     longitude: 2.3376,
     availabilitySlots: [
-      AvailabilitySlot(day: 1, startTime: '09:00:00', endTime: '17:00:00', isValid: true),
-      AvailabilitySlot(day: 2, startTime: '09:00:00', endTime: '17:00:00', isValid: true),
-      AvailabilitySlot(day: 3, startTime: '09:00:00', endTime: '17:00:00', isValid: true),
-      AvailabilitySlot(day: 4, startTime: '09:00:00', endTime: '17:00:00', isValid: true),
-      AvailabilitySlot(day: 5, startTime: '09:00:00', endTime: '15:00:00', isValid: true),
+      AvailabilitySlot(day: 1, startTime: '09:00:00', endTime: '17:00:00'),
+      AvailabilitySlot(day: 2, startTime: '09:00:00', endTime: '17:00:00'),
+      AvailabilitySlot(day: 3, startTime: '09:00:00', endTime: '17:00:00'),
+      AvailabilitySlot(day: 4, startTime: '09:00:00', endTime: '17:00:00'),
+      AvailabilitySlot(day: 5, startTime: '09:00:00', endTime: '15:00:00'),
     ],
     isAvailableNow: true,
     distanceKm: 1.2,
@@ -106,12 +107,12 @@ final mockListings = <Listing>[
     latitude: 45.7640,
     longitude: 4.8357,
     availabilitySlots: [
-      AvailabilitySlot(day: 1, startTime: '08:00:00', endTime: '20:00:00', isValid: true),
-      AvailabilitySlot(day: 2, startTime: '08:00:00', endTime: '20:00:00', isValid: true),
-      AvailabilitySlot(day: 3, startTime: '08:00:00', endTime: '20:00:00', isValid: true),
-      AvailabilitySlot(day: 4, startTime: '08:00:00', endTime: '20:00:00', isValid: true),
-      AvailabilitySlot(day: 5, startTime: '08:00:00', endTime: '20:00:00', isValid: true),
-      AvailabilitySlot(day: 6, startTime: '10:00:00', endTime: '14:00:00', isValid: true),
+      AvailabilitySlot(day: 1, startTime: '08:00:00', endTime: '20:00:00'),
+      AvailabilitySlot(day: 2, startTime: '08:00:00', endTime: '20:00:00'),
+      AvailabilitySlot(day: 3, startTime: '08:00:00', endTime: '20:00:00'),
+      AvailabilitySlot(day: 4, startTime: '08:00:00', endTime: '20:00:00'),
+      AvailabilitySlot(day: 5, startTime: '08:00:00', endTime: '20:00:00'),
+      AvailabilitySlot(day: 6, startTime: '10:00:00', endTime: '14:00:00'),
     ],
     isAvailableNow: true,
     distanceKm: 3.8,
@@ -146,8 +147,8 @@ final mockListings = <Listing>[
     latitude: 48.8738,
     longitude: 2.2950,
     availabilitySlots: [
-      AvailabilitySlot(day: 6, startTime: '10:00:00', endTime: '18:00:00', isValid: true),
-      AvailabilitySlot(day: 7, startTime: '10:00:00', endTime: '16:00:00', isValid: true),
+      AvailabilitySlot(day: 6, startTime: '10:00:00', endTime: '18:00:00'),
+      AvailabilitySlot(day: 7, startTime: '10:00:00', endTime: '16:00:00'),
     ],
     isAvailableNow: false,
     distanceKm: 5.1,
@@ -182,9 +183,9 @@ final mockListings = <Listing>[
     latitude: 48.8719,
     longitude: 2.3601,
     availabilitySlots: [
-      AvailabilitySlot(day: 2, startTime: '18:00:00', endTime: '21:00:00', isValid: true),
-      AvailabilitySlot(day: 4, startTime: '18:00:00', endTime: '21:00:00', isValid: true),
-      AvailabilitySlot(day: 6, startTime: '10:00:00', endTime: '14:00:00', isValid: true),
+      AvailabilitySlot(day: 2, startTime: '18:00:00', endTime: '21:00:00'),
+      AvailabilitySlot(day: 4, startTime: '18:00:00', endTime: '21:00:00'),
+      AvailabilitySlot(day: 6, startTime: '10:00:00', endTime: '14:00:00'),
     ],
     isAvailableNow: false,
     distanceKm: 4.2,
@@ -320,12 +321,12 @@ final mockListings = <Listing>[
     latitude: 48.8566,
     longitude: 2.3522,
     availabilitySlots: [
-      AvailabilitySlot(day: 1, startTime: '10:00:00', endTime: '19:00:00', isValid: true),
-      AvailabilitySlot(day: 2, startTime: '10:00:00', endTime: '19:00:00', isValid: true),
-      AvailabilitySlot(day: 3, startTime: '10:00:00', endTime: '19:00:00', isValid: true),
-      AvailabilitySlot(day: 4, startTime: '10:00:00', endTime: '19:00:00', isValid: true),
-      AvailabilitySlot(day: 5, startTime: '10:00:00', endTime: '19:00:00', isValid: true),
-      AvailabilitySlot(day: 6, startTime: '10:00:00', endTime: '16:00:00', isValid: true),
+      AvailabilitySlot(day: 1, startTime: '10:00:00', endTime: '19:00:00'),
+      AvailabilitySlot(day: 2, startTime: '10:00:00', endTime: '19:00:00'),
+      AvailabilitySlot(day: 3, startTime: '10:00:00', endTime: '19:00:00'),
+      AvailabilitySlot(day: 4, startTime: '10:00:00', endTime: '19:00:00'),
+      AvailabilitySlot(day: 5, startTime: '10:00:00', endTime: '19:00:00'),
+      AvailabilitySlot(day: 6, startTime: '10:00:00', endTime: '16:00:00'),
     ],
     isAvailableNow: true,
     distanceKm: 1.5,
@@ -360,13 +361,13 @@ final mockListings = <Listing>[
     latitude: 48.8606,
     longitude: 2.3376,
     availabilitySlots: [
-      AvailabilitySlot(day: 1, startTime: '05:00:00', endTime: '23:00:00', isValid: true),
-      AvailabilitySlot(day: 2, startTime: '05:00:00', endTime: '23:00:00', isValid: true),
-      AvailabilitySlot(day: 3, startTime: '05:00:00', endTime: '23:00:00', isValid: true),
-      AvailabilitySlot(day: 4, startTime: '05:00:00', endTime: '23:00:00', isValid: true),
-      AvailabilitySlot(day: 5, startTime: '05:00:00', endTime: '23:00:00', isValid: true),
-      AvailabilitySlot(day: 6, startTime: '05:00:00', endTime: '23:00:00', isValid: true),
-      AvailabilitySlot(day: 7, startTime: '05:00:00', endTime: '23:00:00', isValid: true),
+      AvailabilitySlot(day: 1, startTime: '05:00:00', endTime: '23:00:00'),
+      AvailabilitySlot(day: 2, startTime: '05:00:00', endTime: '23:00:00'),
+      AvailabilitySlot(day: 3, startTime: '05:00:00', endTime: '23:00:00'),
+      AvailabilitySlot(day: 4, startTime: '05:00:00', endTime: '23:00:00'),
+      AvailabilitySlot(day: 5, startTime: '05:00:00', endTime: '23:00:00'),
+      AvailabilitySlot(day: 6, startTime: '05:00:00', endTime: '23:00:00'),
+      AvailabilitySlot(day: 7, startTime: '05:00:00', endTime: '23:00:00'),
     ],
     isAvailableNow: true,
     distanceKm: 0.8,
@@ -403,9 +404,9 @@ final mockListings = <Listing>[
     latitude: 48.8566,
     longitude: 2.3522,
     availabilitySlots: [
-      AvailabilitySlot(day: 1, startTime: '07:00:00', endTime: '12:00:00', isValid: true),
-      AvailabilitySlot(day: 3, startTime: '07:00:00', endTime: '12:00:00', isValid: true),
-      AvailabilitySlot(day: 5, startTime: '07:00:00', endTime: '12:00:00', isValid: true),
+      AvailabilitySlot(day: 1, startTime: '07:00:00', endTime: '12:00:00'),
+      AvailabilitySlot(day: 3, startTime: '07:00:00', endTime: '12:00:00'),
+      AvailabilitySlot(day: 5, startTime: '07:00:00', endTime: '12:00:00'),
     ],
     isAvailableNow: false,
     distanceKm: 3.0,
@@ -440,11 +441,11 @@ final mockListings = <Listing>[
     latitude: 48.8566,
     longitude: 2.3522,
     availabilitySlots: [
-      AvailabilitySlot(day: 1, startTime: '08:00:00', endTime: '18:00:00', isValid: true),
-      AvailabilitySlot(day: 2, startTime: '08:00:00', endTime: '18:00:00', isValid: true),
-      AvailabilitySlot(day: 3, startTime: '08:00:00', endTime: '18:00:00', isValid: true),
-      AvailabilitySlot(day: 4, startTime: '08:00:00', endTime: '18:00:00', isValid: true),
-      AvailabilitySlot(day: 5, startTime: '08:00:00', endTime: '18:00:00', isValid: true),
+      AvailabilitySlot(day: 1, startTime: '08:00:00', endTime: '18:00:00'),
+      AvailabilitySlot(day: 2, startTime: '08:00:00', endTime: '18:00:00'),
+      AvailabilitySlot(day: 3, startTime: '08:00:00', endTime: '18:00:00'),
+      AvailabilitySlot(day: 4, startTime: '08:00:00', endTime: '18:00:00'),
+      AvailabilitySlot(day: 5, startTime: '08:00:00', endTime: '18:00:00'),
     ],
     isAvailableNow: false,
     distanceKm: 2.0,
@@ -466,7 +467,8 @@ final mockReviews = <String, List<Map<String, dynamic>>>{
       'userName': 'Alice Martin',
       'userAvatar': 'https://placekitten.com/100/100',
       'rating': 5,
-      'comment': 'Marie est une excellente professeure ! Patiente, pédagogue, mes progrès sont rapides.',
+      'comment':
+          'Marie est une excellente professeure ! Patiente, pédagogue, mes progrès sont rapides.',
       'createdAt': DateTime(2026, 6, 15).toIso8601String(),
       'reply': null,
     },
@@ -477,7 +479,8 @@ final mockReviews = <String, List<Map<String, dynamic>>>{
       'userName': 'Thomas Bernard',
       'userAvatar': null,
       'rating': 5,
-      'comment': 'Très satisfait des cours en visio. Flexible sur les horaires.',
+      'comment':
+          'Très satisfait des cours en visio. Flexible sur les horaires.',
       'createdAt': DateTime(2026, 6, 20).toIso8601String(),
       'reply': 'Merci Thomas ! Ravi que cela vous plaise.',
     },
@@ -490,7 +493,8 @@ final mockReviews = <String, List<Map<String, dynamic>>>{
       'userName': 'Fatou Diallo',
       'userAvatar': 'https://placekitten.com/101/101',
       'rating': 5,
-      'comment': 'Jean-Baptiste a géré mon dossier de titre de séjour de A à Z. Professionnel et rassurant.',
+      'comment':
+          'Jean-Baptiste a géré mon dossier de titre de séjour de A à Z. Professionnel et rassurant.',
       'createdAt': DateTime(2026, 5, 10).toIso8601String(),
       'reply': null,
     },
@@ -503,7 +507,8 @@ final mockReviews = <String, List<Map<String, dynamic>>>{
       'userName': 'Pierre Leroy',
       'userAvatar': null,
       'rating': 4,
-      'comment': 'Traduction rapide et certifiée. Prix correct pour la qualité.',
+      'comment':
+          'Traduction rapide et certifiée. Prix correct pour la qualité.',
       'createdAt': DateTime(2026, 6, 5).toIso8601String(),
       'reply': null,
     },
@@ -529,7 +534,8 @@ final mockReviews = <String, List<Map<String, dynamic>>>{
       'userName': 'Ahmed Benali',
       'userAvatar': null,
       'rating': 5,
-      'comment': 'Ponctuel, véhicule propre, chauffeur très pro. Je recommande.',
+      'comment':
+          'Ponctuel, véhicule propre, chauffeur très pro. Je recommande.',
       'createdAt': DateTime(2026, 7, 15).toIso8601String(),
       'reply': null,
     },
@@ -546,7 +552,8 @@ final mockServiceRequests = <Map<String, dynamic>>[
     'providerName': 'Marie Dupont',
     'requesterId': 'u_current',
     'requesterName': 'Utilisateur Test',
-    'message': 'Bonjour, je souhaite commencer des cours la semaine prochaine. Disponible les mardis et jeudis soirs.',
+    'message':
+        'Bonjour, je souhaite commencer des cours la semaine prochaine. Disponible les mardis et jeudis soirs.',
     'status': 0, // pending
     'createdAt': DateTime(2026, 7, 20).toIso8601String(),
     'updatedAt': DateTime(2026, 7, 20).toIso8601String(),
@@ -559,7 +566,8 @@ final mockServiceRequests = <Map<String, dynamic>>[
     'providerName': 'Jean-Baptiste Koffi',
     'requesterId': 'u_current',
     'requesterName': 'Utilisateur Test',
-    'message': 'Besoin d\'aide pour renouvellement titre de séjour étudiant. Dossier complet prêt.',
+    'message':
+        'Besoin d\'aide pour renouvellement titre de séjour étudiant. Dossier complet prêt.',
     'status': 1, // accepted
     'createdAt': DateTime(2026, 7, 15).toIso8601String(),
     'updatedAt': DateTime(2026, 7, 16).toIso8601String(),
@@ -574,7 +582,8 @@ final mockServiceRequests = <Map<String, dynamic>>[
     'providerName': 'Fatima Traoré',
     'requesterId': 'u_current',
     'requesterName': 'Utilisateur Test',
-    'message': 'Traduction acte de naissance + diplôme pour inscription université. Urgent (délai 1 semaine).',
+    'message':
+        'Traduction acte de naissance + diplôme pour inscription université. Urgent (délai 1 semaine).',
     'status': 3, // completed
     'createdAt': DateTime(2026, 7, 10).toIso8601String(),
     'updatedAt': DateTime(2026, 7, 12).toIso8601String(),
@@ -590,7 +599,8 @@ final mockServiceRequests = <Map<String, dynamic>>[
     'providerName': 'Paul Mensah',
     'requesterId': 'u_current',
     'requesterName': 'Utilisateur Test',
-    'message': 'Recherche colocation pour rentrée septembre. Budget 600€/mois charges comprises. Quartiers préférés : 11e, 12e, 19e, 20e.',
+    'message':
+        'Recherche colocation pour rentrée septembre. Budget 600€/mois charges comprises. Quartiers préférés : 11e, 12e, 19e, 20e.',
     'status': 2, // declined
     'createdAt': DateTime(2026, 7, 5).toIso8601String(),
     'updatedAt': DateTime(2026, 7, 6).toIso8601String(),
@@ -640,9 +650,10 @@ Map<String, dynamic> _buildPagedResult({
   final totalPages = (totalCount / pageSize).ceil();
   final start = (page - 1) * pageSize;
   final end = start + pageSize;
-  final paginatedItems = start < items.length
-      ? items.sublist(start, end > items.length ? items.length : end)
-      : <dynamic>[];
+  final paginatedItems =
+      start < items.length
+          ? items.sublist(start, end > items.length ? items.length : end)
+          : <dynamic>[];
 
   return {
     'items': paginatedItems,

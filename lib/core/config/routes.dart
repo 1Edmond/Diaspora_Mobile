@@ -43,7 +43,7 @@ import '../../features/marketplace/presentation/screens/marketplace_home_screen.
 import '../../features/marketplace/presentation/screens/favorites_screen.dart';
 import '../../features/marketplace/presentation/screens/my_listings_screen.dart';
 import '../../features/marketplace/presentation/screens/provider_dashboard_screen.dart';
-import '../../features/marketplace/presentation/screens/create_listing_screen.dart';
+import '../../features/marketplace/presentation/screens/create_listing_wizard_screen.dart';
 import '../../features/marketplace/presentation/screens/listing_detail_screen.dart';
 
 import '../realtime/realtime_debug_screen.dart';
@@ -299,7 +299,7 @@ class AppRouter {
       GoRoute(
         path: '/marketplace/create',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const CreateListingScreen(),
+        builder: (context, state) => const CreateListingWizardScreen(),
       ),
       GoRoute(
         path: '/marketplace/:id',
@@ -313,7 +313,7 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         builder:
             (context, state) =>
-                CreateListingScreen(editListingId: state.pathParameters['id']!),
+                CreateListingWizardScreen(editListingId: state.pathParameters['id']!),
       ),
     ],
   );

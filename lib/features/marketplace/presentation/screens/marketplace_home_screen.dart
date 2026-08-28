@@ -6,6 +6,7 @@ import '../../../../core/theme/design_system.dart';
 import '../controllers/marketplace_providers.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import '../widgets/listing_card.dart';
+import '../widgets/skeleton_loader.dart';
 
 class MarketplaceHomeScreen extends ConsumerStatefulWidget {
   const MarketplaceHomeScreen({super.key});
@@ -18,9 +19,15 @@ class MarketplaceHomeScreen extends ConsumerStatefulWidget {
 enum _ExplorerMode { annonces, services }
 
 class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
-  final TextEditingController _searchController = TextEditingController();
+  // Two separate controllers so switching tabs never clears what the user
+  // typed in the other tab — each mode keeps its own search text.
+  final TextEditingController _annoncesSearchController = TextEditingController();
+  final TextEditingController _servicesSearchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   _ExplorerMode _mode = _ExplorerMode.annonces;
+
+  TextEditingController get _searchController =>
+      _mode == _ExplorerMode.annonces ? _annoncesSearchController : _servicesSearchController;
 
   @override
   void initState() {
@@ -33,7 +40,8 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _annoncesSearchController.dispose();
+    _servicesSearchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -377,10 +385,10 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
         : (state as ServicesState).hasNext;
 
     if (isLoading && items.isEmpty) {
-      return const SliverFillRemaining(
-        hasScrollBody: false,
-        child: Center(child: CircularProgressIndicator()),
-      );
+      // Skeleton grid instead of a bare spinner: keeps the same 2-column
+      // layout as the real content so nothing jumps once data arrives,
+      // and reads as "loading content" rather than "app is stuck".
+      return const SliverToBoxAdapter(child: ListingGridSkeleton());
     }
 
     if (error != null && items.isEmpty) {

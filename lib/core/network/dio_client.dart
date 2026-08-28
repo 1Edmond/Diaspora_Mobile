@@ -1448,5 +1448,9 @@ class _MockInterceptor extends Interceptor {
     }
   }
 
-  bool _matches(String path, String pattern) => RegExp(pattern).hasMatch(path);
+  bool _matches(String path, String pattern) {
+    // Strip query parameters before matching
+    final pathWithoutQuery = path.split('?').first;
+    return RegExp(pattern).hasMatch(pathWithoutQuery);
+  }
 }

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/design_system.dart';
+import '../../../chat/domain/repositories/chat_repository.dart';
 import '../../data/models/listing_model.dart';
 import '../controllers/marketplace_providers.dart';
 import '../widgets/availability_widget.dart';
 import '../widgets/review_widget.dart';
+import '../widgets/skeleton_loader.dart';
+import '../widgets/write_review_sheet.dart';
 
 class ListingDetailScreen extends ConsumerStatefulWidget {
   final String listingId;
@@ -43,14 +47,112 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
         .toggleFavorite();
   }
 
-  void _contactProvider() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Ouverture du chat...')),
+  Future<void> _contactProvider() async {
+    final listing = ref.read(listingDetailProvider(widget.listingId)).listing;
+    if (listing == null) return;
+
+    // Show a spinner dialog while the conversation is created/resolved,
+    // instead of the previous placeholder SnackBar that did nothing.
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
+
+    try {
+      final chatRepository = GetIt.instance<IChatRepository>();
+      // createConversation is idempotent server-side for direct messages,
+      // so calling it again on a repeat visit just returns the existing
+      // thread rather than creating a duplicate.
+      final conversation = await chatRepository.createConversation(
+        listing.providerName,
+        [listing.providerId],
+      );
+
+      if (!mounted) return;
+      context.pop(); // close the loading dialog
+      context.push('/chat/${conversation.id}');
+    } catch (e) {
+      if (!mounted) return;
+      context.pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Impossible d\'ouvrir la conversation : $e')),
+      );
+    }
   }
 
   void _requestService() {
     context.push('/marketplace/request/${widget.listingId}');
+  }
+
+  void _writeReview() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => WriteReviewSheet(listingId: widget.listingId),
+    );
+  }
+
+  void _showAllReviews() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        maxChildSize: 0.95,
+        builder: (_, scrollController) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Tous les avis', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                      TextButton.icon(
+                        onPressed: _writeReview,
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: const Text('Écrire'),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final reviewsAsync = ref.watch(reviewsProvider(widget.listingId));
+                      return reviewsAsync.when(
+                        data: (result) => ListView(
+                          controller: scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          children: result.items.map((r) => ReviewWidget(review: r)).toList(),
+                        ),
+                        loading: () => const Center(child: CircularProgressIndicator()),
+                        error: (e, _) => Center(child: Text('Erreur : $e')),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -93,8 +195,8 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
                   const SizedBox(height: 12),
                   ReviewsListWidget(
                     listingId: widget.listingId,
-                    onWriteReview: () {},
-                    onShowAll: () {},
+                    onWriteReview: _writeReview,
+                    onShowAll: _showAllReviews,
                   ),
                   const SizedBox(height: 120),
                 ],
@@ -109,9 +211,31 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
   }
 
   Widget _loadingScreen(bool isDark) {
+    // Skeleton matching the real layout (hero image + text blocks) instead
+    // of a bare centered spinner, so the transition into loaded content
+    // doesn't feel like a jump cut.
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
-      body: const Center(child: CircularProgressIndicator()),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ShimmerBox(width: double.infinity, height: 220, borderRadius: BorderRadius.circular(20)),
+              const SizedBox(height: 20),
+              ShimmerBox(width: 100, height: 20, borderRadius: BorderRadius.circular(8)),
+              const SizedBox(height: 12),
+              const ShimmerBox(width: double.infinity, height: 26),
+              const SizedBox(height: 20),
+              const ShimmerBox(width: double.infinity, height: 60),
+              const SizedBox(height: 20),
+              ShimmerBox(width: double.infinity, height: 80, borderRadius: BorderRadius.circular(16)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -534,7 +658,7 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
           ),
         ),
         TextButton.icon(
-          onPressed: () {},
+          onPressed: _showAllReviews,
           icon: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
           label: const Text('Voir tous'),
           style: TextButton.styleFrom(foregroundColor: AppColors.primary),
