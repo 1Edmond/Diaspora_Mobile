@@ -11,6 +11,7 @@ import 'core/config/routes.dart';
 import 'core/theme/app_theme.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'features/auth/presentation/controllers/auth_notifier.dart';
+import 'features/auth/presentation/controllers/auth_restore_provider.dart';
 import 'features/notifications/data/services/firebase_messaging_service.dart';
 import 'features/notifications/presentation/providers/sse_provider.dart';
 import 'features/notifications/presentation/providers/notifications_providers.dart';
@@ -80,9 +81,12 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       if (mounted) _handleDeepLink(uri);
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final ok = await ref.read(authNotifierProvider.notifier).restoreSession();
       if (mounted) {
-        ref.read(authNotifierProvider.notifier).restoreSession();
+        ref.read(authRestoredProvider.notifier).state = ok;
+        authRestoreTick.value++;
       }
     });
   }

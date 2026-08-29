@@ -234,7 +234,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       onClose: () => debugPrint('Orbital closed'),
       onLogout: () async {
         await ref.read(authNotifierProvider.notifier).logout();
-        if (context.mounted) context.go('/onboarding');
+        if (context.mounted) context.go('/auth/login');
       },
     );
   }

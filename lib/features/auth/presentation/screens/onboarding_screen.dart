@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/containers/glass_container.dart';
 import '../../../../shared/widgets/containers/neumorphic_container.dart';
+import '../controllers/auth_restore_provider.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -44,6 +45,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _finishOnboarding() async {
+    await markOnboardingSeen();
+    if (!mounted) return;
+    GoRouter.of(context).go('/auth/login');
   }
 
   @override
@@ -167,7 +174,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             children: [
               Expanded(
                 child: TextButton(
-                  onPressed: () => GoRouter.of(context).go('/auth/login'),
+                  onPressed: () => _finishOnboarding(),
                   child: Text(
                     'Passer',
                     style: TextStyle(
@@ -189,7 +196,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           curve: Curves.easeInOut,
                         );
                       } else {
-                        GoRouter.of(context).go('/auth/login');
+                        _finishOnboarding();
                       }
                     },
                     child: Text(

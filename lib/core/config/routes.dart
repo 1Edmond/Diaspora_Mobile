@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:diaspora_app/features/settings/presentation/screens/providers_config_screen.dart';
 import 'package:diaspora_app/features/wallet/presentation/screens/send_money_screen.dart';
 import 'package:diaspora_app/features/wallet/presentation/screens/wallet_screen.dart';
@@ -62,6 +61,7 @@ import '../../features/freelance/domain/entities/enums.dart';
 
 import '../realtime/realtime_debug_screen.dart';
 import '../../features/auth/presentation/controllers/pending_verification_provider.dart';
+import '../../features/auth/presentation/controllers/auth_restore_provider.dart';
 import '../../features/profile/presentation/screens/profile_list_screen.dart';
 
 class AppRouter {
@@ -70,10 +70,32 @@ class AppRouter {
   static GoRouter router(WidgetRef ref) => GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
+    refreshListenable: authRestoreTick,
     redirect: (context, state) {
+      // 1. Pending email verification takes priority.
       final pending = ref.read(pendingVerificationEmailProvider);
       if (pending != null && !state.matchedLocation.startsWith('/auth')) {
         return '/auth/verify';
+      }
+
+      // 2. Wait until the startup session restore has resolved before
+      //    deciding where to land (otherwise we'd flash onboarding/home).
+      final authRestored = ref.read(authRestoredProvider);
+      if (authRestored == null) {
+        return null;
+      }
+
+      // 3. Authenticated user: never show onboarding/auth again.
+      if (authRestored) {
+        if (_isEntryLocation(state.matchedLocation)) {
+          return '/home';
+        }
+        return null;
+      }
+
+      // 4. Not authenticated: route to onboarding (first launch) or login.
+      if (_isEntryLocation(state.matchedLocation)) {
+        return hasSeenOnboarding() ? '/auth/login' : '/onboarding';
       }
       return null;
     },
@@ -432,31 +454,23 @@ class AppRouter {
       ),
     ],
   );
+
+  /// Locations that represent an "entry point" where the startup redirect
+  /// should decide between boarding/auth/home. Non-entry locations (e.g.
+  /// /marketplace, /chat, deep links) are left untouched to avoid redirect
+  /// loops or losing an intentional deep-link target.
+  static bool _isEntryLocation(String location) {
+    return location == '/' ||
+        location == '/home' ||
+        location == '/onboarding' ||
+        location == '/auth' ||
+        location == '/auth/login' ||
+        location == '/auth/register';
+  }
 }
 
-class SplashPlaceholder extends StatefulWidget {
+class SplashPlaceholder extends StatelessWidget {
   const SplashPlaceholder({super.key});
-
-  @override
-  State<SplashPlaceholder> createState() => _SplashPlaceholderState();
-}
-
-class _SplashPlaceholderState extends State<SplashPlaceholder> {
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer(const Duration(milliseconds: 600), () {
-      if (mounted) GoRouter.of(context).go('/onboarding');
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {

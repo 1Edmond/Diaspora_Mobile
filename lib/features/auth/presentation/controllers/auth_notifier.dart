@@ -10,6 +10,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/services/device_identity_service.dart';
 import '../../../../shared/services/storage_service.dart';
 import 'pending_verification_provider.dart';
+import 'auth_restore_provider.dart';
 
 final authNotifierProvider =
     StateNotifierProvider<AuthNotifier, AsyncValue<User?>>((ref) {
@@ -169,6 +170,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       _lastAccessToken = (res['accessToken'] ?? res['AccessToken']) as String?;
 
       state = AsyncValue.data(user);
+      _ref?.read(authRestoredProvider.notifier).state = true;
+      authRestoreTick.value++;
       fetchProfiles();
       return true;
     } catch (e, st) {
@@ -228,6 +231,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       _lastAccessToken = accessToken;
 
       state = AsyncValue.data(user);
+      _ref?.read(authRestoredProvider.notifier).state = true;
+      authRestoreTick.value++;
       fetchProfiles();
       return true;
     } catch (e, st) {
@@ -243,6 +248,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       debugPrint('logout failed: $e');
     } finally {
       _ref?.read(activeProfileIdProvider.notifier).clear();
+      _ref?.read(authRestoredProvider.notifier).state = false;
+      authRestoreTick.value++;
       state = const AsyncValue.data(null);
     }
   }
