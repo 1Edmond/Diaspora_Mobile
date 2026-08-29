@@ -135,6 +135,7 @@ class ChatNotifier extends StateNotifier<AsyncValue<ChatState>> {
     MessageType type, {
     String? mediaUrl,
     int? duration,
+    String? replyToMessageId,
   }) async {
     try {
       final message = await repository.sendMessage(
@@ -144,14 +145,79 @@ class ChatNotifier extends StateNotifier<AsyncValue<ChatState>> {
         mediaUrl: mediaUrl,
         duration: duration,
       );
+      final withReply = replyToMessageId != null
+          ? message.copyWith(replyToMessageId: replyToMessageId)
+          : message;
       final currentState = state.value ?? const ChatState();
-      final updatedMessages = [...currentState.messages, message];
+      final updatedMessages = [...currentState.messages, withReply];
       state = AsyncValue.data(currentState.copyWith(messages: updatedMessages));
       // Broadcast via mock realtime so other clients receive it
-      realtime.emitMessage(conversationId, message);
+      realtime.emitMessage(conversationId, withReply);
     } catch (e, _) {
       state = AsyncValue.error(e, StackTrace.current);
     }
+  }
+
+  /// Adds or removes [emoji] as the current user's reaction on a message.
+  /// Purely local/optimistic for now: IChatRepository has no reaction
+  /// endpoint, so this does not persist across sessions or sync to other
+  /// participants yet — see the chat feature gap report for what a real
+  /// backend contract for this would need.
+  void toggleReaction(String messageId, String userId, String emoji) {
+    final currentState = state.value;
+    if (currentState == null) return;
+    final updatedMessages = currentState.messages.map((m) {
+      if (m.id != messageId) return m;
+      final reactions = Map<String, String>.from(m.reactions);
+      if (reactions[userId] == emoji) {
+        reactions.remove(userId);
+      } else {
+        reactions[userId] = emoji;
+      }
+      return m.copyWith(reactions: reactions);
+    }).toList();
+    state = AsyncValue.data(currentState.copyWith(messages: updatedMessages));
+  }
+
+  /// Removes a message from local state only. IChatRepository has no
+  /// delete endpoint yet, so this does not delete anything server-side —
+  /// treat as "hide locally" until a real endpoint exists.
+  void deleteMessageLocally(String messageId) {
+    final currentState = state.value;
+    if (currentState == null) return;
+    final updatedMessages =
+        currentState.messages.where((m) => m.id != messageId).toList();
+    state = AsyncValue.data(currentState.copyWith(messages: updatedMessages));
+  }
+
+  void togglePinned(String conversationId) {
+    final currentState = state.value;
+    if (currentState == null) return;
+    final updated = currentState.conversations.map((c) {
+      if (c.id != conversationId) return c;
+      return c.copyWith(isPinned: !c.isPinned);
+    }).toList();
+    state = AsyncValue.data(currentState.copyWith(conversations: updated));
+  }
+
+  void toggleMuted(String conversationId) {
+    final currentState = state.value;
+    if (currentState == null) return;
+    final updated = currentState.conversations.map((c) {
+      if (c.id != conversationId) return c;
+      return c.copyWith(isMuted: !c.isMuted);
+    }).toList();
+    state = AsyncValue.data(currentState.copyWith(conversations: updated));
+  }
+
+  /// Removes a conversation from local state only — same caveat as
+  /// deleteMessageLocally: no backend endpoint exists yet for this.
+  void deleteConversationLocally(String conversationId) {
+    final currentState = state.value;
+    if (currentState == null) return;
+    final updated =
+        currentState.conversations.where((c) => c.id != conversationId).toList();
+    state = AsyncValue.data(currentState.copyWith(conversations: updated));
   }
 
   Future<void> markMessagesAsRead(String conversationId) async {

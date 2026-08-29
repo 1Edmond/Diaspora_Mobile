@@ -147,7 +147,11 @@ class _CreateListingWizardScreenState
 
   void _goBack() {
     if (_step == 0) {
-      context.pop();
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/home');
+      }
       return;
     }
     setState(() => _step--);

@@ -68,7 +68,15 @@ class _ConversationListScreenState
                         (c.category?.toLowerCase() ==
                             _filters[_selectedFilter].toLowerCase());
                     return matchesSearch && matchesFilter;
-                  }).toList();
+                  }).toList()
+                    ..sort((a, b) {
+                      // Pinned conversations first (Telegram behavior),
+                      // most-recent-first within each group.
+                      if (a.isPinned != b.isPinned) {
+                        return a.isPinned ? -1 : 1;
+                      }
+                      return b.lastMessageTime.compareTo(a.lastMessageTime);
+                    });
                   if (items.isEmpty) {
                     return Center(
                       child: Column(

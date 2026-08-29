@@ -31,6 +31,7 @@ class _OrbitalFabState extends State<OrbitalFab>
     with SingleTickerProviderStateMixin {
   late final AnimationController _animController;
   late final Animation<double> _anim;
+  final ScrollController _itemsScrollController = ScrollController();
 
   bool _isOpen = false;
   bool _isClosing = false;
@@ -49,6 +50,7 @@ class _OrbitalFabState extends State<OrbitalFab>
   @override
   void dispose() {
     _animController.dispose();
+    _itemsScrollController.dispose();
     super.dispose();
   }
 
@@ -90,6 +92,22 @@ class _OrbitalFabState extends State<OrbitalFab>
   void _onItemSelected(int index) {
     if (index == _selectedIndex || _isClosing) return;
     setState(() => _selectedIndex = index);
+    _scrollToSelected();
+  }
+
+  void _scrollToSelected() {
+    if (!_itemsScrollController.hasClients) return;
+    final target = _selectedIndex * _itemBlockHeight;
+    final viewport = _itemsScrollController.position.viewportDimension;
+    final maxScroll = _itemsScrollController.position.maxScrollExtent;
+    final offset = (target - viewport / 2 + _itemBlockHeight / 2)
+        .clamp(0.0, maxScroll)
+        .toDouble();
+    _itemsScrollController.animateTo(
+      offset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -205,71 +223,70 @@ class _OrbitalFabState extends State<OrbitalFab>
     );
   }
 
+  static const double _itemBlockHeight = 100.0;
+  static const double _arcLeftAnchor = 40.0;
+  static const double _arcHorizontalRadius = 55.0;
+
+  double _arcXOffset(int index, int itemCount) {
+    final t = itemCount <= 1 ? 0.5 : index / (itemCount - 1);
+    return math.sin(t * math.pi) * _arcHorizontalRadius;
+  }
+
   Widget _buildOrbitalArc() {
+    final itemCount = widget.items.length;
+    final totalHeight = itemCount * _itemBlockHeight;
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        const topMargin = 40.0;
-        const bottomMargin = 20.0;
-        final usableHeight = constraints.maxHeight - topMargin - bottomMargin;
+        final width = constraints.maxWidth;
 
-        final centerX = constraints.maxWidth * 0.12;
-        final centerY = topMargin + usableHeight * 0.5;
-        final radius = usableHeight * 0.44;
-
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            CustomPaint(
-              size: Size(constraints.maxWidth, constraints.maxHeight),
-              painter: OrbitalArcPainter(
-                items: widget.items,
-                selectedIndex: _selectedIndex,
-                centerX: centerX,
-                centerY: centerY,
-                radius: radius,
-                animation: _anim.value,
-              ),
+        return SingleChildScrollView(
+          controller: _itemsScrollController,
+          physics: const BouncingScrollPhysics(),
+          child: SizedBox(
+            height: math.max(totalHeight, constraints.maxHeight),
+            width: width,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: ScrollableArcPainter(
+                        itemCount: itemCount,
+                        selectedIndex: _selectedIndex,
+                        centerX: _arcLeftAnchor,
+                        itemBlockHeight: _itemBlockHeight,
+                        horizontalRadius: _arcHorizontalRadius,
+                        animation: _anim.value,
+                      ),
+                    ),
+                  ),
+                ),
+                ..._buildArcItems(width),
+              ],
             ),
-            ..._buildArcItems(centerX, centerY, radius, constraints),
-          ],
+          ),
         );
       },
     );
   }
 
-  List<Widget> _buildArcItems(
-    double centerX,
-    double centerY,
-    double radius,
-    BoxConstraints constraints,
-  ) {
+  List<Widget> _buildArcItems(double width) {
     final itemCount = widget.items.length;
 
-    // Use linear vertical spacing for uniform visual distribution
-    const topMargin = 50.0;
-    const bottomMargin = 50.0;
-    final usableHeight = constraints.maxHeight - topMargin - bottomMargin;
-
     return List.generate(itemCount, (index) {
-      final t = itemCount <= 1 ? 0.5 : index / (itemCount - 1);
-
-      // Uniform vertical position
-      final y = topMargin + usableHeight * t;
-
-      // X follows the arc curve: items curve inward toward the center
-      final arcOffset = math.sin(t * math.pi) * radius * 0.3;
-      final x = centerX + arcOffset;
-
-      final clampedX = x.clamp(0.0, constraints.maxWidth - 52);
-      final clampedY = y.clamp(0.0, constraints.maxHeight - 70);
-
       final isSelected = index == _selectedIndex;
       final item = widget.items[index];
 
       // Stagger animation
       double itemOpacity;
       double slideOffset;
-      final delay = index / itemCount;
+      final delay = itemCount <= 1 ? 0.0 : index / itemCount;
 
       if (_isClosing) {
         final closeProgress = math.max(
@@ -287,12 +304,17 @@ class _OrbitalFabState extends State<OrbitalFab>
         slideOffset = 30 * (1 - openProgress);
       }
 
+      final centerX = _arcLeftAnchor + _arcXOffset(index, itemCount);
+      final left = (centerX - 26).clamp(0.0, width - 52);
+      final top = index * _itemBlockHeight + 24 + slideOffset;
+
       return Positioned(
-        left: clampedX - 26,
-        top: clampedY - 26 - (isSelected ? 10 : 0) + slideOffset,
+        left: left,
+        top: top,
         child: Opacity(
           opacity: itemOpacity,
           child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () => _onItemSelected(index),
             child: Column(
               mainAxisSize: MainAxisSize.min,

@@ -7,6 +7,7 @@ import '../widgets/message_bubble.dart';
 import '../widgets/message_input.dart';
 import '../../../../core/constants/enums.dart';
 import '../../domain/entities/conversation.dart';
+import '../../domain/entities/message.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final String conversationId;
@@ -19,6 +20,7 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _scrollCtrl = ScrollController();
   bool _showScrollBtn = false;
+  Message? _replyTarget;
 
   @override
   void initState() {
@@ -118,7 +120,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         return Column(
                           children: [
                             if (showDate) _DateChip(date: msg.timestamp),
-                            MessageBubble(message: msg, showSender: isGroup, isGroupChat: isGroup),
+                            MessageBubble(
+                              message: msg,
+                              showSender: isGroup,
+                              isGroupChat: isGroup,
+                              repliedMessage: msg.replyToMessageId == null
+                                  ? null
+                                  : state.messages
+                                      .where((m) => m.id == msg.replyToMessageId)
+                                      .firstOrNull,
+                              onSwipeReply: (m) => setState(() => _replyTarget = m),
+                            ),
                           ],
                         );
                       },
@@ -159,9 +171,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ],
             ),
           ),
+          if (_replyTarget != null) _buildReplyBar(isDark),
           MessageInput(
             onSendMessage: _sendMessage,
-            onSendVoiceMessage: (p, d) {},
+            onSendVoiceMessage: (path, duration) {
+              ref.read(chatNotifierProvider.notifier).sendMessage(
+                    widget.conversationId,
+                    '',
+                    MessageType.AUDIO,
+                    mediaUrl: path,
+                    duration: duration,
+                    replyToMessageId: _replyTarget?.id,
+                  );
+              setState(() => _replyTarget = null);
+            },
           ),
         ],
       ),
@@ -431,11 +454,48 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
+  Widget _buildReplyBar(bool isDark) {
+    final target = _replyTarget!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: isDark ? const Color(0xFF17212B) : Colors.white,
+      child: Row(
+        children: [
+          Container(width: 3, height: 32, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  target.senderName ?? 'Réponse',
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                ),
+                Text(
+                  target.type == MessageType.TEXT ? target.content : '📎 ${target.type.name}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, color: AppColors.getTextSecondary(context)),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.close_rounded, size: 18, color: AppColors.getTextSecondary(context)),
+            onPressed: () => setState(() => _replyTarget = null),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _sendMessage(String content, MessageType type,
       {String? mediaUrl, int? duration}) {
     ref.read(chatNotifierProvider.notifier).sendMessage(
         widget.conversationId, content, type,
-        mediaUrl: mediaUrl, duration: duration);
+        mediaUrl: mediaUrl, duration: duration, replyToMessageId: _replyTarget?.id);
+    setState(() => _replyTarget = null);
   }
 }
 

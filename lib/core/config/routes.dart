@@ -46,6 +46,7 @@ import '../../features/marketplace/presentation/screens/provider_dashboard_scree
 import '../../features/marketplace/presentation/screens/create_listing_wizard_screen.dart';
 import '../../features/marketplace/presentation/screens/listing_detail_screen.dart';
 import '../../features/marketplace/presentation/screens/request_service_screen.dart';
+import '../../features/marketplace/presentation/screens/my_requests_screen.dart';
 import '../../features/freelance/presentation/screens/freelance_shell.dart';
 import '../../features/freelance/presentation/screens/freelance_home_screen.dart';
 import '../../features/freelance/presentation/screens/job_posting_detail_screen.dart';
@@ -323,6 +324,13 @@ class AppRouter {
         builder:
             (context, state) =>
                 RequestServiceScreen(listingId: state.pathParameters['id']!),
+      ),
+      // Literal "/requests" segment must be declared BEFORE the generic
+      // "/marketplace/:id" route.
+      GoRoute(
+        path: '/marketplace/requests',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const MyRequestsScreen(),
       ),
       GoRoute(
         path: '/marketplace/:id',

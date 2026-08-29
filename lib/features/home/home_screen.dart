@@ -187,6 +187,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onTap: () => context.push('/marketplace'),
         ),
         OrbitalItem(
+          icon: Icons.work_rounded,
+          label: 'Jobs',
+          color: const Color(0xFF06B6D4),
+          description: 'Trouvez des missions freelance dans la diaspora',
+          onTap: () => context.push('/freelance'),
+        ),
+        OrbitalItem(
           icon: Icons.fact_check_rounded,
           label: 'Démarches',
           color: const Color(0xFF8B5CF6),

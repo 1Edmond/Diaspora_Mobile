@@ -292,7 +292,13 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
         ),
         child: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
         ),
       ).animate().fadeIn().slideX(begin: -0.2, end: 0),
       actions: [

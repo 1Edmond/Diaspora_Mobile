@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/design_system.dart';
+import '../../../../shared/widgets/home_back_button.dart';
 import '../controllers/marketplace_providers.dart';
 import '../widgets/skeleton_loader.dart';
 
@@ -77,6 +78,7 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: const HomeBackButton(),
         title: Text(
           'Demander un service',
           style: TextStyle(

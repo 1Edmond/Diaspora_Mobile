@@ -15,6 +15,11 @@ class Conversation {
   final Color? avatarColor;
   final List<Map<String, dynamic>>? groupMembers;
 
+  /// Client-side only for now (no backend field/endpoint yet) — see
+  /// ChatNotifier.togglePinned/toggleMuted and the chat feature gap report.
+  final bool isPinned;
+  final bool isMuted;
+
   Conversation({
     required this.id,
     required this.type,
@@ -28,6 +33,8 @@ class Conversation {
     this.category,
     this.avatarColor,
     this.groupMembers,
+    this.isPinned = false,
+    this.isMuted = false,
   });
 
   bool get isGroup => type == ConversationType.GROUP;
@@ -45,6 +52,8 @@ class Conversation {
     String? category,
     Color? avatarColor,
     List<Map<String, dynamic>>? groupMembers,
+    bool? isPinned,
+    bool? isMuted,
   }) {
     return Conversation(
       id: id ?? this.id,
@@ -59,6 +68,8 @@ class Conversation {
       category: category ?? this.category,
       avatarColor: avatarColor ?? this.avatarColor,
       groupMembers: groupMembers ?? this.groupMembers,
+      isPinned: isPinned ?? this.isPinned,
+      isMuted: isMuted ?? this.isMuted,
     );
   }
 }

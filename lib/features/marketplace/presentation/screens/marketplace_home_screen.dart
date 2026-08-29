@@ -150,7 +150,18 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
           ),
         ),
       ),
-      actions: [
+actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: IconButton(
+            onPressed: () => context.push('/marketplace/requests'),
+            icon: Icon(
+              Icons.receipt_long_rounded,
+              color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+              size: 24,
+            ),
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.only(right: 16),
           child: IconButton(
@@ -160,8 +171,8 @@ class _MarketplaceHomeScreenState extends ConsumerState<MarketplaceHomeScreen> {
               color: isDark ? Colors.white : const Color(0xFF1A1A1A),
               size: 26,
             ),
-          ),
-        ).animate().fadeIn(duration: 400.ms, delay: 200.ms),
+          ).animate().fadeIn(duration: 400.ms, delay: 200.ms),
+        ),
       ],
     );
   }
