@@ -7,6 +7,7 @@ import '../../data/models/user_model.dart';
 import '../../../profile/data/services/profile_service.dart';
 import '../../../profile/presentation/controllers/profile_providers.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/services/device_identity_service.dart';
 import '../../../../shared/services/storage_service.dart';
 import 'pending_verification_provider.dart';
 
@@ -25,6 +26,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   final TokenService _tokenService;
   final Ref? _ref;
   final StorageService _storage;
+  final DeviceIdentityService _deviceIdentity;
 
   AuthNotifier(
     this.repository,
@@ -32,12 +34,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     TokenService? tokenService,
     Ref? ref,
     StorageService? storage,
+    DeviceIdentityService? deviceIdentity,
   }) : _tokenService = tokenService ?? TokenService(),
        _ref = ref,
        _storage = storage ?? StorageService(),
+       _deviceIdentity = deviceIdentity ?? DeviceIdentityService(),
        super(const AsyncValue.data(null)) {
     _restorePendingVerification();
   }
+
+  /// Access token usable outside the login flow itself (e.g. to enroll
+  /// biometrics from Settings, well after the original login call).
+  /// Prefers the freshly-issued token from this session; falls back to
+  /// whatever the repository currently has (e.g. after a session restore).
+  String? get currentAccessToken => _lastAccessToken ?? repository.accessToken;
+
+  String? get currentEmail => state.value?.email;
 
   String? _lastAccessToken;
   String? get lastAccessToken => _lastAccessToken;
@@ -107,7 +119,39 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   Future<bool> login(String email, String password) async {
     state = const AsyncValue.loading();
     try {
-      final res = await repository.login(email, password);
+      final localDeviceId = await _deviceIdentity.getStoredDeviceId();
+      final res = await repository.login(
+        email,
+        password,
+        deviceId: localDeviceId,
+      );
+
+      final userMapForDeviceId =
+          (res['user'] ?? res['User']) as Map<String, dynamic>?;
+      final apiDeviceId =
+          (res['deviceId'] ?? res['DeviceId']) as String? ??
+          (userMapForDeviceId != null
+              ? (userMapForDeviceId['deviceId'] ?? userMapForDeviceId['DeviceId']) as String?
+              : null);
+
+      if (localDeviceId == null) {
+        // First login ever on this phone: adopt whatever the backend
+        // considers the device id for this account (binds this phone).
+        if (apiDeviceId != null && apiDeviceId.isNotEmpty) {
+          await _deviceIdentity.storeDeviceId(apiDeviceId);
+        }
+      } else if (apiDeviceId != null &&
+          apiDeviceId.isNotEmpty &&
+          apiDeviceId != localDeviceId) {
+        // This account is already bound to a different phone. Block the
+        // login instead of silently overwriting the local id — otherwise
+        // the single-device guarantee this whole mechanism exists for
+        // would be trivially bypassed.
+        final exception = DeviceMismatchException();
+        state = AsyncValue.error(exception, StackTrace.current);
+        return false;
+      }
+
       final u = (res['user'] ?? res['User']) as Map<String, dynamic>? ?? {};
       final phoneMap =
           (u['phoneNumber'] ?? u['PhoneNumber']) as Map<String, dynamic>?;

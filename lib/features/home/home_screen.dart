@@ -12,6 +12,7 @@ import '../community/presentation/controllers/community_notifier.dart';
 import '../committee/presentation/controllers/committee_notifiers.dart';
 import '../procedures/presentation/controllers/procedures_notifier.dart';
 import '../profile/presentation/controllers/profile_providers.dart';
+import '../profile/presentation/widgets/profile_switcher_header.dart';
 import '../auth/presentation/controllers/auth_notifier.dart';
 
 String initialOf(String value) =>
@@ -26,6 +27,32 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   DateTime? _lastBackPress;
+  final ScrollController _scrollController = ScrollController();
+  bool _isHeaderCompact = false;
+
+  // Threshold in pixels after which the switcher header collapses into
+  // its compact form (matches the "version compacte (scroll)" state).
+  static const double _compactScrollThreshold = 40;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_handleScroll);
+  }
+
+  void _handleScroll() {
+    final shouldBeCompact = _scrollController.offset > _compactScrollThreshold;
+    if (shouldBeCompact != _isHeaderCompact) {
+      setState(() => _isHeaderCompact = shouldBeCompact);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   Future<void> _handleBackPress() async {
     final now = DateTime.now();
@@ -69,12 +96,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       .loadPosts(refresh: true);
                   await ref.read(proceduresProvider.notifier).fetch();
                 },
-                child: const CustomScrollView(
+                child: CustomScrollView(
+                  controller: _scrollController,
                   slivers: [
-                    SliverToBoxAdapter(child: _HomeHeader()),
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: EdgeInsets.all(24.0),
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                        child: ProfileSwitcherHeader(
+                          isCompact: _isHeaderCompact,
+                          onNotificationTap: () => context.push('/notifications'),
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -211,75 +247,6 @@ class _SectionHeader extends StatelessWidget {
         color: AppColors.getTextMain(context),
       ),
     ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1);
-  }
-}
-
-class _HomeHeader extends ConsumerWidget {
-  const _HomeHeader();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final activeProfile = ref.watch(activeProfileProvider);
-    final name = activeProfile?.fullName ?? 'Utilisateur';
-
-    return GlassContainer(
-      padding: const EdgeInsets.all(24),
-      child: Row(
-        children: [
-          Hero(
-            tag: 'profile_avatar',
-            child: CircleAvatar(
-              radius: 30,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              child: Text(
-                initialOf(name),
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Bonjour,',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.getTextSecondary(context),
-                  ),
-                ),
-                Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.getTextMain(context),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          NeumorphicContainer(
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-            child: IconButton(
-              icon: Icon(
-                Icons.notifications_none_rounded,
-                color: AppColors.getTextMain(context),
-                size: 24,
-              ),
-              onPressed: () => context.push('/notifications'),
-            ),
-          ),
-        ],
-      ),
-    ).animate().fadeIn(delay: 100.ms).slideY(begin: -0.2);
   }
 }
 

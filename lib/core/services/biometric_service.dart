@@ -36,6 +36,12 @@ class BiometricService {
   /// enrolled with the server for some account.
   Future<bool> get isEnrolled => _keyService.isEnrolled();
 
+  /// Removes this device's biometric enrollment. Only clears the local key
+  /// material for now — if the backend later exposes a revoke endpoint
+  /// (e.g. POST /auth/biometric/unenroll), call it here first so the
+  /// server-side key is invalidated too, not just the local copy.
+  Future<void> disenroll() => _keyService.clear();
+
   /// Prompts the user to authenticate with biometrics.
   /// Returns [BiometricResult.success] if the user successfully authenticated.
   Future<BiometricResult> authenticate({

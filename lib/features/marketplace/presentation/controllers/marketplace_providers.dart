@@ -8,6 +8,7 @@ import '../../data/models/provider_stats_model.dart';
 import '../../data/models/report_model.dart';
 import '../../data/models/service_request_model.dart';
 import '../../data/models/availability_slot_model.dart';
+import '../../data/models/marketplace_dtos.dart';
 import '../../domain/repositories/marketplace_repository.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/listing.dart';
@@ -17,6 +18,10 @@ final marketplaceRepositoryProvider = Provider((ref) {
 });
 
 final favoriteIdsProvider = StateProvider<Set<String>>((ref) => {});
+
+final marketplaceCategoriesProvider = FutureProvider((ref) {
+  return ref.read(marketplaceRepositoryProvider).getCategories();
+});
 
 class MarketplaceState {
   final List<ListingSummaryModel> items;
@@ -903,6 +908,13 @@ class ServiceRequestsNotifier extends StateNotifier<ServiceRequestsState> {
     } catch (e) {
       state = state.copyWith(isLoadingReceived: false, error: e.toString());
     }
+  }
+
+  Future<void> createRequest(String listingId, String message) async {
+    await _repository.createRequest(
+      CreateServiceRequestDto(listingId: listingId, message: message),
+    );
+    await loadSent();
   }
 
   Future<void> acceptRequest(String id) async {

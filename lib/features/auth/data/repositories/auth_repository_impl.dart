@@ -29,6 +29,7 @@ class AuthRepositoryImpl implements IAuthRepository {
     },
   );
 
+  @override
   String? get accessToken => _tokenService.accessToken;
   String? get refreshToken => _tokenService.refreshToken;
   bool get isAccessTokenExpired => _tokenService.isAccessTokenExpired;
@@ -122,10 +123,21 @@ class AuthRepositoryImpl implements IAuthRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(
+    String email,
+    String password, {
+    String? deviceId,
+  }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/auth/login',
-      data: {'Email': email, 'Password': password},
+      data: {
+        'Email': email,
+        'Password': password,
+        // Sent on every login attempt so the backend can enforce (or at
+        // least track) single-device binding per account. See
+        // AuthNotifier.login() for the local comparison/storage logic.
+        if (deviceId != null) 'DeviceId': deviceId,
+      },
     );
     if (res.statusCode == null ||
         res.statusCode! < 200 ||

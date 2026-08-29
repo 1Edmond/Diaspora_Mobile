@@ -19,6 +19,15 @@ abstract class IChatRepository {
     List<String> participants,
   );
 
+  /// Resolves a Chat profile id from an external (Freelance) profile id.
+  Future<String> resolveChatProfileByExternal(String externalProfileId);
+
+  /// Idempotent direct-message creation between two chat profile ids.
+  Future<Conversation> createDirectConversation(
+    String initiatorChatProfileId,
+    String recipientChatProfileId,
+  );
+
   // V2 Additions
   Future<void> createGroup(Group group);
   Stream<Message> get messageStream;

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/settings_notifier.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/services/biometric_service.dart';
+import '../../../auth/presentation/controllers/auth_notifier.dart';
 import '../../../../shared/widgets/diaspora_app_bar.dart';
 import '../widgets/theme_selector.dart';
 import '../widgets/language_selector.dart';
@@ -273,21 +274,69 @@ class _SecurityTab extends ConsumerWidget {
                       'Authentifiez-vous pour activer la connexion par empreinte',
                 );
 
-                if (result == BiometricResult.success && context.mounted) {
+                if (result != BiometricResult.success) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          result == BiometricResult.canceled
+                              ? 'Authentification annulée'
+                              : 'Échec de l\'authentification biométrique',
+                        ),
+                      ),
+                    );
+                  }
+                  return;
+                }
+
+                // Fingerprint confirmed locally — now actually enroll this
+                // device with the server (register the public key), which
+                // is what login_screen.dart's biometric login button
+                // actually checks (BiometricService.isEnrolled), not the
+                // settings.biometricAuthEnabled flag on its own. Without
+                // this call, the toggle used to turn "on" with no real
+                // effect on whether biometric login worked.
+                final authNotifier = ref.read(authNotifierProvider.notifier);
+                final email = authNotifier.currentEmail;
+                final accessToken = authNotifier.currentAccessToken;
+
+                if (email == null || accessToken == null) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Session introuvable — reconnectez-vous puis réessayez.',
+                        ),
+                      ),
+                    );
+                  }
+                  return;
+                }
+
+                final enrolled = await bioService.enroll(
+                  email: email,
+                  accessToken: accessToken,
+                );
+
+                if (enrolled) {
                   notifier.toggleBiometricAuth();
                 } else if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
+                    const SnackBar(
                       content: Text(
-                        result == BiometricResult.canceled
-                            ? 'Authentification annulée'
-                            : 'Échec de l\'authentification biométrique',
+                        'Échec de l\'activation — impossible d\'enregistrer '
+                        'cet appareil auprès du serveur.',
                       ),
                     ),
                   );
                 }
               }
             } else if (newValue == false && settings.biometricAuthEnabled) {
+              // Mirror of the activation path: actually revoke the local
+              // enrollment, not just flip the display flag, so a disabled
+              // toggle can't leave a stale key usable for biometric login.
+              final bioService = BiometricService();
+              await bioService.disenroll();
               notifier.toggleBiometricAuth();
             }
           },

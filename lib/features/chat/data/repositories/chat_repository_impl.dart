@@ -81,7 +81,32 @@ class ChatRepositoryImpl implements IChatRepository {
     String title,
     List<String> participants,
   ) async {
-    throw UnimplementedError();
+    final res = await _client.post('/chat/conversations', data: {
+      'title': title,
+      'participants': participants,
+    });
+    return ConversationModel.fromJson(res as Map<String, dynamic>);
+  }
+
+  @override
+  Future<String> resolveChatProfileByExternal(String externalProfileId) async {
+    final res = await _client.get('/chat/profiles/by-external/$externalProfileId');
+    final map = res as Map<String, dynamic>;
+    return map['chatProfileId'] as String? ??
+        map['ChatProfileId'] as String? ??
+        'chatprofile_$externalProfileId';
+  }
+
+  @override
+  Future<Conversation> createDirectConversation(
+    String initiatorChatProfileId,
+    String recipientChatProfileId,
+  ) async {
+    final res = await _client.post('/chat/conversations', data: {
+      'initiatorChatProfileId': initiatorChatProfileId,
+      'recipientChatProfileId': recipientChatProfileId,
+    });
+    return ConversationModel.fromJson(res as Map<String, dynamic>);
   }
 
   @override

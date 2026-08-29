@@ -15,4 +15,35 @@ abstract class IWalletRepository {
     required Currency to,
     required double amount,
   });
+
+  // Freelance escrow orchestration (calls Wallet gateway endpoints).
+  Future<String> freelanceHold({
+    required String employerExternalProfileId,
+    required String jobApplicationId,
+    required double amount,
+    String? description,
+  });
+
+  Future<void> freelanceRelease({
+    required String employerExternalProfileId,
+    required String workerExternalProfileId,
+    required String jobApplicationId,
+    required double amount,
+    String? description,
+  });
+
+  Future<void> freelanceRefund({
+    required String employerExternalProfileId,
+    required String jobApplicationId,
+    required double amount,
+    String? description,
+  });
+
+  Future<void> freelancePay({
+    required String employerExternalProfileId,
+    required String workerExternalProfileId,
+    required String jobApplicationId,
+    required double amount,
+    String? description,
+  });
 }

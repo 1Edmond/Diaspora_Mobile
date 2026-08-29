@@ -228,19 +228,41 @@ class _ProfileSelectionSheetState extends ConsumerState<ProfileSelectionSheet> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          profile.isInternal ? 'Interne' : 'Externe',
+                          profile.displaySubtitle,
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.white.withValues(alpha: 0.8),
                           ),
                         ),
-                        if (profile.universityOrCompany != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            profile.universityOrCompany!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.6),
+                        if (profile.statusLabel != null) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  profile.isPending
+                                      ? Icons.hourglass_empty_rounded
+                                      : Icons.error_outline_rounded,
+                                  size: 12,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  profile.statusLabel!,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -366,11 +388,30 @@ class _ProfileSelectionSheetState extends ConsumerState<ProfileSelectionSheet> {
                               ),
                             ),
                           ],
+                          if (profile.statusLabel != null) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: profile.statusColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                profile.statusLabel!,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: profile.statusColor,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${profile.isInternal ? "Interne" : "Externe"}${profile.universityOrCompany != null ? " – ${profile.universityOrCompany}" : ""}',
+                        profile.displaySubtitle,
                         style: TextStyle(
                           fontSize: 13,
                           color: AppColors.getTextSecondary(context),

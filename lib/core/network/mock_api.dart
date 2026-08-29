@@ -2,6 +2,7 @@
 import 'dart:async';
 import '../../features/marketplace/domain/entities/listing.dart';
 import '../../data/mock/mock_marketplace.dart';
+import '../../data/mock/mock_freelance.dart';
 
 class MockApi {
   static Future<Map<String, dynamic>> register({
@@ -687,7 +688,7 @@ class MockApi {
     return List.generate(
       3,
       (i) => {
-        'id': 'notif_${target}_ ${page}_$i',
+        'id': 'notif_${target}_${page}_$i',
         'target': target,
         'title': 'Notification #${(page - 1) * 3 + i + 1}',
         'body': 'Message pour $target - item ${i + 1}',
@@ -1985,6 +1986,30 @@ class MockApi {
     return results.map(_listingToMap).toList();
   }
 
+  // GET /listings/categories - Load categories from API (was previously a
+  // TODO with a hardcoded, partially-wrong chip list in the filter sheet).
+  // Categories are derived from the actual mock listings rather than
+  // hardcoded again, so this list can never drift out of sync with what
+  // listings actually exist.
+  static Future<List<Map<String, dynamic>>> getMarketplaceCategories() async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    final counts = <String, int>{};
+    final names = <String, String>{};
+    for (final l in mockListings) {
+      counts[l.categoryId] = (counts[l.categoryId] ?? 0) + 1;
+      names[l.categoryId] = l.categoryName;
+    }
+    final entries = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return entries
+        .map((e) => {
+              'Id': e.key,
+              'Name': names[e.key] ?? e.key,
+              'Count': e.value,
+            })
+        .toList();
+  }
+
   // GET /listings - Search listings with filters
   static Future<Map<String, dynamic>> searchListings({
     int page = 1,
@@ -2467,5 +2492,506 @@ class MockApi {
   // POST /reports/:id/resolve
   static Future<void> resolveReport(String id, int status, String? notes) async {
     await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  // ==================== CHAT PROFILE RESOLUTION ====================
+  // GET /chat/profiles/by-external/:externalProfileId
+  static Future<Map<String, dynamic>> chatProfileByExternal(
+    String externalProfileId,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return {
+      'chatProfileId': 'chatprofile_$externalProfileId',
+      'externalProfileId': externalProfileId,
+    };
+  }
+
+  // ==================== WALLET FREELANCE ESCROW ====================
+  // POST /transactions/freelance/hold -> { transactionId }
+  static Future<Map<String, dynamic>> freelanceHold(
+    Map<String, dynamic> payload,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return {
+      'transactionId': 'escrow_${DateTime.now().millisecondsSinceEpoch}',
+    };
+  }
+
+  // POST /transactions/freelance/release -> {}
+  static Future<Map<String, dynamic>> freelanceRelease(
+    Map<String, dynamic> payload,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return {'status': 'RELEASED'};
+  }
+
+  // POST /transactions/freelance/refund -> {}
+  static Future<Map<String, dynamic>> freelanceRefund(
+    Map<String, dynamic> payload,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return {'status': 'REFUNDED'};
+  }
+
+  // POST /transactions/freelance/pay -> {}
+  static Future<Map<String, dynamic>> freelancePay(
+    Map<String, dynamic> payload,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return {'status': 'PAID'};
+  }
+
+  // ==================== FREELANCE MOCK ENDPOINTS ====================
+
+  // GET /job-categories
+  static Future<List<Map<String, dynamic>>> jobCategories() async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    return List<Map<String, dynamic>>.from(mockJobCategories);
+  }
+
+  // POST /job-templates
+  static Future<Map<String, dynamic>> createJobTemplate(
+    Map<String, dynamic> data,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return {
+      'Id': 'tpl_${DateTime.now().millisecondsSinceEpoch}',
+      'EmployerId': 'emp_1',
+      'Name': data['Name'],
+      'Description': data['Description'],
+      'CategoryId': data['CategoryId'],
+      'RequiredSkills': data['RequiredSkills'] ?? [],
+      'RequiredDocuments': data['RequiredDocuments'] ?? [],
+      'DefaultCapacity': data['DefaultCapacity'] ?? 1,
+      'DefaultAmount': data['DefaultAmount'] ?? 0,
+      'DefaultCurrency': data['DefaultCurrency'] ?? 'EUR',
+      'DefaultPaymentType': data['DefaultPaymentType'] ?? 0,
+      'DefaultPaymentTiming': data['DefaultPaymentTiming'] ?? 0,
+      'DefaultCheckInMethod': data['DefaultCheckInMethod'] ?? 4,
+      'DefaultGeofenceRadiusMeters': data['DefaultGeofenceRadiusMeters'],
+      'DefaultRequiresKyc': data['DefaultRequiresKyc'] ?? false,
+    };
+  }
+
+  // PUT /job-templates/:id
+  static Future<Map<String, dynamic>> updateJobTemplate(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 350));
+    final existing = mockJobTemplates.firstWhere(
+      (t) => t['Id'] == id,
+      orElse: () => throw Exception('Template not found'),
+    );
+    return {...existing, ...data, 'Id': id};
+  }
+
+  // DELETE /job-templates/:id
+  static Future<void> deleteJobTemplate(String id) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  // GET /job-templates/my
+  static Future<List<Map<String, dynamic>>> myJobTemplates() async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    return List<Map<String, dynamic>>.from(mockJobTemplates);
+  }
+
+  static List<Map<String, dynamic>> _filterJobPostings({
+    String? categoryId,
+    String? search,
+    int? paymentType,
+    double? minAmount,
+    double? maxAmount,
+    String? city,
+    String? country,
+    bool? isRemote,
+  }) {
+    var results = mockJobPostings.where((j) {
+      if (j['Status'] != 1) return false; // only Open in public search
+      if (categoryId != null && categoryId.isNotEmpty && j['CategoryId'] != categoryId) {
+        return false;
+      }
+      if (search != null && search.isNotEmpty) {
+        final q = search.toLowerCase();
+        final title = (j['Title'] as String).toLowerCase();
+        final desc = (j['Description'] as String).toLowerCase();
+        if (!title.contains(q) && !desc.contains(q)) return false;
+      }
+      if (paymentType != null && j['PaymentType'] != paymentType) return false;
+      final amount = (j['Amount'] as num).toDouble();
+      if (minAmount != null && amount < minAmount) return false;
+      if (maxAmount != null && amount > maxAmount) return false;
+      if (city != null && city.isNotEmpty && j['City'] != city) return false;
+      if (country != null && country.isNotEmpty && j['Country'] != country) {
+        return false;
+      }
+      if (isRemote != null && j['IsRemote'] != isRemote) return false;
+      return true;
+    }).toList();
+    results.sort((a, b) => (b['CreatedAt'] as String).compareTo(a['CreatedAt'] as String));
+    return results;
+  }
+
+  // GET /job-postings
+  static Future<Map<String, dynamic>> searchJobPostings({
+    int page = 1,
+    int pageSize = 20,
+    String? categoryId,
+    String? search,
+    int? paymentType,
+    double? minAmount,
+    double? maxAmount,
+    String? city,
+    String? country,
+    bool? isRemote,
+    double? userLat,
+    double? userLng,
+    double? maxDistanceKm,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    final items = _filterJobPostings(
+      categoryId: categoryId,
+      search: search,
+      paymentType: paymentType,
+      minAmount: minAmount,
+      maxAmount: maxAmount,
+      city: city,
+      country: country,
+      isRemote: isRemote,
+    ).map((j) {
+      final copy = Map<String, dynamic>.from(j);
+      if (userLat != null && userLng != null && j['Latitude'] != null) {
+        copy['DistanceKm'] = 3.2; // placeholder distance when geo search used
+      }
+      return copy;
+    }).toList();
+
+    final totalCount = items.length;
+    final totalPages = (totalCount / pageSize).ceil();
+    final start = (page - 1) * pageSize;
+    final end = start + pageSize;
+    final paginated = start < items.length
+        ? items.sublist(start, end > items.length ? items.length : end)
+        : <Map<String, dynamic>>[];
+
+    return {
+      'items': paginated,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': totalCount,
+      'totalPages': totalPages,
+      'hasPrevious': page > 1,
+      'hasNext': page < totalPages,
+    };
+  }
+
+  // GET /job-postings/my
+  static Future<Map<String, dynamic>> myJobPostings({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final items = mockJobPostings.where((j) => j['EmployerId'] == 'emp_1').toList();
+    final totalCount = items.length;
+    final totalPages = (totalCount / pageSize).ceil();
+    final start = (page - 1) * pageSize;
+    final end = start + pageSize;
+    final paginated = start < items.length
+        ? items.sublist(start, end > items.length ? items.length : end)
+        : <Map<String, dynamic>>[];
+    return {
+      'items': paginated,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': totalCount,
+      'totalPages': totalPages,
+      'hasPrevious': page > 1,
+      'hasNext': page < totalPages,
+    };
+  }
+
+  // GET /job-postings/:id
+  static Future<Map<String, dynamic>> getJobPosting(String id) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return mockJobPostings.firstWhere(
+      (j) => j['Id'] == id,
+      orElse: () => throw Exception('Job posting not found'),
+    );
+  }
+
+  // POST /job-postings
+  static Future<Map<String, dynamic>> createJobPosting(
+    Map<String, dynamic> data,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    final categoryId = data['CategoryId'] as String? ?? 'cat_1';
+    final category = mockJobCategories.firstWhere(
+      (c) => c['Id'] == categoryId,
+      orElse: () => mockJobCategories.first,
+    );
+    return {
+      'Id': 'job_${DateTime.now().millisecondsSinceEpoch}',
+      'EmployerId': 'emp_1',
+      'EmployerName': 'Utilisateur Test',
+      'TemplateId': data['TemplateId'],
+      'CategoryId': categoryId,
+      'CategoryName': category['Name'],
+      'Title': data['Title'],
+      'Description': data['Description'],
+      'Capacity': data['Capacity'] ?? 1,
+      'AcceptedCount': 0,
+      'Amount': data['Amount'] ?? 0,
+      'Currency': data['Currency'] ?? 'EUR',
+      'PaymentType': data['PaymentType'] ?? 0,
+      'PaymentTiming': data['PaymentTiming'] ?? 0,
+      'CheckInMethod': data['CheckInMethod'] ?? 4,
+      'GeofenceRadiusMeters': data['GeofenceRadiusMeters'],
+      'RequiresKycVerification': data['RequiresKycVerification'] ?? false,
+      'EventStartAt': data['EventStartAt'],
+      'EventEndAt': data['EventEndAt'],
+      'City': data['City'],
+      'Country': data['Country'],
+      'Latitude': data['Latitude'],
+      'Longitude': data['Longitude'],
+      'IsRemote': data['IsRemote'] ?? false,
+      'RequiredSkills': data['RequiredSkills'] ?? [],
+      'RequiredDocuments': data['RequiredDocuments'] ?? [],
+      'RegistrationDeadline': data['RegistrationDeadline'],
+      'Status': 0, // draft
+      'CreatedAt': DateTime.now().toIso8601String(),
+    };
+  }
+
+  // PUT /job-postings/:id
+  static Future<Map<String, dynamic>> updateJobPosting(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 350));
+    final existing = mockJobPostings.firstWhere(
+      (j) => j['Id'] == id,
+      orElse: () => throw Exception('Job posting not found'),
+    );
+    return {...existing, ...data, 'Id': id};
+  }
+
+  // DELETE /job-postings/:id
+  static Future<void> deleteJobPosting(String id) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  // POST /job-postings/:id/publish
+  static Future<void> publishJobPosting(String id) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  // POST /job-postings/:id/close-registration
+  static Future<void> closeJobRegistration(String id) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  // POST /job-postings/:id/start
+  static Future<void> startJobPosting(String id) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  // POST /job-postings/:id/complete
+  static Future<void> completeJobPosting(String id) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  // POST /job-postings/:id/cancel
+  static Future<void> cancelJobPosting(String id, String? reason) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  // POST /job-postings/:jobPostingId/applications
+  static Future<Map<String, dynamic>> applyToJob(
+    String jobPostingId,
+    Map<String, dynamic> data,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    final posting = mockJobPostings.firstWhere(
+      (j) => j['Id'] == jobPostingId,
+      orElse: () => throw Exception('Job posting not found'),
+    );
+    return {
+      'Id': 'app_${DateTime.now().millisecondsSinceEpoch}',
+      'JobPostingId': jobPostingId,
+      'JobPostingTitle': posting['Title'],
+      'WorkerId': 'worker_1',
+      'WorkerName': 'Utilisateur Test',
+      'Message': data['message'],
+      'Status': 0, // pending
+      'DecidedAt': null,
+      'DecidedBy': null,
+      'RejectionReason': null,
+      'ChatThreadId': null,
+      'EscrowTransactionId': null,
+      'CreatedAt': DateTime.now().toIso8601String(),
+    };
+  }
+
+  // POST /applications/:id/withdraw
+  static Future<void> withdrawApplication(String id) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  // POST /applications/:id/accept
+  static Future<void> acceptApplication(String id, String? escrowTransactionId) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  // POST /applications/:id/reject
+  static Future<void> rejectApplication(String id, String? reason) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  // POST /applications/:id/no-show
+  static Future<void> noShowApplication(String id) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  // POST /applications/:id/complete
+  static Future<void> completeApplication(String id) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  // POST /applications/:id/chat-thread
+  static Future<void> linkApplicationChatThread(String id, String chatThreadId) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  // GET /applications/my
+  static Future<Map<String, dynamic>> myApplications({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final items = mockJobApplications.where((a) => a['WorkerId'] == 'worker_1').toList();
+    return {
+      'items': items,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': items.length,
+      'totalPages': 1,
+      'hasPrevious': false,
+      'hasNext': false,
+    };
+  }
+
+  // GET /job-postings/:jobPostingId/applications
+  static Future<Map<String, dynamic>> jobPostingApplications(
+    String jobPostingId, {
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final items =
+        mockJobApplications.where((a) => a['JobPostingId'] == jobPostingId).toList();
+    return {
+      'items': items,
+      'pageNumber': page,
+      'pageSize': pageSize,
+      'totalCount': items.length,
+      'totalPages': 1,
+      'hasPrevious': false,
+      'hasNext': false,
+    };
+  }
+
+  // GET /applications/:id
+  static Future<Map<String, dynamic>> getApplication(String id) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    return mockJobApplications.firstWhere(
+      (a) => a['Id'] == id,
+      orElse: () => throw Exception('Application not found'),
+    );
+  }
+
+  // POST /applications/:id/check-ins
+  static Future<Map<String, dynamic>> createJobCheckIn(
+    String applicationId,
+    Map<String, dynamic> data,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 350));
+    return {
+      'Id': 'ci_${DateTime.now().millisecondsSinceEpoch}',
+      'JobApplicationId': applicationId,
+      'WorkerId': 'worker_1',
+      'CheckInAt': DateTime.now().toIso8601String(),
+      'CheckOutAt': null,
+      'CheckInLatitude': data['Latitude'],
+      'CheckInLongitude': data['Longitude'],
+      'Method': data['Method'] ?? 0,
+      'Status': 0, // checkedIn
+    };
+  }
+
+  // POST /check-ins/:checkInId/check-out
+  static Future<void> jobCheckOut(String checkInId) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  // GET /applications/:id/check-ins
+  static Future<List<Map<String, dynamic>>> applicationCheckIns(
+    String applicationId,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    return mockJobCheckIns
+        .where((c) => c['JobApplicationId'] == applicationId)
+        .toList();
+  }
+
+  // POST /applications/:id/reviews
+  static Future<void> createJobReview(
+    String applicationId,
+    Map<String, dynamic> data,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 350));
+  }
+
+  // GET /reputation/:subjectId?role=
+  static Future<Map<String, dynamic>> getReputation(String subjectId, int role) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    return mockReputations.firstWhere(
+      (r) => r['SubjectId'] == subjectId && r['Role'] == role,
+      orElse: () => {
+        'SubjectId': subjectId,
+        'Role': role,
+        'AverageRating': 0.0,
+        'AveragePunctuality': 0.0,
+        'AverageQuality': 0.0,
+        'AverageCommunication': 0.0,
+        'TotalRatings': 0,
+        'TotalJobsCompleted': 0,
+      },
+    );
+  }
+
+  // POST /job-preferences
+  static Future<Map<String, dynamic>> createJobPreference(
+    Map<String, dynamic> data,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return {
+      'Id': 'pref_${DateTime.now().millisecondsSinceEpoch}',
+      'WorkerId': 'worker_1',
+      'CategoryId': data['CategoryId'],
+      'City': data['City'],
+      'MaxDistanceKm': data['MaxDistanceKm'],
+    };
+  }
+
+  // DELETE /job-preferences/:id
+  static Future<void> deleteJobPreference(String id) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  // GET /job-preferences/my
+  static Future<List<Map<String, dynamic>>> myJobPreferences() async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    return List<Map<String, dynamic>>.from(mockWorkerJobPreferences);
   }
 }

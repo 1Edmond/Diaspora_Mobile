@@ -7,6 +7,7 @@ import '../../../../shared/widgets/containers/neumorphic_container.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/services/biometric_service.dart';
+import '../../../../core/services/device_identity_service.dart';
 import '../controllers/auth_notifier.dart';
 
 final _biometricServiceProvider = Provider<BiometricService>(
@@ -389,9 +390,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (!mounted) return;
         context.go('/home');
       } else {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Email ou mot de passe incorrect')),
-        );
+        final authError = ref.read(authNotifierProvider).error;
+        final message = authError is DeviceMismatchException
+            ? authError.message
+            : 'Email ou mot de passe incorrect';
+        messenger.showSnackBar(SnackBar(content: Text(message)));
       }
     } catch (_) {
       if (!mounted) return;

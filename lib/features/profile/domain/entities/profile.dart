@@ -36,6 +36,47 @@ class Profile {
         : const Color(0xFF006B3F);
   }
 
+  /// Short label describing what this profile is set up for. Prefers the
+  /// user-entered organization/company (e.g. "Université de Lomé"); falls
+  /// back to the technical Interne/Externe type when no organization was
+  /// provided, since that's the only other classification the data model
+  /// currently carries.
+  String get displaySubtitle {
+    if (universityOrCompany != null && universityOrCompany!.trim().isNotEmpty) {
+      return universityOrCompany!;
+    }
+    return isInternal ? 'Interne' : 'Externe';
+  }
+
+  bool get isPending => status == ProfileStatus.PENDING;
+  bool get isRejected => status == ProfileStatus.REJECTED;
+  bool get isValidated => status == ProfileStatus.VALIDATED;
+
+  /// Short label for the profile's validation state, shown as a badge.
+  String? get statusLabel {
+    switch (status) {
+      case ProfileStatus.PENDING:
+        return 'En attente';
+      case ProfileStatus.REJECTED:
+        return 'Rejeté';
+      case ProfileStatus.VALIDATED:
+        return null; // validated is the default state, no badge needed
+    }
+  }
+
+  /// Color associated with the profile's validation state (used for the
+  /// small status dot and badge background).
+  Color get statusColor {
+    switch (status) {
+      case ProfileStatus.PENDING:
+        return const Color(0xFFF59E0B); // amber
+      case ProfileStatus.REJECTED:
+        return const Color(0xFFDC2626); // red
+      case ProfileStatus.VALIDATED:
+        return const Color(0xFF16A34A); // green
+    }
+  }
+
   Profile({
     required this.id,
     required this.userId,

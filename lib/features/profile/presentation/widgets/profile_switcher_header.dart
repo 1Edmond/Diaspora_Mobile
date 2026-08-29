@@ -11,11 +11,15 @@ import 'profile_confirmation_toast.dart';
 class ProfileSwitcherHeader extends ConsumerStatefulWidget {
   final bool isCompact;
   final bool showNotificationBell;
+  final VoidCallback? onNotificationTap;
+  final int notificationCount;
 
   const ProfileSwitcherHeader({
     super.key,
     this.isCompact = false,
     this.showNotificationBell = true,
+    this.onNotificationTap,
+    this.notificationCount = 0,
   });
 
   @override
@@ -88,13 +92,15 @@ class _ProfileSwitcherHeaderState extends ConsumerState<ProfileSwitcherHeader> {
           children: [
             _buildAvatar(profile),
             const SizedBox(width: 12),
-            _buildInfo(profile),
-            const Spacer(),
+            // Info column takes the remaining space; the notification bell
+            // and the single chevron (inside _buildInfo) sit at the
+            // trailing edge. Previously there was a SECOND chevron here
+            // after the bell — removed, since the mockup shows only one.
+            Expanded(child: _buildInfo(profile)),
             if (widget.showNotificationBell) ...[
               _buildNotificationIcon(),
               const SizedBox(width: 8),
             ],
-            _buildChevron(),
           ],
         ),
       ).animate().fadeIn(duration: 300.ms),
@@ -103,26 +109,59 @@ class _ProfileSwitcherHeaderState extends ConsumerState<ProfileSwitcherHeader> {
 
   Widget _buildAvatar(Profile? profile) {
     final color = profile?.effectiveColor ?? AppColors.primary;
+    final size = widget.isCompact ? 40.0 : 56.0;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      width: widget.isCompact ? 40 : 56,
-      height: widget.isCompact ? 40 : 56,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [color, color.withValues(alpha: 0.7)],
-        ),
-      ),
-      child: Center(
-        child: Text(
-          profile?.firstName.substring(0, 1) ?? '?',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: widget.isCompact ? 16 : 24,
-            fontWeight: FontWeight.bold,
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [color, color.withValues(alpha: 0.7)],
+              ),
+            ),
+            child: Center(
+              child: Text(
+                profile != null && profile.firstName.isNotEmpty
+                    ? profile.firstName.substring(0, 1)
+                    : '?',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: widget.isCompact ? 16 : 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ),
-        ),
+          // Small status dot: only shown for non-validated profiles, since
+          // "validated" is the default/expected state and doesn't need a
+          // badge cluttering the avatar (profiles have states: PENDING,
+          // VALIDATED, REJECTED).
+          if (profile != null && profile.statusLabel != null)
+            Positioned(
+              right: -2,
+              bottom: -2,
+              child: Container(
+                width: widget.isCompact ? 12 : 14,
+                height: widget.isCompact ? 12 : 14,
+                decoration: BoxDecoration(
+                  color: profile.statusColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.getCardBackground(context),
+                    width: 2,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -130,23 +169,27 @@ class _ProfileSwitcherHeaderState extends ConsumerState<ProfileSwitcherHeader> {
   Widget _buildInfo(Profile? profile) {
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
+      alignment: Alignment.centerLeft,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              Text(
-                profile?.fullName ?? 'Aucun profil',
-                style: TextStyle(
-                  fontSize: widget.isCompact ? 14 : 18,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.getTextMain(context),
+              Flexible(
+                child: Text(
+                  profile?.fullName ?? 'Aucun profil',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: widget.isCompact ? 14 : 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.getTextMain(context),
+                  ),
                 ),
               ),
               const SizedBox(width: 4),
               Icon(
-                Icons.keyboard_arrow_down,
+                Icons.keyboard_arrow_down_rounded,
                 size: widget.isCompact ? 14 : 20,
                 color: AppColors.getTextSecondary(context),
               ),
@@ -154,12 +197,41 @@ class _ProfileSwitcherHeaderState extends ConsumerState<ProfileSwitcherHeader> {
           ),
           if (!widget.isCompact && profile != null) ...[
             const SizedBox(height: 2),
-            Text(
-              '${profile.isInternal ? "Interne" : "Externe"}${profile.universityOrCompany != null ? " – ${profile.universityOrCompany}" : ""}',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.getTextSecondary(context),
-              ),
+            Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    // Shows the profile's organization when the user
+                    // provided one, otherwise falls back to Interne/Externe
+                    // (see Profile.displaySubtitle) — the data model has no
+                    // separate "Étudiant/Professionnel/Personnel" field.
+                    profile.displaySubtitle,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.getTextSecondary(context),
+                    ),
+                  ),
+                ),
+                if (profile.statusLabel != null) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: profile.statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      profile.statusLabel!,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: profile.statusColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ],
@@ -168,24 +240,51 @@ class _ProfileSwitcherHeaderState extends ConsumerState<ProfileSwitcherHeader> {
   }
 
   Widget _buildNotificationIcon() {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppColors.getTextSecondary(context).withValues(alpha: 0.1),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(8),
+        onTap: widget.onNotificationTap,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.getTextSecondary(context).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(
+                Icons.notifications_outlined,
+                size: 20,
+                color: AppColors.getTextMain(context),
+              ),
+              if (widget.notificationCount > 0)
+                Positioned(
+                  right: -3,
+                  top: -3,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                    decoration: const BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      widget.notificationCount > 9 ? '9+' : '${widget.notificationCount}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
-      child: Icon(
-        Icons.notifications_outlined,
-        size: 20,
-        color: AppColors.getTextSecondary(context),
-      ),
-    );
-  }
-
-  Widget _buildChevron() {
-    return Icon(
-      Icons.chevron_right,
-      color: AppColors.getTextSecondary(context),
     );
   }
 }

@@ -99,6 +99,9 @@ dependencies:
   agora_rtc_engine: ^6.3.0
   permission_handler: ^11.3.0
 
+  # Geolocation (Freelance search-by-distance + geo check-in)
+  geolocator: ^11.0.0
+
   # Biometric
   local_auth: ^2.2.0
 

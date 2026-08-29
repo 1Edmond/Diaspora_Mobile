@@ -306,16 +306,48 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   }
 
   Widget _buildCategorySelector() {
-    // TODO: Load categories from API
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        ChoiceChip(label: const Text('Tous'), selected: _selectedCategoryId == null, onSelected: (_) => setState(() => _selectedCategoryId = null)),
-        ChoiceChip(label: const Text('Services'), selected: _selectedCategoryId == 'services', onSelected: (_) => setState(() => _selectedCategoryId = 'services')),
-        ChoiceChip(label: const Text('Produits'), selected: _selectedCategoryId == 'products', onSelected: (_) => setState(() => _selectedCategoryId = 'products')),
-        ChoiceChip(label: const Text('Événements'), selected: _selectedCategoryId == 'events', onSelected: (_) => setState(() => _selectedCategoryId = 'events')),
-      ],
+    // Loaded from GET /listings/categories (derived from real listing data)
+    // instead of the previous hardcoded 4-chip list, two of which
+    // ('products', 'events') didn't match any real category and always
+    // returned zero results when selected.
+    final categoriesAsync = ref.watch(marketplaceCategoriesProvider);
+
+    return categoriesAsync.when(
+      data: (categories) => Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          ChoiceChip(
+            label: const Text('Tous'),
+            selected: _selectedCategoryId == null,
+            onSelected: (_) => setState(() => _selectedCategoryId = null),
+          ),
+          for (final category in categories)
+            ChoiceChip(
+              label: Text('${category.name} (${category.count})'),
+              selected: _selectedCategoryId == category.id,
+              onSelected: (_) => setState(() => _selectedCategoryId = category.id),
+            ),
+        ],
+      ),
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: SizedBox(
+          height: 20,
+          width: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+      error: (_, __) => Wrap(
+        spacing: 8,
+        children: [
+          ChoiceChip(
+            label: const Text('Tous'),
+            selected: _selectedCategoryId == null,
+            onSelected: (_) => setState(() => _selectedCategoryId = null),
+          ),
+        ],
+      ),
     );
   }
 

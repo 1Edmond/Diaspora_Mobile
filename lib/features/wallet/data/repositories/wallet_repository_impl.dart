@@ -3,8 +3,14 @@ import '../../domain/entities/currency.dart';
 import '../../domain/repositories/wallet_repository.dart';
 import '../../../../data/mock/mock_wallet_transactions.dart'; // Source
 import '../../../../core/config/app_config.dart';
+import '../../../../core/network/dio_client.dart';
 
 class WalletRepositoryImpl implements IWalletRepository {
+  final DioClient _client;
+
+  WalletRepositoryImpl({DioClient? client})
+      : _client = client ?? DioClient();
+
   // Helpers to reconstruct Currency objects from codes would be needed in real app
   // For mock, we'll create simple Currency objects on the fly or fetch from a CurrencyRepository
 
@@ -78,6 +84,71 @@ class WalletRepositoryImpl implements IWalletRepository {
     }
   }
 
+  @override
+  Future<String> freelanceHold({
+    required String employerExternalProfileId,
+    required String jobApplicationId,
+    required double amount,
+    String? description,
+  }) async {
+    final res = await _client.post('/transactions/freelance/hold', data: {
+      'employerExternalProfileId': employerExternalProfileId,
+      'jobApplicationId': jobApplicationId,
+      'amount': amount,
+      'description': description,
+    });
+    return (res as Map<String, dynamic>)['transactionId'] as String;
+  }
+
+  @override
+  Future<void> freelanceRelease({
+    required String employerExternalProfileId,
+    required String workerExternalProfileId,
+    required String jobApplicationId,
+    required double amount,
+    String? description,
+  }) async {
+    await _client.post('/transactions/freelance/release', data: {
+      'employerExternalProfileId': employerExternalProfileId,
+      'workerExternalProfileId': workerExternalProfileId,
+      'jobApplicationId': jobApplicationId,
+      'amount': amount,
+      'description': description,
+    });
+  }
+
+  @override
+  Future<void> freelanceRefund({
+    required String employerExternalProfileId,
+    required String jobApplicationId,
+    required double amount,
+    String? description,
+  }) async {
+    await _client.post('/transactions/freelance/refund', data: {
+      'employerExternalProfileId': employerExternalProfileId,
+      'jobApplicationId': jobApplicationId,
+      'amount': amount,
+      'description': description,
+    });
+  }
+
+  @override
+  Future<void> freelancePay({
+    required String employerExternalProfileId,
+    required String workerExternalProfileId,
+    required String jobApplicationId,
+    required double amount,
+    String? description,
+  }) async {
+    await _client.post('/transactions/freelance/pay', data: {
+      'employerExternalProfileId': employerExternalProfileId,
+      'workerExternalProfileId': workerExternalProfileId,
+      'jobApplicationId': jobApplicationId,
+      'amount': amount,
+      'description': description,
+    });
+  }
+
   String _getSymbol(String code) {
     if (code == 'EUR') return '€';
     if (code == 'USD') return '\$';
@@ -86,7 +157,6 @@ class WalletRepositoryImpl implements IWalletRepository {
   }
 
   double _getMockRate(String from, String to) {
-    // Simplified rates
     if (from == 'RUB' && to == 'XOF') return 6.5;
     if (from == 'XOF' && to == 'RUB') return 0.15;
     return 1.0;

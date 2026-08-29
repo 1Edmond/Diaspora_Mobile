@@ -45,6 +45,19 @@ import '../../features/marketplace/presentation/screens/my_listings_screen.dart'
 import '../../features/marketplace/presentation/screens/provider_dashboard_screen.dart';
 import '../../features/marketplace/presentation/screens/create_listing_wizard_screen.dart';
 import '../../features/marketplace/presentation/screens/listing_detail_screen.dart';
+import '../../features/marketplace/presentation/screens/request_service_screen.dart';
+import '../../features/freelance/presentation/screens/freelance_shell.dart';
+import '../../features/freelance/presentation/screens/freelance_home_screen.dart';
+import '../../features/freelance/presentation/screens/job_posting_detail_screen.dart';
+import '../../features/freelance/presentation/screens/my_applications_screen.dart';
+import '../../features/freelance/presentation/screens/my_offers_screen.dart';
+import '../../features/freelance/presentation/screens/job_applications_screen.dart';
+import '../../features/freelance/presentation/screens/create_job_posting_screen.dart';
+import '../../features/freelance/presentation/screens/check_in_screen.dart';
+import '../../features/freelance/presentation/screens/job_preferences_screen.dart';
+import '../../features/freelance/presentation/screens/job_templates_screen.dart';
+import '../../features/freelance/presentation/screens/reputation_screen.dart';
+import '../../features/freelance/domain/entities/enums.dart';
 
 import '../realtime/realtime_debug_screen.dart';
 import '../../features/auth/presentation/controllers/pending_verification_provider.dart';
@@ -301,6 +314,16 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const CreateListingWizardScreen(),
       ),
+      // Literal "/request" segment must be declared BEFORE the generic
+      // "/marketplace/:id" route, otherwise GoRouter matches "request" as
+      // an ":id" and this sub-path is never reachable.
+      GoRoute(
+        path: '/marketplace/request/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder:
+            (context, state) =>
+                RequestServiceScreen(listingId: state.pathParameters['id']!),
+      ),
       GoRoute(
         path: '/marketplace/:id',
         parentNavigatorKey: _rootNavigatorKey,
@@ -314,6 +337,90 @@ class AppRouter {
         builder:
             (context, state) =>
                 CreateListingWizardScreen(editListingId: state.pathParameters['id']!),
+      ),
+      // Freelance routes - StatefulShellRoute for bottom nav
+      StatefulShellRoute.indexedStack(
+        builder:
+            (context, state, navigationShell) =>
+                FreelanceShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/freelance',
+                builder: (context, state) => const FreelanceHomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/freelance/my-applications',
+                builder: (context, state) => const MyApplicationsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/freelance/my-offers',
+                builder: (context, state) => const MyOffersScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/freelance/preferences',
+                builder: (context, state) => const JobPreferencesScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
+      // Freelance leaf routes (full screen, pushed on root navigator)
+      GoRoute(
+        path: '/freelance/create',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const CreateJobPostingScreen(),
+      ),
+      GoRoute(
+        path: '/freelance/templates',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const JobTemplatesScreen(),
+      ),
+      GoRoute(
+        path: '/freelance/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder:
+            (context, state) =>
+                JobPostingDetailScreen(jobPostingId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/freelance/:id/applications',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder:
+            (context, state) =>
+                JobApplicationsScreen(jobPostingId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/freelance/check-in/:applicationId/:method',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => CheckInScreen(
+          applicationId: state.pathParameters['applicationId']!,
+          method: CheckInMethod.values[
+              int.tryParse(state.pathParameters['method'] ?? '') ??
+                  0],
+        ),
+      ),
+      GoRoute(
+        path: '/reputation/:subjectId/:role',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => ReputationScreen(
+          subjectId: state.pathParameters['subjectId']!,
+          role: ReputationRole.values[
+              int.tryParse(state.pathParameters['role'] ?? '') ?? 0],
+        ),
       ),
     ],
   );

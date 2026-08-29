@@ -7,10 +7,17 @@ import '../../data/models/report_model.dart';
 import '../../data/models/service_request_model.dart';
 import '../../data/models/marketplace_dtos.dart';
 import '../../data/models/availability_slot_model.dart';
+import '../../data/models/marketplace_category_model.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/listing.dart';
 
 abstract class IMarketplaceRepository {
+  /// Distinct listing categories, derived from live listing data rather
+  /// than a hardcoded list, so the filter UI never offers a category that
+  /// returns zero results. Implements the "Load categories from API" TODO
+  /// that used to live directly in filter_bottom_sheet.dart.
+  Future<List<MarketplaceCategoryModel>> getCategories();
+
   Future<PagedResult<ListingSummaryModel>> searchListings({
     int page = 1,
     int pageSize = 20,

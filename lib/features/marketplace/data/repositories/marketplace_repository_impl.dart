@@ -9,6 +9,7 @@ import '../../data/models/report_model.dart';
 import '../../data/models/service_request_model.dart';
 import '../../data/models/marketplace_dtos.dart';
 import '../../data/models/availability_slot_model.dart';
+import '../../data/models/marketplace_category_model.dart';
 import '../../domain/repositories/marketplace_repository.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/listing.dart';
@@ -18,6 +19,15 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
   final DioClient _client;
 
   MarketplaceRepositoryImpl({required DioClient client}) : _client = client;
+
+  @override
+  Future<List<MarketplaceCategoryModel>> getCategories() async {
+    final res = await _client.get('/listings/categories');
+    final list = (res as List<dynamic>? ?? []);
+    return list
+        .map((json) => MarketplaceCategoryModel.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
 
   @override
   Future<PagedResult<ListingSummaryModel>> searchListings({
@@ -59,7 +69,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
 
     final res = await _client.get('/listings', queryParameters: queryParams);
     return PagedResult.fromJson(
-      res.data as Map<String, dynamic>,
+      res as Map<String, dynamic>,
       (json) => ListingSummaryModel.fromJson(json),
     );
   }
@@ -99,7 +109,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
 
     final res = await _client.get('/listings', queryParameters: queryParams);
     return PagedResult.fromJson(
-      res.data as Map<String, dynamic>,
+      res as Map<String, dynamic>,
       (json) => ListingSummaryModel.fromJson(json),
     );
   }
@@ -107,7 +117,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
   @override
   Future<ListingModel> getListing(String id) async {
     final res = await _client.get('/listings/$id');
-    return ListingModel.fromJson(res.data as Map<String, dynamic>);
+    return ListingModel.fromJson(res as Map<String, dynamic>);
   }
 
   @override
@@ -126,7 +136,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
 
     final res = await _client.get('/listings/my', queryParameters: queryParams);
     return PagedResult.fromJson(
-      res.data as Map<String, dynamic>,
+      res as Map<String, dynamic>,
       (json) => ListingSummaryModel.fromJson(json),
     );
   }
@@ -142,7 +152,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     };
     final res = await _client.get('/listings/pending', queryParameters: queryParams);
     return PagedResult.fromJson(
-      res.data as Map<String, dynamic>,
+      res as Map<String, dynamic>,
       (json) => ListingSummaryModel.fromJson(json),
     );
   }
@@ -150,13 +160,13 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
   @override
   Future<ListingModel> createListing(CreateListingDto dto) async {
     final res = await _client.post('/listings', data: dto.toJson());
-    return ListingModel.fromJson(res.data as Map<String, dynamic>);
+    return ListingModel.fromJson(res as Map<String, dynamic>);
   }
 
   @override
   Future<ListingModel> updateListing(String id, UpdateListingDto dto) async {
     final res = await _client.put('/listings/$id', data: dto.toJson());
-    return ListingModel.fromJson(res.data as Map<String, dynamic>);
+    return ListingModel.fromJson(res as Map<String, dynamic>);
   }
 
   @override
@@ -212,7 +222,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
       queryParameters: queryParams,
     );
     return PagedResult.fromJson(
-      res.data as Map<String, dynamic>,
+      res as Map<String, dynamic>,
       (json) => ReviewModel.fromJson(json),
     );
   }
@@ -220,13 +230,13 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
   @override
   Future<ReviewModel> createReview(String listingId, CreateReviewDto dto) async {
     final res = await _client.post('/listings/$listingId/reviews', data: dto.toJson());
-    return ReviewModel.fromJson(res.data as Map<String, dynamic>);
+    return ReviewModel.fromJson(res as Map<String, dynamic>);
   }
 
   @override
   Future<ReviewModel> updateReview(String listingId, String reviewId, UpdateReviewDto dto) async {
     final res = await _client.put('/listings/$listingId/reviews/$reviewId', data: dto.toJson());
-    return ReviewModel.fromJson(res.data as Map<String, dynamic>);
+    return ReviewModel.fromJson(res as Map<String, dynamic>);
   }
 
   @override
@@ -263,7 +273,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     };
     final res = await _client.get('/favorites/my', queryParameters: queryParams);
     return PagedResult.fromJson(
-      res.data as Map<String, dynamic>,
+      res as Map<String, dynamic>,
       (json) => ListingSummaryModel.fromJson(json),
     );
   }
@@ -271,7 +281,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
   @override
   Future<ServiceRequestModel> createRequest(CreateServiceRequestDto dto) async {
     final res = await _client.post('/service-requests', data: dto.toJson());
-    return ServiceRequestModel.fromJson(res.data as Map<String, dynamic>);
+    return ServiceRequestModel.fromJson(res as Map<String, dynamic>);
   }
 
   @override
@@ -285,7 +295,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     };
     final res = await _client.get('/service-requests/my', queryParameters: queryParams);
     return PagedResult.fromJson(
-      res.data as Map<String, dynamic>,
+      res as Map<String, dynamic>,
       (json) => ServiceRequestModel.fromJson(json),
     );
   }
@@ -301,7 +311,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     };
     final res = await _client.get('/service-requests/received', queryParameters: queryParams);
     return PagedResult.fromJson(
-      res.data as Map<String, dynamic>,
+      res as Map<String, dynamic>,
       (json) => ServiceRequestModel.fromJson(json),
     );
   }
@@ -309,7 +319,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
   @override
   Future<ServiceRequestModel> getRequest(String id) async {
     final res = await _client.get('/service-requests/$id');
-    return ServiceRequestModel.fromJson(res.data as Map<String, dynamic>);
+    return ServiceRequestModel.fromJson(res as Map<String, dynamic>);
   }
 
   @override
@@ -343,7 +353,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
   @override
   Future<ProviderStatsModel> getMyProviderStats() async {
     final res = await _client.get('/listings/stats/my');
-    return ProviderStatsModel.fromJson(res.data as Map<String, dynamic>);
+    return ProviderStatsModel.fromJson(res as Map<String, dynamic>);
   }
 
   @override
@@ -366,7 +376,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     };
     final res = await _client.get('/reports/pending', queryParameters: queryParams);
     return PagedResult.fromJson(
-      res.data as Map<String, dynamic>,
+      res as Map<String, dynamic>,
       (json) => ReportModel.fromJson(json),
     );
   }

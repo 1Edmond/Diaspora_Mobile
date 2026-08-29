@@ -4,7 +4,11 @@ import 'package:diaspora_app/features/auth/domain/repositories/auth_repository.d
 
 class _FakeRepo implements IAuthRepository {
   @override
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(
+    String email,
+    String password, {
+    String? deviceId,
+  }) async {
     return {
       'user': {
         'id': 'u1',
@@ -39,6 +43,9 @@ class _FakeRepo implements IAuthRepository {
 
   @override
   Future<bool> ensureAuthenticated() async => false;
+
+  @override
+  String? get accessToken => null;
 }
 
 void main() {

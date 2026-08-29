@@ -61,6 +61,40 @@ class _FakeRepo implements IWalletRepository {
     required Currency to,
     required double amount,
   }) async {}
+
+  @override
+  Future<String> freelanceHold({
+    required String employerExternalProfileId,
+    required String jobApplicationId,
+    required double amount,
+    String? description,
+  }) async => 'tx_test';
+
+  @override
+  Future<void> freelanceRelease({
+    required String employerExternalProfileId,
+    required String workerExternalProfileId,
+    required String jobApplicationId,
+    required double amount,
+    String? description,
+  }) async {}
+
+  @override
+  Future<void> freelanceRefund({
+    required String employerExternalProfileId,
+    required String jobApplicationId,
+    required double amount,
+    String? description,
+  }) async {}
+
+  @override
+  Future<void> freelancePay({
+    required String employerExternalProfileId,
+    required String workerExternalProfileId,
+    required String jobApplicationId,
+    required double amount,
+    String? description,
+  }) async {}
 }
 
 void main() {
