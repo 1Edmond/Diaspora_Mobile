@@ -168,7 +168,10 @@ class _PhoneVerificationScreenState
                       Icons.arrow_back_ios_new_rounded,
                       color: AppColors.getTextMain(context),
                     ),
-                    onPressed: null,
+                    onPressed: () {
+                      ref.read(authNotifierProvider.notifier).cancelRegistration();
+                      context.go('/auth/register');
+                    },
                   ).animate().fadeIn(delay: 800.ms),
                 ),
               ],

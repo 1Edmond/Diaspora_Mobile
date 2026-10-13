@@ -459,13 +459,19 @@ class AppRouter {
   /// should decide between boarding/auth/home. Non-entry locations (e.g.
   /// /marketplace, /chat, deep links) are left untouched to avoid redirect
   /// loops or losing an intentional deep-link target.
+  ///
+  /// /auth/register is deliberately NOT in this list: it used to be, which
+  /// meant navigating to it while unauthenticated (the normal case for
+  /// someone creating an account) tripped case 4 below and bounced the
+  /// user straight back to /auth/login — the register screen could never
+  /// actually be reached. Registration is a legitimate destination for an
+  /// unauthenticated user, not a "return to start" trigger point.
   static bool _isEntryLocation(String location) {
     return location == '/' ||
         location == '/home' ||
         location == '/onboarding' ||
         location == '/auth' ||
-        location == '/auth/login' ||
-        location == '/auth/register';
+        location == '/auth/login';
   }
 }
 

@@ -123,6 +123,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
     if (accept != true) return;
 
+    // The dialog above is just a yes/no prompt — it is NOT a fingerprint
+    // scan. Without this call, tapping "Activer" went straight to
+    // registering a biometric key with the server with no actual
+    // fingerprint confirmation ever happening on the device.
+    final authResult = await svc.authenticate(
+      reason: 'Confirmez votre empreinte pour activer la connexion biométrique',
+    );
+    if (authResult != BiometricResult.success) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            authResult == BiometricResult.canceled
+                ? 'Activation annulée'
+                : 'Échec de la vérification par empreinte',
+          ),
+        ),
+      );
+      return;
+    }
+
     final accessToken = ref.read(authNotifierProvider.notifier).lastAccessToken;
     if (accessToken == null) return;
 

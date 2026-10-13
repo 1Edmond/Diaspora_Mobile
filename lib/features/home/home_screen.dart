@@ -14,6 +14,8 @@ import '../procedures/presentation/controllers/procedures_notifier.dart';
 import '../profile/presentation/controllers/profile_providers.dart';
 import '../profile/presentation/widgets/profile_switcher_header.dart';
 import '../auth/presentation/controllers/auth_notifier.dart';
+import '../settings/presentation/controllers/settings_notifier.dart';
+import '../settings/domain/entities/settings_entity.dart';
 
 String initialOf(String value) =>
     value.isNotEmpty ? value[0].toUpperCase() : '?';
@@ -110,28 +112,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _SectionHeader(title: 'Services rapides'),
-                            SizedBox(height: 16),
-                            _MenuGridSection(),
-                            SizedBox(height: 32),
-                            _SectionHeader(title: 'Actualités Communauté'),
-                            SizedBox(height: 16),
-                            _CommunityFeedSection(),
-                            SizedBox(height: 32),
-                            _SectionHeader(title: 'Vos Démarches'),
-                            SizedBox(height: 16),
-                            _ProceduresHighlightSection(),
-                            SizedBox(height: 32),
-                            _SectionHeader(title: 'Comités Actifs'),
-                            SizedBox(height: 16),
-                            _CommitteeListSection(),
-                            SizedBox(height: 100),
-                          ],
-                        ),
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                        child: _HomeSections(),
                       ),
                     ),
                   ],
@@ -187,13 +169,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onTap: () => context.push('/marketplace'),
         ),
         OrbitalItem(
-          icon: Icons.work_rounded,
-          label: 'Jobs',
-          color: const Color(0xFF06B6D4),
-          description: 'Trouvez des missions freelance dans la diaspora',
-          onTap: () => context.push('/freelance'),
-        ),
-        OrbitalItem(
           icon: Icons.fact_check_rounded,
           label: 'Démarches',
           color: const Color(0xFF8B5CF6),
@@ -234,7 +209,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       onClose: () => debugPrint('Orbital closed'),
       onLogout: () async {
         await ref.read(authNotifierProvider.notifier).logout();
-        if (context.mounted) context.go('/auth/login');
+        if (context.mounted) context.go('/onboarding');
       },
     );
   }
@@ -242,18 +217,138 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
-  const _SectionHeader({required this.title});
+  final VoidCallback? onSeeAll;
+  const _SectionHeader({required this.title, this.onSeeAll});
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: AppColors.getTextMain(context),
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.getTextMain(context),
+          ),
+        ),
+        if (onSeeAll != null)
+          GestureDetector(
+            onTap: onSeeAll,
+            child: Row(
+              children: [
+                Text(
+                  'Tout voir',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.primary),
+              ],
+            ),
+          ),
+      ],
     ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1);
+  }
+}
+
+/// Assembles the home page's content sections in order, each individually
+/// toggleable from Réglages > Accueil. Sections animate in/out with
+/// AnimatedSwitcher when their visibility is toggled live, rather than
+/// just popping — and each section's own internal content still does its
+/// staggered entrance animation the first time it appears.
+class _HomeSections extends ConsumerWidget {
+  const _HomeSections();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsNotifierProvider).valueOrNull ??
+        const SettingsEntity();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _AnimatedSection(
+          visible: settings.homeShowQuickAccess,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionHeader(title: 'Services rapides'),
+              const SizedBox(height: 16),
+              _MenuGridSection(horizontal: settings.homeQuickAccessHorizontal),
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+        _AnimatedSection(
+          visible: settings.homeShowProceduresStats,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionHeader(
+                title: 'Vos démarches',
+                onSeeAll: () => context.push('/procedures'),
+              ),
+              const SizedBox(height: 16),
+              const _ProceduresStatsSection(),
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+        _AnimatedSection(
+          visible: settings.homeShowCommunityFeed,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionHeader(
+                title: 'Actualités communauté',
+                onSeeAll: () => context.push('/community'),
+              ),
+              const SizedBox(height: 16),
+              const _CommunityFeedSection(),
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+        _AnimatedSection(
+          visible: settings.homeShowCommitteeList,
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionHeader(title: 'Comités actifs'),
+              SizedBox(height: 16),
+              _CommitteeListSection(),
+              SizedBox(height: 32),
+            ],
+          ),
+        ),
+        const SizedBox(height: 68),
+      ],
+    );
+  }
+}
+
+class _AnimatedSection extends StatelessWidget {
+  final bool visible;
+  final Widget child;
+  const _AnimatedSection({required this.visible, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        child: visible
+            ? child
+            : const SizedBox(width: double.infinity, key: ValueKey('hidden')),
+      ),
+    );
   }
 }
 
@@ -266,7 +361,8 @@ class _MenuItem {
 }
 
 class _MenuGridSection extends StatelessWidget {
-  const _MenuGridSection();
+  final bool horizontal;
+  const _MenuGridSection({this.horizontal = true});
 
   static const _items = [
     _MenuItem(
@@ -304,6 +400,22 @@ class _MenuGridSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (horizontal) {
+      return SizedBox(
+        height: 92,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: _items.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 14),
+          itemBuilder: (context, index) => _QuickAccessBubble(
+            item: _items[index],
+            index: index,
+          ),
+        ),
+      );
+    }
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -354,6 +466,78 @@ class _MenuGridSection extends StatelessWidget {
             .scale(begin: const Offset(0.8, 0.8));
       },
     );
+  }
+}
+
+/// The horizontal "bubble" layout: a big circular icon with a subtle
+/// gradient ring, a bouncy staggered entrance, and a press-down scale
+/// animation on tap — meant to feel a bit more alive than the grid.
+class _QuickAccessBubble extends StatefulWidget {
+  final _MenuItem item;
+  final int index;
+  const _QuickAccessBubble({required this.item, required this.index});
+
+  @override
+  State<_QuickAccessBubble> createState() => _QuickAccessBubbleState();
+}
+
+class _QuickAccessBubbleState extends State<_QuickAccessBubble> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTap: () => context.push(item.route),
+      child: AnimatedScale(
+        scale: _pressed ? 0.9 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: SizedBox(
+          width: 68,
+          child: Column(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      item.color.withValues(alpha: 0.18),
+                      item.color.withValues(alpha: 0.06),
+                    ],
+                  ),
+                  border: Border.all(color: item.color.withValues(alpha: 0.25)),
+                ),
+                child: Icon(item.icon, color: item.color, size: 26),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                item.label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.getTextMain(context),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    )
+        .animate()
+        .fadeIn(delay: (150 + widget.index * 70).ms, duration: 350.ms)
+        .slideY(begin: 0.4, curve: Curves.easeOutBack)
+        .scale(begin: const Offset(0.7, 0.7), curve: Curves.easeOutBack);
   }
 }
 
@@ -425,88 +609,129 @@ class _CommitteeListSection extends ConsumerWidget {
   }
 }
 
-class _ProceduresHighlightSection extends ConsumerWidget {
-  const _ProceduresHighlightSection();
+/// Replaces the old "show the first procedure" section: a compact stats
+/// row (not a list of every procedure) — total, in progress, completed,
+/// not started — each tappable to jump to the filtered procedures list.
+class _ProceduresStatsSection extends ConsumerWidget {
+  const _ProceduresStatsSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final proceduresState = ref.watch(proceduresProvider);
+    final state = ref.watch(proceduresProvider);
 
-    if (proceduresState.isLoading && proceduresState.items.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+    if (state.isLoading && state.items.isEmpty) {
+      return const SizedBox(
+        height: 90,
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
-    if (proceduresState.items.isEmpty) return const SizedBox();
+    if (state.items.isEmpty) return const SizedBox();
 
-    final p = proceduresState.items.first;
-    final isCompleted = proceduresState.completedProcedureIds.contains(p.id);
+    final total = state.items.length;
+    final completed = state.completedProcedureIds.length;
+    final inProgress = state.startedProcedureIds
+        .difference(state.completedProcedureIds)
+        .length;
+    final notStarted = (total - state.startedProcedureIds.length).clamp(0, total);
+
+    final stats = [
+      (
+        'Total',
+        total,
+        Icons.folder_copy_rounded,
+        AppColors.primary,
+      ),
+      (
+        'En cours',
+        inProgress,
+        Icons.hourglass_top_rounded,
+        const Color(0xFFF59E0B),
+      ),
+      (
+        'Terminées',
+        completed,
+        Icons.check_circle_rounded,
+        AppColors.accent,
+      ),
+      (
+        'À faire',
+        notStarted,
+        Icons.radio_button_unchecked_rounded,
+        AppColors.getTextSecondary(context),
+      ),
+    ];
 
     return GlassContainer(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color:
-                  isCompleted
-                      ? AppColors.accent.withValues(alpha: 0.15)
-                      : AppColors.primary.withValues(alpha: 0.1),
+          for (var i = 0; i < stats.length; i++)
+            Expanded(
+              child: _StatPill(
+                label: stats[i].$1,
+                value: stats[i].$2,
+                icon: stats[i].$3,
+                color: stats[i].$4,
+                delay: i * 100,
+                onTap: () => context.push('/procedures'),
+              ),
             ),
-            child: Center(
-              child:
-                  isCompleted
-                      ? const Icon(
-                        Icons.check_rounded,
-                        size: 24,
-                        color: AppColors.accent,
-                      )
-                      : const Icon(
-                        Icons.article_outlined,
-                        size: 20,
-                        color: AppColors.primary,
-                      ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1);
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  final String label;
+  final int value;
+  final IconData icon;
+  final Color color;
+  final int delay;
+  final VoidCallback onTap;
+
+  const _StatPill({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+    required this.delay,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 6),
+          TweenAnimationBuilder<int>(
+            tween: IntTween(begin: 0, end: value),
+            duration: 700.ms,
+            curve: Curves.easeOutCubic,
+            builder: (context, animatedValue, _) => Text(
+              '$animatedValue',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: AppColors.getTextMain(context),
+              ),
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  p.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: AppColors.getTextMain(context),
-                    decoration: isCompleted ? TextDecoration.lineThrough : null,
-                    decorationColor: AppColors.accent.withValues(alpha: 0.5),
-                  ),
-                ),
-                Text(
-                  p.description,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.getTextSecondary(context),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          InkWell(
-            onTap: () => context.push('/procedures'),
-            child: Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 16,
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
               color: AppColors.getTextSecondary(context),
             ),
           ),
         ],
       ),
-    ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1);
+    ).animate().fadeIn(delay: (500 + delay).ms).scale(begin: const Offset(0.7, 0.7));
   }
 }
 

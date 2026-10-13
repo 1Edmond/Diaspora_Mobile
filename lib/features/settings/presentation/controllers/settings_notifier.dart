@@ -107,6 +107,35 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsEntity>> {
     }
   }
 
+  // ── Home page personalization ───────────────────────────────────────
+
+  Future<void> _updateHome(SettingsEntity Function(SettingsEntity) mutate) async {
+    final current = state.value;
+    if (current == null) return;
+    final updated = mutate(current);
+    state = AsyncValue.data(updated);
+    try {
+      await repository.updateSettings(updated);
+    } catch (e, _) {
+      state = AsyncValue.error(e, StackTrace.current);
+    }
+  }
+
+  Future<void> toggleHomeQuickAccess() => _updateHome(
+      (c) => c.copyWith(homeShowQuickAccess: !c.homeShowQuickAccess));
+
+  Future<void> toggleHomeQuickAccessLayout() => _updateHome(
+      (c) => c.copyWith(homeQuickAccessHorizontal: !c.homeQuickAccessHorizontal));
+
+  Future<void> toggleHomeProceduresStats() => _updateHome(
+      (c) => c.copyWith(homeShowProceduresStats: !c.homeShowProceduresStats));
+
+  Future<void> toggleHomeCommunityFeed() => _updateHome(
+      (c) => c.copyWith(homeShowCommunityFeed: !c.homeShowCommunityFeed));
+
+  Future<void> toggleHomeCommitteeList() => _updateHome(
+      (c) => c.copyWith(homeShowCommitteeList: !c.homeShowCommitteeList));
+
   Future<void> deleteAccount() async {
     try {
       await repository.deleteAccount();

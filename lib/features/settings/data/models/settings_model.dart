@@ -7,6 +7,11 @@ class SettingsModel extends SettingsEntity {
     required super.notificationsEnabled,
     required super.biometricAuthEnabled,
     required super.privacyLevel,
+    super.homeShowQuickAccess,
+    super.homeQuickAccessHorizontal,
+    super.homeShowProceduresStats,
+    super.homeShowCommunityFeed,
+    super.homeShowCommitteeList,
   });
 
   factory SettingsModel.fromJson(Map<String, dynamic> json) {
@@ -18,6 +23,13 @@ class SettingsModel extends SettingsEntity {
       privacyLevel: PrivacyLevel.fromString(
         json['privacyLevel'] as String? ?? 'PRIVATE',
       ),
+      homeShowQuickAccess: json['homeShowQuickAccess'] as bool? ?? true,
+      homeQuickAccessHorizontal:
+          json['homeQuickAccessHorizontal'] as bool? ?? true,
+      homeShowProceduresStats:
+          json['homeShowProceduresStats'] as bool? ?? true,
+      homeShowCommunityFeed: json['homeShowCommunityFeed'] as bool? ?? true,
+      homeShowCommitteeList: json['homeShowCommitteeList'] as bool? ?? true,
     );
   }
 
@@ -29,6 +41,11 @@ class SettingsModel extends SettingsEntity {
       'biometricAuthEnabled': biometricAuthEnabled,
       'darkMode': darkMode,
       'privacyLevel': privacyLevel.value,
+      'homeShowQuickAccess': homeShowQuickAccess,
+      'homeQuickAccessHorizontal': homeQuickAccessHorizontal,
+      'homeShowProceduresStats': homeShowProceduresStats,
+      'homeShowCommunityFeed': homeShowCommunityFeed,
+      'homeShowCommitteeList': homeShowCommitteeList,
     };
   }
 
@@ -39,6 +56,11 @@ class SettingsModel extends SettingsEntity {
       notificationsEnabled: entity.notificationsEnabled,
       biometricAuthEnabled: entity.biometricAuthEnabled,
       privacyLevel: entity.privacyLevel,
+      homeShowQuickAccess: entity.homeShowQuickAccess,
+      homeQuickAccessHorizontal: entity.homeQuickAccessHorizontal,
+      homeShowProceduresStats: entity.homeShowProceduresStats,
+      homeShowCommunityFeed: entity.homeShowCommunityFeed,
+      homeShowCommitteeList: entity.homeShowCommitteeList,
     );
   }
 }

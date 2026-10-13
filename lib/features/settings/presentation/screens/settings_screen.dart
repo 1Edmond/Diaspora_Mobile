@@ -20,7 +20,7 @@ class SettingsScreen extends ConsumerWidget {
     final settingsNotifier = ref.read(settingsNotifierProvider.notifier);
 
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         body: SafeArea(
           child: Column(
@@ -29,9 +29,12 @@ class SettingsScreen extends ConsumerWidget {
                 padding: EdgeInsets.fromLTRB(4, 8, 16, 0),
                 child: DiasporaAppBar(title: 'Paramètres'),
               ),
-              const TabBar(
-                tabs: [
+              TabBar(
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                tabs: const [
                   Tab(text: 'Général'),
+                  Tab(text: 'Accueil'),
                   Tab(text: 'Confidentiel'),
                   Tab(text: 'Notifications'),
                   Tab(text: 'Sécurité'),
@@ -43,6 +46,7 @@ class SettingsScreen extends ConsumerWidget {
                       (settings) => TabBarView(
                         children: [
                           _GeneralTab(settings, settingsNotifier),
+                          _HomeLayoutTab(settings, settingsNotifier),
                           _PrivacyTab(settings, settingsNotifier),
                           _NotificationsTab(settings, settingsNotifier),
                           _SecurityTab(settings, settingsNotifier),
@@ -100,6 +104,73 @@ class _GeneralTab extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HomeLayoutTab extends StatelessWidget {
+  final SettingsEntity settings;
+  final SettingsNotifier notifier;
+
+  const _HomeLayoutTab(this.settings, this.notifier);
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Text(
+            'Sections affichées',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey),
+          ),
+        ),
+        SwitchListTile.adaptive(
+          value: settings.homeShowQuickAccess,
+          onChanged: (_) => notifier.toggleHomeQuickAccess(),
+          title: const Text('Accès rapides'),
+          subtitle: const Text('Portefeuille, Documents, Marketplace...'),
+        ),
+        if (settings.homeShowQuickAccess)
+          Padding(
+            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 4),
+            child: Row(
+              children: [
+                const Expanded(child: Text('Affichage en ligne horizontale', style: TextStyle(fontSize: 13))),
+                Switch.adaptive(
+                  value: settings.homeQuickAccessHorizontal,
+                  onChanged: (_) => notifier.toggleHomeQuickAccessLayout(),
+                ),
+              ],
+            ),
+          ),
+        SwitchListTile.adaptive(
+          value: settings.homeShowProceduresStats,
+          onChanged: (_) => notifier.toggleHomeProceduresStats(),
+          title: const Text('Statistiques des démarches'),
+          subtitle: const Text('Aperçu : en cours, terminées, à faire'),
+        ),
+        SwitchListTile.adaptive(
+          value: settings.homeShowCommunityFeed,
+          onChanged: (_) => notifier.toggleHomeCommunityFeed(),
+          title: const Text('Actualités communautaires'),
+          subtitle: const Text('Derniers posts de la communauté'),
+        ),
+        SwitchListTile.adaptive(
+          value: settings.homeShowCommitteeList,
+          onChanged: (_) => notifier.toggleHomeCommitteeList(),
+          title: const Text('Comités actifs'),
+        ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            'Décochez une section pour la masquer sur votre écran d\'accueil. '
+            'Vous pouvez tout réactiver à tout moment.',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ),
+      ],
     );
   }
 }
