@@ -1,11 +1,13 @@
 class AppConfig {
   // SWITCH: true = use mock data for non-auth endpoints, false = use real backend everywhere
-  static const bool useMockData =
-      bool.fromEnvironment('USE_MOCK_DATA', defaultValue: false);
+  static const bool useMockData = bool.fromEnvironment(
+    'USE_MOCK_DATA',
+    defaultValue: false,
+  );
 
   static const String _localApiUrl = 'http://localhost:3000/api';
   static const String _prodApiUrl =
-      'https://5899-194-71-130-44.ngrok-free.app/api';
+      'https://f39a-194-71-130-44.ngrok-free.app/api';
 
   static const String apiBaseUrl = useMockData ? _localApiUrl : _prodApiUrl;
   static const String realApiBaseUrl = _prodApiUrl;
