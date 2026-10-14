@@ -99,6 +99,12 @@ class ProfileScreen extends ConsumerWidget {
                     child: Column(
                       children: [
                         _ProfileTile(
+                          icon: Icons.verified_user_outlined,
+                          label: "Vérification d'identité (KYC)",
+                          onTap: () => context.push('/profile/kyc'),
+                        ),
+                        const Divider(height: 1, indent: 52),
+                        _ProfileTile(
                           icon: Icons.person_outline_rounded,
                           label: 'Détails du compte',
                           onTap: () => context.push('/settings'),

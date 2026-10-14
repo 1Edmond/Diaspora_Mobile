@@ -29,9 +29,11 @@ enum ServiceRequestStatus {
 }
 
 enum PaymentStatus {
-  notApplicable,
-  pending,
-  completed,
-  refunded,
-  failed,
+  notApplicable, // 0
+  pending, // 1
+  processing, // 2
+  held, // 3
+  completed, // 4 (Released)
+  refunded, // 5
+  failed, // 6
 }

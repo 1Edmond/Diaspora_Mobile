@@ -1254,13 +1254,17 @@ class MockApi {
     Map<String, dynamic> data,
   ) async {
     await Future.delayed(const Duration(milliseconds: 300));
+    final participants = data['participants'] ?? [
+      if (data['InitiatorChatProfileId'] != null) data['InitiatorChatProfileId'],
+      if (data['RecipientChatProfileId'] != null) data['RecipientChatProfileId'],
+    ];
     return {
       'id': 'conv_${DateTime.now().millisecondsSinceEpoch}',
-      'title': data['title'],
+      'title': data['title'] ?? 'Discussion directe',
       'lastMessage': '',
       'lastMessageTime': DateTime.now().toIso8601String(),
       'unreadCount': 0,
-      'participants': data['participants'],
+      'participants': participants,
       'avatarUrl': null,
     };
   }
@@ -2435,21 +2439,56 @@ class MockApi {
   // POST /service-requests/:id/accept
   static Future<void> acceptServiceRequest(String id) async {
     await Future.delayed(const Duration(milliseconds: 300));
+    final idx = mockServiceRequests.indexWhere((r) => r['id'] == id);
+    if (idx != -1) {
+      mockServiceRequests[idx]['status'] = 1; // accepted
+      mockServiceRequests[idx]['paymentStatus'] = 1; // pending
+      mockServiceRequests[idx]['agreedPrice'] ??= 50.0;
+      mockServiceRequests[idx]['agreedCurrency'] ??= 'EUR';
+    }
   }
 
   // POST /service-requests/:id/decline
   static Future<void> declineServiceRequest(String id, String reason) async {
     await Future.delayed(const Duration(milliseconds: 300));
+    final idx = mockServiceRequests.indexWhere((r) => r['id'] == id);
+    if (idx != -1) {
+      mockServiceRequests[idx]['status'] = 2; // declined
+    }
   }
 
   // POST /service-requests/:id/complete
   static Future<void> completeServiceRequest(String id) async {
     await Future.delayed(const Duration(milliseconds: 300));
+    final idx = mockServiceRequests.indexWhere((r) => r['id'] == id);
+    if (idx != -1) {
+      mockServiceRequests[idx]['status'] = 3; // completed
+      if (mockServiceRequests[idx]['paymentStatus'] == 3) {
+        mockServiceRequests[idx]['paymentStatus'] = 4; // completed (released)
+      }
+    }
   }
 
   // POST /service-requests/:id/cancel
   static Future<void> cancelServiceRequest(String id, String reason) async {
     await Future.delayed(const Duration(milliseconds: 300));
+    final idx = mockServiceRequests.indexWhere((r) => r['id'] == id);
+    if (idx != -1) {
+      mockServiceRequests[idx]['status'] = 4; // cancelled
+      if (mockServiceRequests[idx]['paymentStatus'] == 3) {
+        mockServiceRequests[idx]['paymentStatus'] = 5; // refunded
+      }
+    }
+  }
+
+  // POST /service-requests/:id/pay
+  static Future<void> payServiceRequest(String id) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final idx = mockServiceRequests.indexWhere((r) => r['id'] == id);
+    if (idx != -1) {
+      mockServiceRequests[idx]['paymentStatus'] = 3; // Held
+      mockServiceRequests[idx]['status'] = 1; // accepted
+    }
   }
 
   // POST /service-requests/:id/chat-thread
@@ -2993,5 +3032,45 @@ class MockApi {
   static Future<List<Map<String, dynamic>>> myJobPreferences() async {
     await Future.delayed(const Duration(milliseconds: 250));
     return List<Map<String, dynamic>>.from(mockWorkerJobPreferences);
+  }
+
+  // ==================== KYC VERIFICATION ====================
+  static final Map<String, dynamic> mockKycState = {
+    'id': 'kyc_123',
+    'userId': 'u_current',
+    'status': 'Draft',
+    'rejectionReason': null,
+    'submittedAt': null,
+    'reviewedAt': null,
+    'documents': <Map<String, dynamic>>[],
+  };
+
+  static Future<Map<String, dynamic>> getMyKycVerification() async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    return Map<String, dynamic>.from(mockKycState);
+  }
+
+  static Future<Map<String, dynamic>> createKycVerification(Map<String, dynamic> data) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    mockKycState['status'] = 'Draft';
+    return {'id': mockKycState['id']};
+  }
+
+  static Future<Map<String, dynamic>> uploadKycDocument(String kycId, String docType) async {
+    await Future.delayed(const Duration(milliseconds: 350));
+    final doc = {
+      'id': 'kycdoc_${DateTime.now().millisecondsSinceEpoch}',
+      'documentType': docType,
+      'status': 'Uploaded',
+      'uploadedAt': DateTime.now().toIso8601String(),
+    };
+    (mockKycState['documents'] as List).add(doc);
+    return {'documentId': doc['id']};
+  }
+
+  static Future<void> submitKycVerification(String kycId) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    mockKycState['status'] = 'Pending';
+    mockKycState['submittedAt'] = DateTime.now().toIso8601String();
   }
 }

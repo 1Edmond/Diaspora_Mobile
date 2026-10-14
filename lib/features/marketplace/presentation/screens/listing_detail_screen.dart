@@ -5,9 +5,13 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../chat/domain/repositories/chat_repository.dart';
+import '../../../profile/presentation/controllers/profile_providers.dart';
+import '../../../auth/presentation/controllers/auth_notifier.dart';
 import '../../data/models/listing_model.dart';
 import '../controllers/marketplace_providers.dart';
+import '../../domain/entities/enums.dart';
 import '../widgets/availability_widget.dart';
+import '../widgets/report_bottom_sheet.dart';
 import '../widgets/review_widget.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/write_review_sheet.dart';
@@ -51,8 +55,7 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
     final listing = ref.read(listingDetailProvider(widget.listingId)).listing;
     if (listing == null) return;
 
-    // Show a spinner dialog while the conversation is created/resolved,
-    // instead of the previous placeholder SnackBar that did nothing.
+    // Show a spinner dialog while the conversation is created/resolved
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -61,12 +64,19 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
 
     try {
       final chatRepository = GetIt.instance<IChatRepository>();
-      // createConversation is idempotent server-side for direct messages,
-      // so calling it again on a repeat visit just returns the existing
-      // thread rather than creating a duplicate.
-      final conversation = await chatRepository.createConversation(
-        listing.providerName,
-        [listing.providerId],
+      final activeProfile = ref.read(activeProfileProvider);
+      final currentUser = ref.read(authNotifierProvider).valueOrNull;
+      final myProfileId = activeProfile?.id ?? currentUser?.id ?? 'me';
+      final targetProfileId = (listing.providerProfileId != null && listing.providerProfileId!.isNotEmpty)
+          ? listing.providerProfileId!
+          : listing.providerId;
+
+      final myChatProfileId = await chatRepository.resolveChatProfileByExternal(myProfileId);
+      final recipientChatProfileId = await chatRepository.resolveChatProfileByExternal(targetProfileId);
+
+      final conversation = await chatRepository.createDirectConversation(
+        myChatProfileId,
+        recipientChatProfileId,
       );
 
       if (!mounted) return;
@@ -316,6 +326,23 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
             onPressed: _toggleFavorite,
           ),
         ).animate().fadeIn(delay: 200.ms).slideX(begin: 0.2, end: 0),
+        Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.flag_outlined, color: Colors.white),
+            tooltip: 'Signaler cette annonce',
+            onPressed: () => ReportBottomSheet.show(
+              context,
+              targetType: ReportTargetType.listing,
+              targetId: listing.id,
+              title: listing.title,
+            ),
+          ),
+        ).animate().fadeIn(delay: 250.ms).slideX(begin: 0.2, end: 0),
       ],
       flexibleSpace: FlexibleSpaceBar(
         stretchModes: const [
@@ -597,13 +624,30 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  providerName,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : const Color(0xFF1A1A1A),
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        providerName,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                        ),
+                      ),
+                    ),
+                    if (listing.providerIsVerified) ...[
+                      const SizedBox(width: 6),
+                      const Tooltip(
+                        message: 'Profil vérifié',
+                        child: Icon(
+                          Icons.verified_rounded,
+                          size: 18,
+                          color: Color(0xFF0033A0),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Row(

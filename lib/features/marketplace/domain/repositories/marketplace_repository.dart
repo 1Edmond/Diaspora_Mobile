@@ -131,6 +131,8 @@ abstract class IMarketplaceRepository {
 
   Future<void> cancelRequest(String id, String reason);
 
+  Future<void> payRequest(String id);
+
   Future<void> linkChatThread(String requestId, String chatThreadId);
 
   Future<ProviderStatsModel> getMyProviderStats();

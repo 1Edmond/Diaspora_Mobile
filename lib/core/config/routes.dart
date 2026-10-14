@@ -46,6 +46,7 @@ import '../../features/marketplace/presentation/screens/create_listing_wizard_sc
 import '../../features/marketplace/presentation/screens/listing_detail_screen.dart';
 import '../../features/marketplace/presentation/screens/request_service_screen.dart';
 import '../../features/marketplace/presentation/screens/my_requests_screen.dart';
+import '../../features/marketplace/presentation/screens/received_service_requests_screen.dart';
 import '../../features/freelance/presentation/screens/freelance_shell.dart';
 import '../../features/freelance/presentation/screens/freelance_home_screen.dart';
 import '../../features/freelance/presentation/screens/job_posting_detail_screen.dart';
@@ -63,6 +64,7 @@ import '../realtime/realtime_debug_screen.dart';
 import '../../features/auth/presentation/controllers/pending_verification_provider.dart';
 import '../../features/auth/presentation/controllers/auth_restore_provider.dart';
 import '../../features/profile/presentation/screens/profile_list_screen.dart';
+import '../../features/profile/presentation/screens/kyc_verification_screen.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -124,6 +126,7 @@ class AppRouter {
       ),
       GoRoute(path: '/home', builder: (c, s) => const HomeScreen()),
       GoRoute(path: '/profile', builder: (c, s) => const ProfileScreen()),
+      GoRoute(path: '/profile/kyc', builder: (c, s) => const KycVerificationScreen()),
       GoRoute(path: '/profiles', builder: (c, s) => const ProfileListScreen()),
       GoRoute(
         path: '/procedures',
@@ -349,6 +352,11 @@ class AppRouter {
       ),
       // Literal "/requests" segment must be declared BEFORE the generic
       // "/marketplace/:id" route.
+      GoRoute(
+        path: '/marketplace/requests/received',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ReceivedServiceRequestsScreen(),
+      ),
       GoRoute(
         path: '/marketplace/requests',
         parentNavigatorKey: _rootNavigatorKey,

@@ -20,7 +20,10 @@ enum ServiceScope { cityOnly, departmentList, countryWide }
 class Listing {
   final String id;
   final String providerId;
+  final String? providerProfileId;
   final String providerName;
+  final bool providerIsVerified;
+  final String? providerCountryCode;
   final String categoryId;
   final String categoryName;
   final String title;
@@ -54,7 +57,10 @@ class Listing {
   const Listing({
     required this.id,
     required this.providerId,
+    this.providerProfileId,
     required this.providerName,
+    this.providerIsVerified = false,
+    this.providerCountryCode,
     required this.categoryId,
     required this.categoryName,
     required this.title,
@@ -87,7 +93,10 @@ class Listing {
   Listing copyWith({
     String? id,
     String? providerId,
+    String? providerProfileId,
     String? providerName,
+    bool? providerIsVerified,
+    String? providerCountryCode,
     String? categoryId,
     String? categoryName,
     String? title,
@@ -119,7 +128,10 @@ class Listing {
     return Listing(
       id: id ?? this.id,
       providerId: providerId ?? this.providerId,
+      providerProfileId: providerProfileId ?? this.providerProfileId,
       providerName: providerName ?? this.providerName,
+      providerIsVerified: providerIsVerified ?? this.providerIsVerified,
+      providerCountryCode: providerCountryCode ?? this.providerCountryCode,
       categoryId: categoryId ?? this.categoryId,
       categoryName: categoryName ?? this.categoryName,
       title: title ?? this.title,
@@ -149,6 +161,7 @@ class Listing {
       isStandardService: isStandardService ?? this.isStandardService,
     );
   }
+
 
   factory Listing.fromService({
     required String id,

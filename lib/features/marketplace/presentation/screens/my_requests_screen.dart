@@ -169,6 +169,27 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
               style: TextStyle(fontSize: 13, color: isDark ? Colors.white60 : Colors.grey[700]),
             ),
           ],
+          if (request.agreedPrice != null && request.agreedPrice! > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(
+                  'Prix convenu : ',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+                Text(
+                  '${request.agreedPrice!.toStringAsFixed(2)} ${request.agreedCurrency ?? "XOF"}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.amber[300] : AppColors.primary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _buildPaymentBadge(request.paymentStatus),
+              ],
+            ),
+          ],
           const SizedBox(height: 10),
           Row(
             children: [
@@ -179,14 +200,189 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
                 style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),
               const Spacer(),
-              if (request.status == ServiceRequestStatus.cancelled)
-                TextButton(
-                  onPressed: () => ref
-                      .read(serviceRequestsProvider.notifier)
-                      .cancelRequest(request.id, ''),
-                  child: const Text('Annuler', style: TextStyle(color: Colors.red)),
-                ),
+              _buildSentActions(request),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentBadge(PaymentStatus status) {
+    String label;
+    Color color;
+    switch (status) {
+      case PaymentStatus.held:
+        label = 'Fonds sous séquestre';
+        color = Colors.blue;
+        break;
+      case PaymentStatus.completed:
+        label = 'Payé & libéré';
+        color = Colors.green;
+        break;
+      case PaymentStatus.processing:
+        label = 'Paiement en cours';
+        color = Colors.purple;
+        break;
+      case PaymentStatus.pending:
+        label = 'Paiement en attente';
+        color = Colors.orange;
+        break;
+      case PaymentStatus.refunded:
+        label = 'Remboursé';
+        color = Colors.grey;
+        break;
+      case PaymentStatus.failed:
+        label = 'Paiement échoué';
+        color = Colors.red;
+        break;
+      case PaymentStatus.notApplicable:
+        return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+      ),
+    );
+  }
+
+  Widget _buildSentActions(ServiceRequestModel request) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (request.canPay)
+          FilledButton.icon(
+            onPressed: () async {
+              try {
+                await ref
+                    .read(serviceRequestsProvider.notifier)
+                    .payRequest(request.id);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Paiement initié — fonds placés sous séquestre'),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur de paiement : $e')),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.lock_clock_rounded, size: 14),
+            label: const Text('Payer (séquestre)'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: const Size(60, 32),
+            ),
+          )
+        else if (request.isHeld)
+          FilledButton.icon(
+            onPressed: () async {
+              try {
+                await ref
+                    .read(serviceRequestsProvider.notifier)
+                    .completeRequest(request.id);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Service confirmé — fonds libérés au prestataire'),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur : $e')),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.check_circle_rounded, size: 14),
+            label: const Text('Confirmer réception'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.green,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: const Size(60, 32),
+            ),
+          ),
+        if (request.status == ServiceRequestStatus.pending ||
+            request.status == ServiceRequestStatus.accepted) ...[
+          const SizedBox(width: 6),
+          TextButton(
+            onPressed: () => _showCancelDialog(request),
+            child: const Text('Annuler', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _showCancelDialog(ServiceRequestModel request) {
+    final reasonController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Annuler la demande'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Indiquez la raison de l\'annulation (les fonds sous séquestre seront remboursés) :',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: reasonController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                hintText: 'Ex : Changement de projet...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('Retour'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final reason = reasonController.text.trim();
+              Navigator.of(dialogCtx).pop();
+              try {
+                await ref
+                    .read(serviceRequestsProvider.notifier)
+                    .cancelRequest(request.id, reason);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Demande annulée')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur : $e')),
+                  );
+                }
+              }
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Confirmer l\'annulation'),
           ),
         ],
       ),

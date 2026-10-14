@@ -333,6 +333,7 @@ class _CreateListingWizardScreenState
                     countryController: _countryController,
                     serviceCategory: _serviceCategory,
                     onServiceCategoryChanged: (c) => setState(() => _serviceCategory = c),
+                    onCountrySelected: (code, cur) => setState(() => _currency = cur),
                     onChanged: () => setState(() {}),
                   ),
                   _PricingStep(
@@ -528,6 +529,7 @@ class _BasicsStep extends StatelessWidget {
   final TextEditingController countryController;
   final ServiceCategory serviceCategory;
   final ValueChanged<ServiceCategory> onServiceCategoryChanged;
+  final void Function(String countryCode, String currency)? onCountrySelected;
   final VoidCallback onChanged;
 
   const _BasicsStep({
@@ -540,6 +542,7 @@ class _BasicsStep extends StatelessWidget {
     required this.countryController,
     required this.serviceCategory,
     required this.onServiceCategoryChanged,
+    this.onCountrySelected,
     required this.onChanged,
   });
 
@@ -627,7 +630,30 @@ class _BasicsStep extends StatelessWidget {
           _FieldLabel('Pays', isDark),
           TextField(
             controller: countryController,
-            decoration: _inputDecoration(isDark, hint: 'Ex : France'),
+            decoration: _inputDecoration(isDark, hint: 'Ex : TG, CI, FR...'),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              ('TG', '🇹🇬 Togo', 'XOF'),
+              ('CI', '🇨🇮 Côte d\'Ivoire', 'XOF'),
+              ('BJ', '🇧🇯 Bénin', 'XOF'),
+              ('SN', '🇸🇳 Sénégal', 'XOF'),
+              ('FR', '🇫🇷 France', 'EUR'),
+            ].map((c) {
+              final selected = countryController.text.toUpperCase() == c.$1;
+              return ChoiceChip(
+                label: Text(c.$2, style: const TextStyle(fontSize: 12)),
+                selected: selected,
+                onSelected: (_) {
+                  countryController.text = c.$1;
+                  onCountrySelected?.call(c.$1, c.$3);
+                  onChanged();
+                },
+              );
+            }).toList(),
           ),
           if (kind == _ListingKind.service) ...[
             const SizedBox(height: 12),

@@ -43,20 +43,31 @@ class ConversationModel extends Conversation {
         type = ConversationType.DIRECT;
     }
 
-    final title = json['title'] as String? ?? 'Unknown';
+    final title = (json['title'] ?? json['Title'] ?? 'Discussion') as String;
     final colorIndex = title.hashCode.abs() % _avatarColors.length;
 
+    final id = (json['id'] ?? json['Id'] ?? json['conversationId'] ?? json['ConversationId'] ?? '').toString();
+    final rawDate = json['lastMessageTime'] ?? json['LastMessageTime'] ?? json['createdAt'] ?? json['CreatedAt'];
+    final lastMessageTime = rawDate != null
+        ? (rawDate is DateTime ? rawDate : DateTime.tryParse(rawDate.toString()) ?? DateTime.now())
+        : DateTime.now();
+
+    final rawParticipants = json['participants'] ?? json['Participants'] ?? json['participantIds'] ?? json['ParticipantIds'];
+    final participantsList = rawParticipants is List
+        ? rawParticipants.map((e) => e.toString()).toList()
+        : <String>[];
+
     return ConversationModel(
-      id: json['id'] as String,
+      id: id,
       type: type,
       title: title,
-      lastMessage: json['lastMessage'] as String? ?? '',
-      lastMessageTime: DateTime.parse(json['lastMessageTime'] as String),
-      unreadCount: json['unreadCount'] as int? ?? 0,
-      participants: List<String>.from(json['participants'] ?? []),
-      avatarUrl: json['avatarUrl'] as String?,
-      isOnline: json['isOnline'] as bool? ?? false,
-      category: json['category'] as String?,
+      lastMessage: (json['lastMessage'] ?? json['LastMessage'] ?? '') as String,
+      lastMessageTime: lastMessageTime,
+      unreadCount: (json['unreadCount'] ?? json['UnreadCount'] ?? 0) as int,
+      participants: participantsList,
+      avatarUrl: (json['avatarUrl'] ?? json['AvatarUrl']) as String?,
+      isOnline: (json['isOnline'] ?? json['IsOnline'] ?? false) as bool,
+      category: (json['category'] ?? json['Category']) as String?,
       avatarColor: _avatarColors[colorIndex],
       groupMembers: (json['groupMembers'] as List<dynamic>?)
           ?.map((e) => Map<String, dynamic>.from(e as Map))

@@ -102,9 +102,9 @@ class ChatRepositoryImpl implements IChatRepository {
     String initiatorChatProfileId,
     String recipientChatProfileId,
   ) async {
-    final res = await _client.post('/chat/conversations', data: {
-      'initiatorChatProfileId': initiatorChatProfileId,
-      'recipientChatProfileId': recipientChatProfileId,
+    final res = await _client.post('/chat/conversations/direct', data: {
+      'InitiatorChatProfileId': initiatorChatProfileId,
+      'RecipientChatProfileId': recipientChatProfileId,
     });
     return ConversationModel.fromJson(res as Map<String, dynamic>);
   }

@@ -262,15 +262,30 @@ class ListingCard extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            listing.providerName.isNotEmpty ? listing.providerName : 'Prestataire',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: isDark ? Colors.white70 : Colors.grey[700],
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  listing.providerName.isNotEmpty ? listing.providerName : 'Prestataire',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white70 : Colors.grey[700],
+                  ),
+                ),
+              ),
+              if (listing.providerIsVerified) ...[
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.verified_rounded,
+                  size: 14,
+                  color: Color(0xFF0033A0),
+                ),
+              ],
+            ],
           ),
         ),
         Row(

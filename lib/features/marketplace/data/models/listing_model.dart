@@ -4,7 +4,10 @@ import '../../domain/entities/listing.dart';
 class ListingModel {
   final String id;
   final String providerId;
+  final String? providerProfileId;
   final String providerName;
+  final bool providerIsVerified;
+  final String? providerCountryCode;
   final String categoryId;
   final String categoryName;
   final String title;
@@ -38,7 +41,10 @@ class ListingModel {
   const ListingModel({
     required this.id,
     required this.providerId,
+    this.providerProfileId,
     required this.providerName,
+    this.providerIsVerified = false,
+    this.providerCountryCode,
     required this.categoryId,
     required this.categoryName,
     required this.title,
@@ -72,7 +78,10 @@ class ListingModel {
     return ListingModel(
       id: _str(json, 'Id', 'id'),
       providerId: _str(json, 'ProviderId', 'providerId'),
+      providerProfileId: _strOrNull(json, 'ProviderProfileId', 'providerProfileId'),
       providerName: _str(json, 'ProviderName', 'providerName'),
+      providerIsVerified: _bool(json, 'ProviderIsVerified', 'providerIsVerified'),
+      providerCountryCode: _strOrNull(json, 'ProviderCountryCode', 'providerCountryCode'),
       categoryId: _str(json, 'CategoryId', 'categoryId'),
       categoryName: _str(json, 'CategoryName', 'categoryName'),
       title: _str(json, 'Title', 'title'),
@@ -220,7 +229,10 @@ class ListingModel {
   Map<String, dynamic> toJson() => {
     'Id': id,
     'ProviderId': providerId,
+    'ProviderProfileId': providerProfileId,
     'ProviderName': providerName,
+    'ProviderIsVerified': providerIsVerified,
+    'ProviderCountryCode': providerCountryCode,
     'CategoryId': categoryId,
     'CategoryName': categoryName,
     'Title': title,

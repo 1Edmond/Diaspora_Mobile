@@ -945,6 +945,15 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
+      // POST /service-requests/:id/pay
+      if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/pay')) {
+        final id = path.split('/')[2];
+        await MockApi.payServiceRequest(id);
+        return handler.resolve(
+          Response(requestOptions: options, data: {}, statusCode: 202),
+        );
+      }
+
       // POST /service-requests/:id/chat-thread
       if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/chat-thread')) {
         final id = path.split('/')[2];
@@ -1018,6 +1027,39 @@ class _MockInterceptor extends Interceptor {
         final data = await MockApi.chatProfileByExternal(externalId);
         return handler.resolve(
           Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      // ==================== KYC VERIFICATION ====================
+      if (method == 'GET' && _matches(path, r'^/kyc/my-verification')) {
+        final data = await MockApi.getMyKycVerification();
+        return handler.resolve(
+          Response(requestOptions: options, data: {'data': data}, statusCode: 200),
+        );
+      }
+
+      if (method == 'POST' && _matches(path, r'^/kyc$')) {
+        final payload = options.data as Map<String, dynamic>? ?? {};
+        final data = await MockApi.createKycVerification(payload);
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 201),
+        );
+      }
+
+      if (method == 'POST' && _matches(path, r'^/kyc/[^/]+/documents')) {
+        final id = path.split('/')[2];
+        final docType = options.queryParameters['documentType'] ?? 'IdentityDocument';
+        final data = await MockApi.uploadKycDocument(id, docType.toString());
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      if (method == 'POST' && _matches(path, r'^/kyc/[^/]+/submit')) {
+        final id = path.split('/')[2];
+        await MockApi.submitKycVerification(id);
+        return handler.resolve(
+          Response(requestOptions: options, data: {'message': 'KYC submitted'}, statusCode: 200),
         );
       }
 

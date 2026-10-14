@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/profile.dart';
+import '../../data/models/public_profile_type_model.dart';
+import '../../data/services/profile_service.dart';
 import '../../../../shared/services/storage_service.dart';
 
 const _activeProfileIdKey = 'active_profile_id';
@@ -64,4 +66,13 @@ final activeProfileProvider = Provider<Profile?>((ref) {
     if (found != null) return found;
   }
   return profiles.isNotEmpty ? profiles.first : null;
+});
+
+final profileServiceProvider = Provider<ProfileService>((ref) {
+  return ProfileService();
+});
+
+final publicProfileTypesProvider = FutureProvider<List<PublicProfileType>>((ref) async {
+  final service = ref.watch(profileServiceProvider);
+  return service.fetchPublicProfileTypes();
 });

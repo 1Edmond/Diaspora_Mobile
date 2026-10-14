@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../data/models/review_model.dart';
+import '../../domain/entities/enums.dart';
+import 'report_bottom_sheet.dart';
 
 class ReviewWidget extends StatelessWidget {
   final ReviewModel review;
@@ -99,6 +101,18 @@ class ReviewWidget extends StatelessWidget {
                       ],
                     ),
                   ],
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.more_vert_rounded, size: 18, color: Colors.grey[500]),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                tooltip: 'Signaler cet avis',
+                onPressed: () => ReportBottomSheet.show(
+                  context,
+                  targetType: ReportTargetType.review,
+                  targetId: review.id,
+                  title: 'Avis de ${review.reviewerName.isNotEmpty ? review.reviewerName : "l'utilisateur"}',
                 ),
               ),
             ],

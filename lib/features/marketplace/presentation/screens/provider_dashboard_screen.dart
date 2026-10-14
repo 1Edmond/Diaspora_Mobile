@@ -2,6 +2,7 @@ import 'package:diaspora_app/features/marketplace/data/models/provider_stats_mod
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/design_system.dart';
 import '../controllers/marketplace_providers.dart';
 
@@ -77,6 +78,7 @@ class ProviderDashboardScreen extends ConsumerWidget {
                       value: '${stats.totalRequestsReceived}',
                       color: Colors.orange,
                       delayMs: 250,
+                      onTap: () => context.push('/marketplace/requests/received'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -267,15 +269,19 @@ class ProviderDashboardScreen extends ConsumerWidget {
     required String value,
     required Color color,
     required int delayMs,
+    VoidCallback? onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
-      ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+        ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -307,10 +313,11 @@ class ProviderDashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-    )
-        .animate()
-        .fadeIn(duration: 350.ms, delay: Duration(milliseconds: delayMs))
-        .slideY(begin: 0.15, end: 0);
+    ),
+  )
+      .animate()
+      .fadeIn(duration: 350.ms, delay: Duration(milliseconds: delayMs))
+      .slideY(begin: 0.15, end: 0);
   }
 
   Widget _progressCard(ProviderStatsModel stats, bool isDark) {

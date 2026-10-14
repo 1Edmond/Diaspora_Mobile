@@ -8,8 +8,15 @@ class DocumentTypeRepositoryImpl implements IDocumentTypeRepository {
   DocumentTypeRepositoryImpl({required Dio dio}) : _dio = dio;
 
   @override
-  Future<List<DocumentTypeModel>> getDocumentTypes() async {
-    final res = await _dio.get<List<dynamic>>('/document-types');
+  Future<List<DocumentTypeModel>> getDocumentTypes({String? profileTypeId}) async {
+    final queryParams = <String, dynamic>{};
+    if (profileTypeId != null && profileTypeId.isNotEmpty) {
+      queryParams['profileTypeId'] = profileTypeId;
+    }
+    final res = await _dio.get<List<dynamic>>(
+      '/document-types',
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
     if (res.statusCode != 200 || res.data == null) {
       throw DioException(
         requestOptions: res.requestOptions,

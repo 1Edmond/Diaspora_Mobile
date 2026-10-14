@@ -19,7 +19,8 @@ final documentTypesProvider = FutureProvider<List<DocumentTypeModel>>((
   ref,
 ) async {
   final repo = ref.watch(documentTypeRepositoryProvider);
-  return repo.getDocumentTypes();
+  final activeProfile = ref.watch(activeProfileProvider);
+  return repo.getDocumentTypes(profileTypeId: activeProfile?.profileTypeId);
 });
 
 // ==================== Document sort ====================

@@ -929,11 +929,16 @@ class ServiceRequestsNotifier extends StateNotifier<ServiceRequestsState> {
 
   Future<void> completeRequest(String id) async {
     await _repository.completeRequest(id);
-    await loadReceived();
+    await Future.wait([loadReceived(), loadSent()]);
   }
 
   Future<void> cancelRequest(String id, String reason) async {
     await _repository.cancelRequest(id, reason);
+    await loadSent();
+  }
+
+  Future<void> payRequest(String id) async {
+    await _repository.payRequest(id);
     await loadSent();
   }
 }

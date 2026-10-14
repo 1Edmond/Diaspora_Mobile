@@ -343,6 +343,11 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
   }
 
   @override
+  Future<void> payRequest(String id) async {
+    await _client.post('/service-requests/$id/pay');
+  }
+
+  @override
   Future<void> linkChatThread(String requestId, String chatThreadId) async {
     await _client.post(
       '/service-requests/$requestId/chat-thread',

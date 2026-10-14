@@ -49,16 +49,54 @@ class ServiceRequestModel {
       providerId: _str(json, 'ProviderId', 'providerId'),
       providerName: _str(json, 'ProviderName', 'providerName'),
       message: _str(json, 'Message', 'message'),
-      status: ServiceRequestStatus.values[_int(json, 'Status', 'status')],
+      status: _parseStatus(json),
       agreedPrice: _double(json, 'AgreedPrice', 'agreedPrice'),
       agreedCurrency: _strOrNull(json, 'AgreedCurrency', 'agreedCurrency'),
-      paymentStatus: PaymentStatus.values[_int(json, 'PaymentStatus', 'paymentStatus')],
+      paymentStatus: _parsePaymentStatus(json),
       walletTransactionId: _strOrNull(json, 'WalletTransactionId', 'walletTransactionId'),
       createdAt: _parseDateTime(json, 'CreatedAt', 'createdAt') ?? DateTime.now(),
       acceptedAt: _parseDateTime(json, 'AcceptedAt', 'acceptedAt'),
       completedAt: _parseDateTime(json, 'CompletedAt', 'completedAt'),
       chatThreadId: _strOrNull(json, 'ChatThreadId', 'chatThreadId'),
     );
+  }
+
+  bool get canPay =>
+      status == ServiceRequestStatus.accepted &&
+      (paymentStatus == PaymentStatus.pending || paymentStatus == PaymentStatus.failed) &&
+      (agreedPrice != null && agreedPrice! > 0);
+
+  bool get isHeld => paymentStatus == PaymentStatus.held;
+  bool get isProcessing => paymentStatus == PaymentStatus.processing;
+
+  static ServiceRequestStatus _parseStatus(Map<String, dynamic> json) {
+    final val = json['Status'] ?? json['status'];
+    if (val is int && val >= 0 && val < ServiceRequestStatus.values.length) {
+      return ServiceRequestStatus.values[val];
+    }
+    if (val is String) {
+      return ServiceRequestStatus.values.firstWhere(
+        (e) => e.name.toLowerCase() == val.toLowerCase(),
+        orElse: () => ServiceRequestStatus.pending,
+      );
+    }
+    return ServiceRequestStatus.pending;
+  }
+
+  static PaymentStatus _parsePaymentStatus(Map<String, dynamic> json) {
+    final val = json['PaymentStatus'] ?? json['paymentStatus'];
+    if (val is int && val >= 0 && val < PaymentStatus.values.length) {
+      return PaymentStatus.values[val];
+    }
+    if (val is String) {
+      final s = val.toLowerCase();
+      if (s == 'released') return PaymentStatus.completed;
+      return PaymentStatus.values.firstWhere(
+        (e) => e.name.toLowerCase() == s,
+        orElse: () => PaymentStatus.notApplicable,
+      );
+    }
+    return PaymentStatus.notApplicable;
   }
 
   static String _str(Map<String, dynamic> json, String pascal, String camel) {
