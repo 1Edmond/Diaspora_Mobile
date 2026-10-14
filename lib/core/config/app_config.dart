@@ -1,6 +1,7 @@
 class AppConfig {
   // SWITCH: true = use mock data for non-auth endpoints, false = use real backend everywhere
-  static const bool useMockData = true;
+  static const bool useMockData =
+      bool.fromEnvironment('USE_MOCK_DATA', defaultValue: false);
 
   static const String _localApiUrl = 'http://localhost:3000/api';
   static const String _prodApiUrl =

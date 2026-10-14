@@ -59,7 +59,7 @@ lib/
 
 ## Networking
 
-Deux pipes HTTP, commutés via `AppConfig.useMockData` (`true` = dev) :
+Deux pipes HTTP, commutés via `AppConfig.useMockData` (configuré via `bool.fromEnvironment('USE_MOCK_DATA', defaultValue: false)`) :
 
 ```
 useMockData = true  →  DioClient (baseUrl: localhost:3000)
@@ -159,11 +159,13 @@ GET    /internalprofile/me
 
 ```bash
 flutter pub get
-flutter run        # mode mock (useMockData = true)
-flutter test       # tests unitaires + widget
+flutter run                                     # mode réel par défaut (useMockData = false)
+flutter run --dart-define=USE_MOCK_DATA=true   # mode mock avec données simulées
+flutter test                                    # tests unitaires + widget
 ```
 
-- `AppConfig.useMockData` = `true` → tout le trafic non-auth est intercepté en mémoire (`_MockInterceptor` → `MockApi`).
+- Par défaut, `useMockData` vaut `false` (appels vers l'API réelle). Pour activer les données simulées : `flutter run --dart-define=USE_MOCK_DATA=true`.
+- En mode mock (`useMockData = true`), tout le trafic non-auth est intercepté en mémoire (`_MockInterceptor` → `MockApi`).
 - `AuthRepositoryImpl` utilise toujours l'API réelle (login, register, refresh).
 - Les tokens JWT sont persistés dans Hive (`settings` box).
 
