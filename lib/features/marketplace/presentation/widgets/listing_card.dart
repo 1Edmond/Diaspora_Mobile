@@ -282,6 +282,20 @@ class ListingCard extends StatelessWidget {
     );
   }
 
+  Widget _buildFavoriteButton(BuildContext context) {
+    return IconButton(
+      icon: Icon(
+        isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+        size: 20,
+        color: isFavorite ? Colors.red : Colors.grey[400],
+      ),
+      onPressed: onFavoriteToggle,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+    );
+  }
+
   Widget _buildPriceRow(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
