@@ -4,6 +4,7 @@ import 'package:diaspora_app/features/wallet/presentation/screens/wallet_screen.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'feature_flags.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
@@ -86,12 +87,17 @@ class AppRouter {
       if (authRestored == null) {
         return null;
       }
-
       // 3. Authenticated user: never show onboarding/auth again.
       if (authRestored) {
         if (_isEntryLocation(state.matchedLocation)) {
           return '/home';
         }
+
+        // 3b. Guard against disabled modules (redirect to home)
+        if (!FeatureFlags.isRouteEnabled(state.matchedLocation)) {
+          return '/home';
+        }
+
         return null;
       }
 

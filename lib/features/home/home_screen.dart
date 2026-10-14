@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/config/feature_flags.dart';
 import '../../core/theme/design_system.dart';
 import '../../shared/widgets/containers/glass_container.dart';
 import '../../shared/widgets/containers/neumorphic_container.dart';
@@ -145,8 +146,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildOrbitalFab() {
-    return OrbitalFab(
-      items: [
+    final items = [
+      if (FeatureFlags.enableWallet)
         OrbitalItem(
           icon: Icons.account_balance_wallet_rounded,
           label: 'Portefeuille',
@@ -154,6 +155,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           description: 'Gérez votre portefeuille et vos transactions',
           onTap: () => context.push('/wallet'),
         ),
+      if (FeatureFlags.enableDocuments)
         OrbitalItem(
           icon: Icons.description_rounded,
           label: 'Documents',
@@ -161,6 +163,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           description: 'Ajoutez et consultez vos documents administratifs',
           onTap: () => context.push('/documents'),
         ),
+      if (FeatureFlags.enableMarketplace)
         OrbitalItem(
           icon: Icons.storefront_rounded,
           label: 'Marketplace',
@@ -168,6 +171,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           description: 'Découvrez services et annonces de la diaspora',
           onTap: () => context.push('/marketplace'),
         ),
+      if (FeatureFlags.enableProcedures)
         OrbitalItem(
           icon: Icons.fact_check_rounded,
           label: 'Démarches',
@@ -175,6 +179,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           description: 'Accédez à vos démarches administratives',
           onTap: () => context.push('/procedures'),
         ),
+      if (FeatureFlags.enableChat)
         OrbitalItem(
           icon: Icons.chat_bubble_rounded,
           label: 'Messagerie',
@@ -182,6 +187,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           description: 'Communiquez avec la communauté',
           onTap: () => context.push('/chat'),
         ),
+      if (FeatureFlags.enableCommunity)
         OrbitalItem(
           icon: Icons.forum_rounded,
           label: 'Communauté',
@@ -189,6 +195,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           description: 'Participez aux discussions de la diaspora',
           onTap: () => context.push('/community'),
         ),
+      if (FeatureFlags.enableCommittee)
         OrbitalItem(
           icon: Icons.groups_rounded,
           label: 'Comités',
@@ -196,6 +203,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           description: 'Rejoignez et gérez vos comités',
           onTap: () => context.push('/committee'),
         ),
+      if (FeatureFlags.enableProfile)
         OrbitalItem(
           icon: Icons.person_rounded,
           label: 'Profil',
@@ -203,13 +211,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           description: 'Gérez votre profil et paramètres',
           onTap: () => context.push('/profile'),
         ),
-      ],
+    ];
+
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return OrbitalFab(
+      items: items,
       fabColor: AppColors.primary,
       onOpen: () => debugPrint('Orbital opened'),
       onClose: () => debugPrint('Orbital closed'),
       onLogout: () async {
-        await ref.read(authNotifierProvider.notifier).logout();
-        if (context.mounted) context.go('/onboarding');
+        final authNotifier = ref.read(authNotifierProvider.notifier);
+        await authNotifier.logout();
+        if (mounted) context.go('/onboarding');
       },
     );
   }
@@ -268,11 +284,18 @@ class _HomeSections extends ConsumerWidget {
     final settings = ref.watch(settingsNotifierProvider).valueOrNull ??
         const SettingsEntity();
 
+    final hasQuickAccess = FeatureFlags.enableWallet ||
+        FeatureFlags.enableDocuments ||
+        FeatureFlags.enableMarketplace ||
+        FeatureFlags.enableProcedures ||
+        FeatureFlags.enableChat ||
+        FeatureFlags.enableSettings;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _AnimatedSection(
-          visible: settings.homeShowQuickAccess,
+          visible: settings.homeShowQuickAccess && hasQuickAccess,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -284,7 +307,7 @@ class _HomeSections extends ConsumerWidget {
           ),
         ),
         _AnimatedSection(
-          visible: settings.homeShowProceduresStats,
+          visible: settings.homeShowProceduresStats && FeatureFlags.enableProcedures,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -299,7 +322,7 @@ class _HomeSections extends ConsumerWidget {
           ),
         ),
         _AnimatedSection(
-          visible: settings.homeShowCommunityFeed,
+          visible: settings.homeShowCommunityFeed && FeatureFlags.enableCommunity,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -314,7 +337,7 @@ class _HomeSections extends ConsumerWidget {
           ),
         ),
         _AnimatedSection(
-          visible: settings.homeShowCommitteeList,
+          visible: settings.homeShowCommitteeList && FeatureFlags.enableCommittee,
           child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -400,35 +423,74 @@ class _MenuGridSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final activeItems = _items
+        .where((item) => FeatureFlags.isRouteEnabled(item.route))
+        .toList();
+
+    if (activeItems.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     if (horizontal) {
       return SizedBox(
         height: 92,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
-          itemCount: _items.length,
+          itemCount: activeItems.length,
           separatorBuilder: (_, __) => const SizedBox(width: 14),
           itemBuilder: (context, index) => _QuickAccessBubble(
-            item: _items[index],
+            item: activeItems[index],
             index: index,
           ),
         ),
       );
     }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 1.4,
-      ),
-      itemCount: _items.length,
-      itemBuilder: (context, index) {
-        final item = _items[index];
-        return NeumorphicContainer(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final count = activeItems.length;
+        int crossAxisCount;
+        double childAspectRatio;
+
+        if (count == 1) {
+          crossAxisCount = 1;
+          childAspectRatio = constraints.maxWidth > 400 ? 3.5 : 2.6;
+        } else if (count == 2) {
+          crossAxisCount = 2;
+          childAspectRatio = 1.6;
+        } else if (count == 3 && constraints.maxWidth >= 340) {
+          crossAxisCount = 3;
+          childAspectRatio = 1.1;
+        } else if (count == 4) {
+          crossAxisCount = 2;
+          childAspectRatio = 1.4;
+        } else {
+          if (constraints.maxWidth >= 600) {
+            crossAxisCount = count >= 4 ? 4 : count;
+            childAspectRatio = 1.3;
+          } else if (constraints.maxWidth >= 450) {
+            crossAxisCount = 3;
+            childAspectRatio = 1.2;
+          } else {
+            crossAxisCount = 2;
+            childAspectRatio = 1.4;
+          }
+        }
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: childAspectRatio,
+          ),
+          itemCount: activeItems.length,
+          itemBuilder: (context, index) {
+            final item = activeItems[index];
+            return NeumorphicContainer(
               key: ValueKey(item.route),
               borderRadius: 24,
               child: InkWell(
@@ -450,6 +512,7 @@ class _MenuGridSection extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         item.label,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: AppColors.getTextMain(context),
@@ -464,6 +527,8 @@ class _MenuGridSection extends StatelessWidget {
             .animate()
             .fadeIn(delay: (200 + index * 50).ms)
             .scale(begin: const Offset(0.8, 0.8));
+          },
+        );
       },
     );
   }

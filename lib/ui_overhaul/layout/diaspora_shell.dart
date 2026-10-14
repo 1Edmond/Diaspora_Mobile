@@ -1,30 +1,65 @@
 import 'package:flutter/material.dart';
-import '../theme/diaspora_ui_tokens.dart';
+import '../../core/config/feature_flags.dart';
 
 class DiasporaShellItem {
-  const DiasporaShellItem({required this.label, required this.icon});
+  const DiasporaShellItem({required this.label, required this.icon, this.route});
   final String label;
   final IconData icon;
+  final String? route;
 }
 
 class DiasporaShell extends StatelessWidget {
-  const DiasporaShell({super.key, required this.currentIndex, required this.onDestinationSelected, required this.body, this.profileLabel, this.profileInitials = 'D', this.onProfileTap, this.destinations = const [
-    DiasporaShellItem(label: 'Accueil', icon: Icons.home_outlined),
-    DiasporaShellItem(label: 'Communauté', icon: Icons.groups_outlined),
-    DiasporaShellItem(label: 'Services', icon: Icons.storefront_outlined),
-    DiasporaShellItem(label: 'Messages', icon: Icons.chat_bubble_outline),
-    DiasporaShellItem(label: 'Profil', icon: Icons.person_outline),
-  ]});
+  const DiasporaShell({
+    super.key,
+    required this.currentIndex,
+    required this.onDestinationSelected,
+    required this.body,
+    this.profileLabel,
+    this.profileInitials = 'D',
+    this.onProfileTap,
+    this.destinations,
+  });
+
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
   final Widget body;
   final String? profileLabel;
   final String profileInitials;
   final VoidCallback? onProfileTap;
-  final List<DiasporaShellItem> destinations;
+  final List<DiasporaShellItem>? destinations;
+
+  List<DiasporaShellItem> get _activeDestinations {
+    if (destinations != null) {
+      return destinations!;
+    }
+
+    final items = <DiasporaShellItem>[
+      const DiasporaShellItem(label: 'Accueil', icon: Icons.home_outlined, route: '/home'),
+    ];
+
+    if (FeatureFlags.enableCommunity) {
+      items.add(const DiasporaShellItem(label: 'Communauté', icon: Icons.groups_outlined, route: '/community'));
+    }
+    if (FeatureFlags.enableMarketplace || FeatureFlags.enableServices) {
+      items.add(const DiasporaShellItem(label: 'Services', icon: Icons.storefront_outlined, route: '/marketplace'));
+    }
+    if (FeatureFlags.enableChat) {
+      items.add(const DiasporaShellItem(label: 'Messages', icon: Icons.chat_bubble_outline, route: '/chat'));
+    }
+    if (FeatureFlags.enableProfile) {
+      items.add(const DiasporaShellItem(label: 'Profil', icon: Icons.person_outline, route: '/profile'));
+    }
+
+    return items;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final activeItems = _activeDestinations;
+    final safeIndex = activeItems.isEmpty
+        ? 0
+        : currentIndex.clamp(0, activeItems.length - 1);
+
     return Scaffold(
       body: Column(children: [
         if (profileLabel != null) Padding(
@@ -36,13 +71,20 @@ class DiasporaShell extends StatelessWidget {
         ),
         Expanded(child: body),
       ]),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: onDestinationSelected,
-        destinations: [
-          for (final item in destinations) NavigationDestination(icon: Icon(item.icon), selectedIcon: Icon(_selectedIcon(item.icon)), label: item.label),
-        ],
-      ),
+      bottomNavigationBar: activeItems.length >= 2
+          ? NavigationBar(
+              selectedIndex: safeIndex,
+              onDestinationSelected: onDestinationSelected,
+              destinations: [
+                for (final item in activeItems)
+                  NavigationDestination(
+                    icon: Icon(item.icon),
+                    selectedIcon: Icon(_selectedIcon(item.icon)),
+                    label: item.label,
+                  ),
+              ],
+            )
+          : null,
     );
   }
 
