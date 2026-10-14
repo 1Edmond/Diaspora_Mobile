@@ -16,6 +16,14 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+subprojects {
+    tasks.configureEach {
+        if (name.contains("CMake", ignoreCase = true)) {
+            doNotTrackState("Bypassing Gradle 8+ state tracking for native CMake tasks")
+        }
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
