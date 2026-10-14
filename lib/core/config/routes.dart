@@ -44,10 +44,15 @@ import '../../features/marketplace/presentation/screens/favorites_screen.dart';
 import '../../features/marketplace/presentation/screens/my_listings_screen.dart';
 import '../../features/marketplace/presentation/screens/provider_dashboard_screen.dart';
 import '../../features/marketplace/presentation/screens/create_listing_wizard_screen.dart';
+import '../../features/marketplace/presentation/screens/create_travel_listing_screen.dart';
+import '../../features/marketplace/presentation/screens/book_parcel_screen.dart';
+import '../../features/marketplace/presentation/screens/parcel_tracking_screen.dart';
 import '../../features/marketplace/presentation/screens/listing_detail_screen.dart';
 import '../../features/marketplace/presentation/screens/request_service_screen.dart';
 import '../../features/marketplace/presentation/screens/my_requests_screen.dart';
 import '../../features/marketplace/presentation/screens/received_service_requests_screen.dart';
+import '../../features/marketplace/data/models/listing_model.dart';
+import '../../features/marketplace/data/models/service_request_model.dart';
 import '../../features/freelance/presentation/screens/freelance_shell.dart';
 import '../../features/freelance/presentation/screens/freelance_home_screen.dart';
 import '../../features/freelance/presentation/screens/job_posting_detail_screen.dart';
@@ -345,6 +350,36 @@ class AppRouter {
         path: '/marketplace/create',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const CreateListingWizardScreen(),
+      ),
+      GoRoute(
+        path: '/marketplace/travel/create',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const CreateTravelListingScreen(),
+      ),
+      GoRoute(
+        path: '/marketplace/parcel/book/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder:
+            (context, state) => BookParcelScreen(
+              listingId: state.pathParameters['id']!,
+              listing: state.extra as ListingModel?,
+            ),
+      ),
+      GoRoute(
+        path: '/marketplace/parcel/track/:requestId',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder:
+            (context, state) {
+              final extra = state.extra;
+              final request = extra is ServiceRequestModel ? extra : null;
+              final isTraveler = state.uri.queryParameters['role'] == 'traveler' ||
+                  (extra is Map && extra['isTraveler'] == true);
+              return ParcelTrackingScreen(
+                requestId: state.pathParameters['requestId']!,
+                request: request,
+                isTravelerRole: isTraveler,
+              );
+            },
       ),
       // Literal "/request" segment must be declared BEFORE the generic
       // "/marketplace/:id" route, otherwise GoRouter matches "request" as

@@ -19,6 +19,24 @@ class ServiceRequestModel {
   final DateTime? completedAt;
   final String? chatThreadId;
 
+  // Parcel / Travel tracking fields
+  final double? parcelWeightKg;
+  final String? parcelNature;
+  final double? declaredValue;
+  final String? pickupOtpCode;
+  final String? deliveryOtpCode;
+  final ParcelTrackingStep trackingStep;
+  final String? departureCountryCode;
+  final String? departureCity;
+  final String? arrivalCountryCode;
+  final String? arrivalCity;
+  final DateTime? departureDate;
+  final DateTime? arrivalDate;
+  final String? pickupProofUrl;
+  final String? deliveryProofUrl;
+  final bool isInDispute;
+  final String? disputeReason;
+
   const ServiceRequestModel({
     required this.id,
     required this.listingId,
@@ -37,7 +55,25 @@ class ServiceRequestModel {
     this.acceptedAt,
     this.completedAt,
     this.chatThreadId,
+    this.parcelWeightKg,
+    this.parcelNature,
+    this.declaredValue,
+    this.pickupOtpCode,
+    this.deliveryOtpCode,
+    this.trackingStep = ParcelTrackingStep.bookingConfirmed,
+    this.departureCountryCode,
+    this.departureCity,
+    this.arrivalCountryCode,
+    this.arrivalCity,
+    this.departureDate,
+    this.arrivalDate,
+    this.pickupProofUrl,
+    this.deliveryProofUrl,
+    this.isInDispute = false,
+    this.disputeReason,
   });
+
+  bool get isParcelRequest => parcelWeightKg != null && parcelWeightKg! > 0;
 
   factory ServiceRequestModel.fromJson(Map<String, dynamic> json) {
     return ServiceRequestModel(
@@ -58,7 +94,37 @@ class ServiceRequestModel {
       acceptedAt: _parseDateTime(json, 'AcceptedAt', 'acceptedAt'),
       completedAt: _parseDateTime(json, 'CompletedAt', 'completedAt'),
       chatThreadId: _strOrNull(json, 'ChatThreadId', 'chatThreadId'),
+      parcelWeightKg: _double(json, 'ParcelWeightKg', 'parcelWeightKg'),
+      parcelNature: _strOrNull(json, 'ParcelNature', 'parcelNature'),
+      declaredValue: _double(json, 'DeclaredValue', 'declaredValue'),
+      pickupOtpCode: _strOrNull(json, 'PickupOtpCode', 'pickupOtpCode'),
+      deliveryOtpCode: _strOrNull(json, 'DeliveryOtpCode', 'deliveryOtpCode'),
+      trackingStep: _parseTrackingStep(json),
+      departureCountryCode: _strOrNull(json, 'DepartureCountryCode', 'departureCountryCode'),
+      departureCity: _strOrNull(json, 'DepartureCity', 'departureCity'),
+      arrivalCountryCode: _strOrNull(json, 'ArrivalCountryCode', 'arrivalCountryCode'),
+      arrivalCity: _strOrNull(json, 'ArrivalCity', 'arrivalCity'),
+      departureDate: _parseDateTime(json, 'DepartureDate', 'departureDate'),
+      arrivalDate: _parseDateTime(json, 'ArrivalDate', 'arrivalDate'),
+      pickupProofUrl: _strOrNull(json, 'PickupProofUrl', 'pickupProofUrl'),
+      deliveryProofUrl: _strOrNull(json, 'DeliveryProofUrl', 'deliveryProofUrl'),
+      isInDispute: _bool(json, 'IsInDispute', 'isInDispute'),
+      disputeReason: _strOrNull(json, 'DisputeReason', 'disputeReason'),
     );
+  }
+
+  static ParcelTrackingStep _parseTrackingStep(Map<String, dynamic> json) {
+    final val = json['TrackingStep'] ?? json['trackingStep'];
+    if (val is int && val >= 0 && val < ParcelTrackingStep.values.length) {
+      return ParcelTrackingStep.values[val];
+    }
+    if (val is String) {
+      return ParcelTrackingStep.values.firstWhere(
+        (e) => e.name.toLowerCase() == val.toLowerCase(),
+        orElse: () => ParcelTrackingStep.bookingConfirmed,
+      );
+    }
+    return ParcelTrackingStep.bookingConfirmed;
   }
 
   bool get canPay =>
@@ -121,6 +187,14 @@ class ServiceRequestModel {
     return (val as num).toDouble();
   }
 
+  static bool _bool(Map<String, dynamic> json, String pascal, String camel) {
+    final val = json[pascal] ?? json[camel];
+    if (val == null) return false;
+    if (val is bool) return val;
+    if (val is String) return val.toLowerCase() == 'true';
+    return val == 1;
+  }
+
   static DateTime? _parseDateTime(Map<String, dynamic> json, String pascal, String camel) {
     final raw = json[pascal] ?? json[camel];
     if (raw is String) return DateTime.tryParse(raw);
@@ -146,5 +220,21 @@ class ServiceRequestModel {
     'AcceptedAt': acceptedAt?.toIso8601String(),
     'CompletedAt': completedAt?.toIso8601String(),
     'ChatThreadId': chatThreadId,
+    'ParcelWeightKg': parcelWeightKg,
+    'ParcelNature': parcelNature,
+    'DeclaredValue': declaredValue,
+    'PickupOtpCode': pickupOtpCode,
+    'DeliveryOtpCode': deliveryOtpCode,
+    'TrackingStep': trackingStep.index,
+    'DepartureCountryCode': departureCountryCode,
+    'DepartureCity': departureCity,
+    'ArrivalCountryCode': arrivalCountryCode,
+    'ArrivalCity': arrivalCity,
+    'DepartureDate': departureDate?.toIso8601String(),
+    'ArrivalDate': arrivalDate?.toIso8601String(),
+    'PickupProofUrl': pickupProofUrl,
+    'DeliveryProofUrl': deliveryProofUrl,
+    'IsInDispute': isInDispute,
+    'DisputeReason': disputeReason,
   };
 }

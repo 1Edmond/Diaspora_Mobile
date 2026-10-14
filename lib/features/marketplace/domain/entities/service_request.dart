@@ -20,6 +20,24 @@ class ServiceRequest {
   final DateTime? completedAt;
   final String? chatThreadId;
 
+  // Parcel / Travel tracking fields
+  final double? parcelWeightKg;
+  final String? parcelNature;
+  final double? declaredValue;
+  final String? pickupOtpCode;
+  final String? deliveryOtpCode;
+  final ParcelTrackingStep trackingStep;
+  final String? departureCountryCode;
+  final String? departureCity;
+  final String? arrivalCountryCode;
+  final String? arrivalCity;
+  final DateTime? departureDate;
+  final DateTime? arrivalDate;
+  final String? pickupProofUrl;
+  final String? deliveryProofUrl;
+  final bool isInDispute;
+  final String? disputeReason;
+
   const ServiceRequest({
     required this.id,
     required this.listingId,
@@ -38,7 +56,25 @@ class ServiceRequest {
     this.acceptedAt,
     this.completedAt,
     this.chatThreadId,
+    this.parcelWeightKg,
+    this.parcelNature,
+    this.declaredValue,
+    this.pickupOtpCode,
+    this.deliveryOtpCode,
+    this.trackingStep = ParcelTrackingStep.bookingConfirmed,
+    this.departureCountryCode,
+    this.departureCity,
+    this.arrivalCountryCode,
+    this.arrivalCity,
+    this.departureDate,
+    this.arrivalDate,
+    this.pickupProofUrl,
+    this.deliveryProofUrl,
+    this.isInDispute = false,
+    this.disputeReason,
   });
+
+  bool get isParcelRequest => parcelWeightKg != null && parcelWeightKg! > 0;
 
   ServiceRequest copyWith({
     String? id,
@@ -58,6 +94,22 @@ class ServiceRequest {
     DateTime? acceptedAt,
     DateTime? completedAt,
     String? chatThreadId,
+    double? parcelWeightKg,
+    String? parcelNature,
+    double? declaredValue,
+    String? pickupOtpCode,
+    String? deliveryOtpCode,
+    ParcelTrackingStep? trackingStep,
+    String? departureCountryCode,
+    String? departureCity,
+    String? arrivalCountryCode,
+    String? arrivalCity,
+    DateTime? departureDate,
+    DateTime? arrivalDate,
+    String? pickupProofUrl,
+    String? deliveryProofUrl,
+    bool? isInDispute,
+    String? disputeReason,
   }) {
     return ServiceRequest(
       id: id ?? this.id,
@@ -77,6 +129,22 @@ class ServiceRequest {
       acceptedAt: acceptedAt ?? this.acceptedAt,
       completedAt: completedAt ?? this.completedAt,
       chatThreadId: chatThreadId ?? this.chatThreadId,
+      parcelWeightKg: parcelWeightKg ?? this.parcelWeightKg,
+      parcelNature: parcelNature ?? this.parcelNature,
+      declaredValue: declaredValue ?? this.declaredValue,
+      pickupOtpCode: pickupOtpCode ?? this.pickupOtpCode,
+      deliveryOtpCode: deliveryOtpCode ?? this.deliveryOtpCode,
+      trackingStep: trackingStep ?? this.trackingStep,
+      departureCountryCode: departureCountryCode ?? this.departureCountryCode,
+      departureCity: departureCity ?? this.departureCity,
+      arrivalCountryCode: arrivalCountryCode ?? this.arrivalCountryCode,
+      arrivalCity: arrivalCity ?? this.arrivalCity,
+      departureDate: departureDate ?? this.departureDate,
+      arrivalDate: arrivalDate ?? this.arrivalDate,
+      pickupProofUrl: pickupProofUrl ?? this.pickupProofUrl,
+      deliveryProofUrl: deliveryProofUrl ?? this.deliveryProofUrl,
+      isInDispute: isInDispute ?? this.isInDispute,
+      disputeReason: disputeReason ?? this.disputeReason,
     );
   }
 

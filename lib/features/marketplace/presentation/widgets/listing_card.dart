@@ -95,9 +95,18 @@ class ListingCard extends StatelessWidget {
     );
   }
 
-  String get formattedPrice => listing.price != null
-      ? '${listing.price!.toStringAsFixed(listing.price! == listing.price!.toInt() ? 0 : 2)} ${listing.currency ?? "XOF"}'
-      : 'Prix sur demande';
+  String get formattedPrice {
+    if (listing.isTravelListing) {
+      final p = listing.pricePerKg ?? listing.price;
+      if (p != null) {
+        final formatted = p.toStringAsFixed(p == p.toInt() ? 0 : 2);
+        return '$formatted ${listing.currency ?? "XOF"}/kg';
+      }
+    }
+    return listing.price != null
+        ? '${listing.price!.toStringAsFixed(listing.price! == listing.price!.toInt() ? 0 : 2)} ${listing.currency ?? "XOF"}'
+        : 'Prix sur demande';
+  }
 
   Color getPriceColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
@@ -157,6 +166,48 @@ class ListingCard extends StatelessWidget {
 
   Widget _buildPlaceholder(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (listing.isTravelListing) {
+      final depFlag = listing.departureCountryFlag.isNotEmpty ? listing.departureCountryFlag : '🌍';
+      final arrFlag = listing.arrivalCountryFlag.isNotEmpty ? listing.arrivalCountryFlag : '🌍';
+
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                : [const Color(0xFFE0E7FF), const Color(0xFFC7D2FE)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(depFlag, style: const TextStyle(fontSize: 26)),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(Icons.flight_takeoff_rounded, size: 20, color: Color(0xFF4338CA)),
+                  ),
+                  Text(arrFlag, style: const TextStyle(fontSize: 26)),
+                ],
+              ),
+              if (listing.departureCity != null || listing.arrivalCity != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '${listing.departureCity ?? ""} ➔ ${listing.arrivalCity ?? ""}',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF4338CA)),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
     return Container(
       color: isDark ? Colors.grey[800] : Colors.grey[200],
       child: Center(
@@ -169,29 +220,51 @@ class ListingCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFavoriteButton(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
-      onTap: onFavoriteToggle,
-      child: AnimatedContainer(
-        duration: 200.ms,
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: isFavorite
-              ? Colors.red.withValues(alpha: 0.15)
-              : Colors.black.withValues(alpha: 0.3),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-          color: isFavorite ? Colors.red : (isDark ? Colors.white : Colors.white),
-          size: 20,
-        ),
-      ).animate(target: isFavorite ? 1 : 0).scale(duration: 200.ms, curve: Curves.easeOutBack),
-    );
-  }
-
   Widget _buildCategoryBadge() {
+    if (listing.isTravelListing) {
+      final depFlag = listing.departureCountryFlag;
+      final arrFlag = listing.arrivalCountryFlag;
+      final remaining = listing.remainingKg ?? listing.capacityKg;
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: const Color(0xFF4338CA).withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (depFlag.isNotEmpty && arrFlag.isNotEmpty) ...[
+              Text('$depFlag ➔ $arrFlag', style: const TextStyle(fontSize: 12)),
+              const SizedBox(width: 6),
+            ],
+            if (remaining != null) ...[
+              const Icon(Icons.luggage_rounded, size: 12, color: Color(0xFF4338CA)),
+              const SizedBox(width: 3),
+              Text(
+                '${remaining.toStringAsFixed(remaining == remaining.toInt() ? 0 : 1)} kg dispo',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF4338CA),
+                ),
+              ),
+            ] else ...[
+              const Text(
+                'Trajet de transport',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF4338CA),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(

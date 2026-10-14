@@ -54,6 +54,20 @@ class Listing {
   final List<String>? allowedDepartments;
   final bool isStandardService;
 
+  // Travel / P2P parcel fields
+  final String? departureCountryCode;
+  final String? departureCity;
+  final String? arrivalCountryCode;
+  final String? arrivalCity;
+  final DateTime? departureDate;
+  final DateTime? arrivalDate;
+  final DateTime? pickupDeadline;
+  final double? capacityKg;
+  final double? remainingKg;
+  final double? pricePerKg;
+  final String? transportMode;
+  final String? prohibitedItemsDescription;
+
   const Listing({
     required this.id,
     required this.providerId,
@@ -88,7 +102,37 @@ class Listing {
     this.serviceScope,
     this.allowedDepartments,
     this.isStandardService = false,
+    this.departureCountryCode,
+    this.departureCity,
+    this.arrivalCountryCode,
+    this.arrivalCity,
+    this.departureDate,
+    this.arrivalDate,
+    this.pickupDeadline,
+    this.capacityKg,
+    this.remainingKg,
+    this.pricePerKg,
+    this.transportMode,
+    this.prohibitedItemsDescription,
   });
+
+  bool get isTravelListing =>
+      (departureCountryCode != null && arrivalCountryCode != null) ||
+      (capacityKg != null && capacityKg! > 0);
+
+  String get departureCountryFlag =>
+      departureCountryCode != null ? countryCodeToEmoji(departureCountryCode!) : '';
+
+  String get arrivalCountryFlag =>
+      arrivalCountryCode != null ? countryCodeToEmoji(arrivalCountryCode!) : '';
+
+  static String countryCodeToEmoji(String countryCode) {
+    if (countryCode.length != 2) return '';
+    final code = countryCode.toUpperCase();
+    final first = code.codeUnitAt(0) - 0x41 + 0x1F1E6;
+    final second = code.codeUnitAt(1) - 0x41 + 0x1F1E6;
+    return String.fromCharCode(first) + String.fromCharCode(second);
+  }
 
   Listing copyWith({
     String? id,
@@ -124,6 +168,18 @@ class Listing {
     ServiceScope? serviceScope,
     List<String>? allowedDepartments,
     bool? isStandardService,
+    String? departureCountryCode,
+    String? departureCity,
+    String? arrivalCountryCode,
+    String? arrivalCity,
+    DateTime? departureDate,
+    DateTime? arrivalDate,
+    DateTime? pickupDeadline,
+    double? capacityKg,
+    double? remainingKg,
+    double? pricePerKg,
+    String? transportMode,
+    String? prohibitedItemsDescription,
   }) {
     return Listing(
       id: id ?? this.id,
@@ -159,6 +215,18 @@ class Listing {
       serviceScope: serviceScope ?? this.serviceScope,
       allowedDepartments: allowedDepartments ?? this.allowedDepartments,
       isStandardService: isStandardService ?? this.isStandardService,
+      departureCountryCode: departureCountryCode ?? this.departureCountryCode,
+      departureCity: departureCity ?? this.departureCity,
+      arrivalCountryCode: arrivalCountryCode ?? this.arrivalCountryCode,
+      arrivalCity: arrivalCity ?? this.arrivalCity,
+      departureDate: departureDate ?? this.departureDate,
+      arrivalDate: arrivalDate ?? this.arrivalDate,
+      pickupDeadline: pickupDeadline ?? this.pickupDeadline,
+      capacityKg: capacityKg ?? this.capacityKg,
+      remainingKg: remainingKg ?? this.remainingKg,
+      pricePerKg: pricePerKg ?? this.pricePerKg,
+      transportMode: transportMode ?? this.transportMode,
+      prohibitedItemsDescription: prohibitedItemsDescription ?? this.prohibitedItemsDescription,
     );
   }
 

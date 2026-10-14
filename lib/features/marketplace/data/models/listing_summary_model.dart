@@ -28,6 +28,20 @@ class ListingSummaryModel {
   final List<String>? allowedDepartments;
   final bool isStandardService;
 
+  // Travel / P2P parcel fields
+  final String? departureCountryCode;
+  final String? departureCity;
+  final String? arrivalCountryCode;
+  final String? arrivalCity;
+  final DateTime? departureDate;
+  final DateTime? arrivalDate;
+  final DateTime? pickupDeadline;
+  final double? capacityKg;
+  final double? remainingKg;
+  final double? pricePerKg;
+  final String? transportMode;
+  final String? prohibitedItemsDescription;
+
   const ListingSummaryModel({
     required this.id,
     required this.providerId,
@@ -53,7 +67,29 @@ class ListingSummaryModel {
     this.serviceScope,
     this.allowedDepartments,
     this.isStandardService = false,
+    this.departureCountryCode,
+    this.departureCity,
+    this.arrivalCountryCode,
+    this.arrivalCity,
+    this.departureDate,
+    this.arrivalDate,
+    this.pickupDeadline,
+    this.capacityKg,
+    this.remainingKg,
+    this.pricePerKg,
+    this.transportMode,
+    this.prohibitedItemsDescription,
   });
+
+  bool get isTravelListing =>
+      (departureCountryCode != null && arrivalCountryCode != null) ||
+      (capacityKg != null && capacityKg! > 0);
+
+  String get departureCountryFlag =>
+      departureCountryCode != null ? Listing.countryCodeToEmoji(departureCountryCode!) : '';
+
+  String get arrivalCountryFlag =>
+      arrivalCountryCode != null ? Listing.countryCodeToEmoji(arrivalCountryCode!) : '';
 
   factory ListingSummaryModel.fromJson(Map<String, dynamic> json) {
     return ListingSummaryModel(
@@ -81,6 +117,18 @@ class ListingSummaryModel {
       serviceScope: _parseServiceScope(json),
       allowedDepartments: _parseStringList(json, 'AllowedDepartments', 'allowedDepartments'),
       isStandardService: _bool(json, 'IsStandardService', 'isStandardService'),
+      departureCountryCode: _strOrNull(json, 'DepartureCountryCode', 'departureCountryCode'),
+      departureCity: _strOrNull(json, 'DepartureCity', 'departureCity'),
+      arrivalCountryCode: _strOrNull(json, 'ArrivalCountryCode', 'arrivalCountryCode'),
+      arrivalCity: _strOrNull(json, 'ArrivalCity', 'arrivalCity'),
+      departureDate: _parseDateTime(json, 'DepartureDate', 'departureDate'),
+      arrivalDate: _parseDateTime(json, 'ArrivalDate', 'arrivalDate'),
+      pickupDeadline: _parseDateTime(json, 'PickupDeadline', 'pickupDeadline'),
+      capacityKg: _double(json, 'CapacityKg', 'capacityKg'),
+      remainingKg: _double(json, 'RemainingKg', 'remainingKg'),
+      pricePerKg: _double(json, 'PricePerKg', 'pricePerKg'),
+      transportMode: _strOrNull(json, 'TransportMode', 'transportMode'),
+      prohibitedItemsDescription: _strOrNull(json, 'ProhibitedItemsDescription', 'prohibitedItemsDescription'),
     );
   }
 

@@ -37,6 +37,8 @@ class MarketplaceState {
   final double? maxPrice;
   final String? city;
   final String? country;
+  final String? departureCountry;
+  final String? arrivalCountry;
   final bool availableNow;
   final double? userLat;
   final double? userLng;
@@ -56,6 +58,8 @@ class MarketplaceState {
     this.maxPrice,
     this.city,
     this.country,
+    this.departureCountry,
+    this.arrivalCountry,
     this.availableNow = false,
     this.userLat,
     this.userLng,
@@ -76,6 +80,8 @@ class MarketplaceState {
     double? maxPrice,
     String? city,
     String? country,
+    String? departureCountry,
+    String? arrivalCountry,
     bool? availableNow,
     double? userLat,
     double? userLng,
@@ -84,6 +90,7 @@ class MarketplaceState {
     bool clearCategoryId = false,
     bool clearPriceRange = false,
     bool clearLocation = false,
+    bool clearCorridor = false,
   }) {
     return MarketplaceState(
       items: items ?? this.items,
@@ -99,6 +106,8 @@ class MarketplaceState {
       maxPrice: clearPriceRange ? null : (maxPrice ?? this.maxPrice),
       city: clearLocation ? null : (city ?? this.city),
       country: clearLocation ? null : (country ?? this.country),
+      departureCountry: clearCorridor ? null : (departureCountry ?? this.departureCountry),
+      arrivalCountry: clearCorridor ? null : (arrivalCountry ?? this.arrivalCountry),
       availableNow: availableNow ?? this.availableNow,
       userLat: userLat ?? this.userLat,
       userLng: userLng ?? this.userLng,
@@ -113,6 +122,8 @@ class MarketplaceState {
       maxPrice != null ||
       city != null ||
       country != null ||
+      departureCountry != null ||
+      arrivalCountry != null ||
       availableNow;
 }
 
@@ -213,6 +224,15 @@ class MarketplaceNotifier extends StateNotifier<MarketplaceState> {
     fetch(refresh: true);
   }
 
+  void setCorridor(String? departureCountry, String? arrivalCountry) {
+    state = state.copyWith(
+      departureCountry: departureCountry,
+      arrivalCountry: arrivalCountry,
+      clearCorridor: departureCountry == null && arrivalCountry == null,
+    );
+    fetch(refresh: true);
+  }
+
   void setUserLocation(double lat, double lng, {double? maxDistanceKm}) {
     state = state.copyWith(userLat: lat, userLng: lng, maxDistanceKm: maxDistanceKm);
     fetch(refresh: true);
@@ -229,6 +249,7 @@ class MarketplaceNotifier extends StateNotifier<MarketplaceState> {
       clearCategoryId: true,
       clearPriceRange: true,
       clearLocation: true,
+      clearCorridor: true,
       availableNow: false,
       sortBy: ListingSortBy.relevance,
       userLat: null,

@@ -17,6 +17,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   late TextEditingController _maxPriceController;
   late TextEditingController _cityController;
   late TextEditingController _countryController;
+  late TextEditingController _departureCountryController;
+  late TextEditingController _arrivalCountryController;
   late double _maxDistanceKm;
   late bool _availableNow;
   late ListingSortBy _sortBy;
@@ -30,6 +32,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     _maxPriceController = TextEditingController(text: state.maxPrice?.toStringAsFixed(0) ?? '');
     _cityController = TextEditingController(text: state.city ?? '');
     _countryController = TextEditingController(text: state.country ?? '');
+    _departureCountryController = TextEditingController(text: state.departureCountry ?? '');
+    _arrivalCountryController = TextEditingController(text: state.arrivalCountry ?? '');
     _maxDistanceKm = state.maxDistanceKm ?? 50;
     _availableNow = state.availableNow;
     _sortBy = state.sortBy;
@@ -42,6 +46,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     _maxPriceController.dispose();
     _cityController.dispose();
     _countryController.dispose();
+    _departureCountryController.dispose();
+    _arrivalCountryController.dispose();
     super.dispose();
   }
 
@@ -53,6 +59,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     );
     notifier.setLocation(_cityController.text.isEmpty ? null : _cityController.text, 
                          _countryController.text.isEmpty ? null : _countryController.text);
+    notifier.setCorridor(
+      _departureCountryController.text.trim().isEmpty ? null : _departureCountryController.text.trim(),
+      _arrivalCountryController.text.trim().isEmpty ? null : _arrivalCountryController.text.trim(),
+    );
     notifier.setAvailableNow(_availableNow);
     notifier.setSortBy(_sortBy);
     Navigator.pop(context);
@@ -97,6 +107,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                     _buildSectionTitle('Localisation'),
                     const SizedBox(height: 12),
                     _buildLocationFields(),
+                    const SizedBox(height: 24),
+                    _buildSectionTitle('Corridor de voyage (Colis)'),
+                    const SizedBox(height: 12),
+                    _buildCorridorFields(),
                     const SizedBox(height: 24),
                     _buildSectionTitle('Distance max (km)'),
                     const SizedBox(height: 12),
@@ -270,6 +284,34 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             labelText: 'Pays',
             hintText: 'Togo',
             prefixIcon: const Icon(Icons.public_rounded),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCorridorFields() {
+    return Column(
+      children: [
+        TextField(
+          key: const Key('filter_departure_country_field'),
+          controller: _departureCountryController,
+          decoration: InputDecoration(
+            labelText: 'Pays de départ (ex: Togo, TG)',
+            hintText: 'Togo ou TG',
+            prefixIcon: const Icon(Icons.flight_takeoff_rounded),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          key: const Key('filter_arrival_country_field'),
+          controller: _arrivalCountryController,
+          decoration: InputDecoration(
+            labelText: 'Pays d\'arrivée (ex: Russie, RU)',
+            hintText: 'Russie ou RU',
+            prefixIcon: const Icon(Icons.flight_land_rounded),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),

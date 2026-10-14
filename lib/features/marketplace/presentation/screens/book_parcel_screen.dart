@@ -1,0 +1,639 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../../../../core/theme/design_system.dart';
+import '../../data/models/listing_model.dart';
+import '../../data/models/marketplace_dtos.dart';
+import '../controllers/marketplace_providers.dart';
+
+class BookParcelScreen extends ConsumerStatefulWidget {
+  final String listingId;
+  final ListingModel? listing;
+
+  const BookParcelScreen({
+    super.key,
+    required this.listingId,
+    this.listing,
+  });
+
+  @override
+  ConsumerState<BookParcelScreen> createState() => _BookParcelScreenState();
+}
+
+class _BookParcelScreenState extends ConsumerState<BookParcelScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  late TextEditingController _weightController;
+  late TextEditingController _declaredValueController;
+  late TextEditingController _messageController;
+
+  String _selectedNature = 'Vêtements & Textiles';
+  bool _isLoading = false;
+  String? _weightError;
+
+  static const List<String> _parcelNatures = [
+    'Vêtements & Textiles',
+    'Documents & Livres',
+    'Nourriture sèche & Épices',
+    'Électronique & Accessoires',
+    'Cosmétiques & Soins',
+    'Artisanat & Souvenirs',
+    'Autre',
+  ];
+
+  static const double _platformFeeRate = 0.10; // 10% platform service commission
+
+  @override
+  void initState() {
+    super.initState();
+    _weightController = TextEditingController(text: '2');
+    _declaredValueController = TextEditingController(text: '20000');
+    _messageController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _weightController.dispose();
+    _declaredValueController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  double get _requestedWeight {
+    return double.tryParse(_weightController.text.trim()) ?? 0.0;
+  }
+
+  double get _pricePerKg {
+    if (widget.listing != null) {
+      return widget.listing!.pricePerKg ?? widget.listing!.price ?? 5000.0;
+    }
+    return 5000.0;
+  }
+
+  double get _remainingKg {
+    if (widget.listing != null) {
+      return widget.listing!.remainingKg ?? widget.listing!.capacityKg ?? 20.0;
+    }
+    return 20.0;
+  }
+
+  String get _currency {
+    return widget.listing?.currency ?? 'XOF';
+  }
+
+  double get _travelerAmount {
+    return _requestedWeight * _pricePerKg;
+  }
+
+  double get _platformFee {
+    return _travelerAmount * _platformFeeRate;
+  }
+
+  double get _totalEscrowAmount {
+    return _travelerAmount + _platformFee;
+  }
+
+  String _formatAmount(double amount) {
+    final s = amount.toStringAsFixed(amount == amount.toInt() ? 0 : 2);
+    final parts = s.split('.');
+    final integerPart = parts[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]} ',
+    );
+    if (parts.length > 1) {
+      return '$integerPart.${parts[1]}';
+    }
+    return integerPart;
+  }
+
+  void _incrementWeight() {
+    final current = _requestedWeight;
+    if (current + 1 <= _remainingKg) {
+      setState(() {
+        _weightController.text = (current + 1).toStringAsFixed(0);
+        _weightError = null;
+      });
+    }
+  }
+
+  void _decrementWeight() {
+    final current = _requestedWeight;
+    if (current - 1 >= 1) {
+      setState(() {
+        _weightController.text = (current - 1).toStringAsFixed(0);
+        _weightError = null;
+      });
+    }
+  }
+
+  bool _validateInputs() {
+    final weight = _requestedWeight;
+    if (weight <= 0) {
+      setState(() => _weightError = 'Veuillez renseigner un poids supérieur à 0 kg');
+      return false;
+    }
+    if (weight > _remainingKg) {
+      setState(() => _weightError = 'Le poids demandé ($weight kg) dépasse les ${_remainingKg.toStringAsFixed(0)} kg disponibles');
+      return false;
+    }
+    setState(() => _weightError = null);
+    return true;
+  }
+
+  Future<void> _submitBooking() async {
+    if (!_validateInputs()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final repo = ref.read(marketplaceRepositoryProvider);
+      final declaredVal = double.tryParse(_declaredValueController.text.trim()) ?? 0.0;
+
+      final message = 'Réservation colis : ${_requestedWeight} kg ($_selectedNature). '
+          'Valeur déclarée : ${_formatAmount(declaredVal)} $_currency. '
+          '${_messageController.text.trim()}';
+
+      await repo.createRequest(
+        CreateServiceRequestDto(
+          listingId: widget.listingId,
+          message: message,
+        ),
+      );
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: const [
+              Icon(Icons.shield_rounded, color: Colors.green, size: 28),
+              SizedBox(width: 10),
+              Text('Séquestre confirmé !', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Votre réservation pour ${_requestedWeight} kg est enregistrée. Le montant de ${_formatAmount(_totalEscrowAmount)} $_currency est placé sous séquestre sécurisé.',
+                style: const TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                ),
+                child: const Text(
+                  '💡 Un code secret OTP unique de remise vous a été attribué. Communiquez-le au voyageur uniquement lorsqu\'il prendra votre colis en charge.',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/marketplace/requests');
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Accéder à mes demandes'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la réservation : $e'),
+          backgroundColor: Colors.red[700],
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Réserver un espace colis',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildListingSummaryCard(context, isDark),
+              const SizedBox(height: 24),
+              _buildWeightSelector(context, isDark),
+              const SizedBox(height: 24),
+              _buildParcelDetails(context, isDark),
+              const SizedBox(height: 24),
+              _buildPriceBreakdownCard(context, isDark),
+              const SizedBox(height: 16),
+              _buildEscrowSecurityBanner(context, isDark),
+              const SizedBox(height: 32),
+              _buildConfirmButton(context),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListingSummaryCard(BuildContext context, bool isDark) {
+    final listing = widget.listing;
+    final depFlag = listing?.departureCountryFlag ?? '🇹🇬';
+    final arrFlag = listing?.arrivalCountryFlag ?? '🇷🇺';
+    final depCity = listing?.departureCity ?? 'Lomé';
+    final arrCity = listing?.arrivalCity ?? 'Moscou';
+    final providerName = listing?.providerName ?? 'Voyageur vérifié';
+    final dateStr = listing?.departureDate != null
+        ? DateFormat('dd/MM/yyyy').format(listing!.departureDate!)
+        : 'Bientôt';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF252525) : Colors.grey[50],
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(depFlag, style: const TextStyle(fontSize: 24)),
+              const SizedBox(width: 6),
+              Text(
+                depCity,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Icon(Icons.arrow_forward_rounded, size: 16, color: Colors.grey),
+              ),
+              Text(arrFlag, style: const TextStyle(fontSize: 24)),
+              const SizedBox(width: 6),
+              Text(
+                arrCity,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                child: Text(
+                  providerName.isNotEmpty ? providerName[0].toUpperCase() : 'V',
+                  style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          providerName,
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                        if (listing?.providerIsVerified ?? true) ...[
+                          const SizedBox(width: 4),
+                          const Icon(Icons.verified_rounded, size: 15, color: Color(0xFF0033A0)),
+                        ],
+                      ],
+                    ),
+                    Text(
+                      'Vol prévu le $dateStr',
+                      style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${_remainingKg.toStringAsFixed(0)} kg dispo',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeightSelector(BuildContext context, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Kilos souhaités',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Indiquez le poids estimé de votre colis (max ${_remainingKg.toStringAsFixed(0)} kg)',
+          style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.grey[600]),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            IconButton.filledTonal(
+              onPressed: _decrementWeight,
+              icon: const Icon(Icons.remove_rounded),
+              tooltip: 'Moins de kilos',
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                key: const Key('requested_weight_field'),
+                controller: _weightController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                decoration: InputDecoration(
+                  suffixText: 'kg',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onChanged: (_) {
+                  setState(() => _weightError = null);
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            IconButton.filledTonal(
+              onPressed: _incrementWeight,
+              icon: const Icon(Icons.add_rounded),
+              tooltip: 'Plus de kilos',
+            ),
+          ],
+        ),
+        if (_weightError != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            _weightError!,
+            style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildParcelDetails(BuildContext context, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Détails du colis',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 12),
+
+        // Nature Dropdown
+        const Text('Nature du contenu', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        Container(
+          key: const Key('parcel_nature_dropdown'),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.4)),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedNature,
+              isExpanded: true,
+              items: _parcelNatures.map((n) {
+                return DropdownMenuItem<String>(
+                  value: n,
+                  child: Text(n, style: const TextStyle(fontSize: 14)),
+                );
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _selectedNature = val);
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Declared Value
+        const Text('Valeur déclarée estimée', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        TextFormField(
+          key: const Key('declared_value_field'),
+          controller: _declaredValueController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: 'Ex: 25000',
+            prefixIcon: const Icon(Icons.lock_outline_rounded),
+            suffixText: _currency,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Sender message
+        const Text('Message / Consignes pour le voyageur', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        TextFormField(
+          key: const Key('sender_message_field'),
+          controller: _messageController,
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: 'Précisez la nature exacte des objets, le point de remise souhaité ou toute consigne utile...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPriceBreakdownCard(BuildContext context, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.receipt_long_rounded, color: Color(0xFF4338CA), size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Récapitulatif financier transparent',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Montant voyageur (${_requestedWeight.toStringAsFixed(_requestedWeight == _requestedWeight.toInt() ? 0 : 1)} kg × ${_formatAmount(_pricePerKg)} $_currency/kg)',
+                style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.grey[700]),
+              ),
+              Text(
+                '${_formatAmount(_travelerAmount)} $_currency',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Frais de service plateforme (10%)',
+                    style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.grey[700]),
+                  ),
+                  const SizedBox(width: 4),
+                  const Tooltip(
+                    message: 'Couvre le séquestre bancaire, la vérification KYC et la garantie litige',
+                    child: Icon(Icons.info_outline_rounded, size: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+              Text(
+                '${_formatAmount(_platformFee)} $_currency',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total sous séquestre sécurisé',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+              ),
+              Text(
+                '${_formatAmount(_totalEscrowAmount)} $_currency',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                  color: isDark ? Colors.amber[300] : AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEscrowSecurityBanner(BuildContext context, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F291E) : const Color(0xFFECFDF5),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.security_rounded, color: Colors.green, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Vos fonds restent sécurisés sous séquestre. Le voyageur ne percevra sa rémunération qu\'après validation définitive de la livraison par votre code OTP secret.',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.green[200] : Colors.green[900],
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConfirmButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        key: const Key('confirm_escrow_booking_button'),
+        onPressed: _isLoading ? null : _submitBooking,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 2,
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              )
+            : const Text(
+                'Confirmer et bloquer sous séquestre',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+      ),
+    );
+  }
+}

@@ -23,6 +23,20 @@ class CreateListingDto {
   final List<String>? allowedDepartments;
   final bool isStandardService;
 
+  // Travel fields
+  final String? departureCountryCode;
+  final String? departureCity;
+  final String? arrivalCountryCode;
+  final String? arrivalCity;
+  final DateTime? departureDate;
+  final DateTime? arrivalDate;
+  final DateTime? pickupDeadline;
+  final double? capacityKg;
+  final double? remainingKg;
+  final double? pricePerKg;
+  final String? transportMode;
+  final String? prohibitedItemsDescription;
+
   const CreateListingDto({
     required this.categoryId,
     required this.title,
@@ -42,6 +56,18 @@ class CreateListingDto {
     this.serviceScope,
     this.allowedDepartments,
     this.isStandardService = false,
+    this.departureCountryCode,
+    this.departureCity,
+    this.arrivalCountryCode,
+    this.arrivalCity,
+    this.departureDate,
+    this.arrivalDate,
+    this.pickupDeadline,
+    this.capacityKg,
+    this.remainingKg,
+    this.pricePerKg,
+    this.transportMode,
+    this.prohibitedItemsDescription,
   });
 
   Map<String, dynamic> toJson() => {
@@ -63,6 +89,18 @@ class CreateListingDto {
     'ServiceScope': serviceScope?.name,
     'AllowedDepartments': allowedDepartments,
     'IsStandardService': isStandardService,
+    'DepartureCountryCode': departureCountryCode,
+    'DepartureCity': departureCity,
+    'ArrivalCountryCode': arrivalCountryCode,
+    'ArrivalCity': arrivalCity,
+    'DepartureDate': departureDate?.toIso8601String(),
+    'ArrivalDate': arrivalDate?.toIso8601String(),
+    'PickupDeadline': pickupDeadline?.toIso8601String(),
+    'CapacityKg': capacityKg,
+    'RemainingKg': remainingKg,
+    'PricePerKg': pricePerKg,
+    'TransportMode': transportMode,
+    'ProhibitedItemsDescription': prohibitedItemsDescription,
   };
 }
 
@@ -87,6 +125,20 @@ class UpdateListingDto {
   final List<String>? allowedDepartments;
   final bool? isStandardService;
 
+  // Travel fields
+  final String? departureCountryCode;
+  final String? departureCity;
+  final String? arrivalCountryCode;
+  final String? arrivalCity;
+  final DateTime? departureDate;
+  final DateTime? arrivalDate;
+  final DateTime? pickupDeadline;
+  final double? capacityKg;
+  final double? remainingKg;
+  final double? pricePerKg;
+  final String? transportMode;
+  final String? prohibitedItemsDescription;
+
   const UpdateListingDto({
     this.title,
     this.description,
@@ -105,6 +157,18 @@ class UpdateListingDto {
     this.serviceScope,
     this.allowedDepartments,
     this.isStandardService,
+    this.departureCountryCode,
+    this.departureCity,
+    this.arrivalCountryCode,
+    this.arrivalCity,
+    this.departureDate,
+    this.arrivalDate,
+    this.pickupDeadline,
+    this.capacityKg,
+    this.remainingKg,
+    this.pricePerKg,
+    this.transportMode,
+    this.prohibitedItemsDescription,
   });
 
   Map<String, dynamic> toJson() {
@@ -128,6 +192,18 @@ class UpdateListingDto {
     if (serviceScope != null) map['ServiceScope'] = serviceScope!.name;
     if (allowedDepartments != null) map['AllowedDepartments'] = allowedDepartments;
     if (isStandardService != null) map['IsStandardService'] = isStandardService;
+    if (departureCountryCode != null) map['DepartureCountryCode'] = departureCountryCode;
+    if (departureCity != null) map['DepartureCity'] = departureCity;
+    if (arrivalCountryCode != null) map['ArrivalCountryCode'] = arrivalCountryCode;
+    if (arrivalCity != null) map['ArrivalCity'] = arrivalCity;
+    if (departureDate != null) map['DepartureDate'] = departureDate!.toIso8601String();
+    if (arrivalDate != null) map['ArrivalDate'] = arrivalDate!.toIso8601String();
+    if (pickupDeadline != null) map['PickupDeadline'] = pickupDeadline!.toIso8601String();
+    if (capacityKg != null) map['CapacityKg'] = capacityKg;
+    if (remainingKg != null) map['RemainingKg'] = remainingKg;
+    if (pricePerKg != null) map['PricePerKg'] = pricePerKg;
+    if (transportMode != null) map['TransportMode'] = transportMode;
+    if (prohibitedItemsDescription != null) map['ProhibitedItemsDescription'] = prohibitedItemsDescription;
     return map;
   }
 }
@@ -194,5 +270,32 @@ class CreateReportDto {
     'TargetType': targetType,
     'TargetId': targetId,
     'Reason': reason,
+  };
+}
+
+class BookParcelDto {
+  final String listingId;
+  final double weightKg;
+  final String parcelNature;
+  final double declaredValue;
+  final String currency;
+  final String? message;
+
+  const BookParcelDto({
+    required this.listingId,
+    required this.weightKg,
+    required this.parcelNature,
+    required this.declaredValue,
+    required this.currency,
+    this.message,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'ListingId': listingId,
+    'WeightKg': weightKg,
+    'ParcelNature': parcelNature,
+    'DeclaredValue': declaredValue,
+    'Currency': currency,
+    'Message': message ?? '',
   };
 }
