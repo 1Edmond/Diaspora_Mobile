@@ -1039,9 +1039,11 @@ class _CreateListingWizardScreenState
           const SizedBox(height: 20),
           _label('Photos (optionnelles)', isDark),
           PhotoPickerGrid(
+            existingUrls: const [],
             localPaths: _localPhotoPaths,
-            onAdd: (path) => setState(() => _localPhotoPaths.add(path)),
-            onRemove: (path) => setState(() => _localPhotoPaths.remove(path)),
+            onAddLocalPath: (path) => setState(() => _localPhotoPaths.add(path)),
+            onRemoveExisting: (_) {},
+            onRemoveLocal: (path) => setState(() => _localPhotoPaths.remove(path)),
           ),
         ],
       ),
