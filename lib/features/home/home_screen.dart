@@ -289,6 +289,10 @@ class _HomeSections extends ConsumerWidget {
         FeatureFlags.enableMarketplace ||
         FeatureFlags.enableProcedures ||
         FeatureFlags.enableChat ||
+        FeatureFlags.enableServices ||
+        FeatureFlags.enableCommunity ||
+        FeatureFlags.enableFreelance ||
+        FeatureFlags.enableCommittee ||
         FeatureFlags.enableSettings;
 
     return Column(
@@ -418,6 +422,24 @@ class _MenuGridSection extends StatelessWidget {
       '/chat',
       AppColors.accent,
     ),
+    _MenuItem(
+      Icons.handyman_rounded,
+      'Services',
+      '/services',
+      Color(0xFF0D9488),
+    ),
+    _MenuItem(
+      Icons.people_rounded,
+      'Communauté',
+      '/community',
+      Color(0xFFF59E0B),
+    ),
+    _MenuItem(
+      Icons.work_rounded,
+      'Freelance',
+      '/freelance',
+      Color(0xFFEC4899),
+    ),
     _MenuItem(Icons.settings_rounded, 'Réglages', '/settings', Colors.blueGrey),
   ];
 
@@ -432,6 +454,24 @@ class _MenuGridSection extends StatelessWidget {
     }
 
     if (horizontal) {
+      if (activeItems.length <= 4) {
+        return SizedBox(
+          height: 92,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: activeItems.asMap().entries.map((entry) {
+              return Expanded(
+                child: Center(
+                  child: _QuickAccessBubble(
+                    item: entry.value,
+                    index: entry.key,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      }
       return SizedBox(
         height: 92,
         child: ListView.separated(
@@ -459,12 +499,12 @@ class _MenuGridSection extends StatelessWidget {
         } else if (count == 2) {
           crossAxisCount = 2;
           childAspectRatio = 1.6;
-        } else if (count == 3 && constraints.maxWidth >= 340) {
-          crossAxisCount = 3;
-          childAspectRatio = 1.1;
+        } else if (count == 3) {
+          crossAxisCount = constraints.maxWidth >= 340 ? 3 : 1;
+          childAspectRatio = constraints.maxWidth >= 340 ? 1.05 : 2.8;
         } else if (count == 4) {
           crossAxisCount = 2;
-          childAspectRatio = 1.4;
+          childAspectRatio = 1.45;
         } else {
           if (constraints.maxWidth >= 600) {
             crossAxisCount = count >= 4 ? 4 : count;

@@ -24,6 +24,15 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   late ListingSortBy _sortBy;
   String? _selectedCategoryId;
 
+  bool get _isParcelTransport {
+    if (_selectedCategoryId == null) return false;
+    final cat = _selectedCategoryId!.toLowerCase();
+    return cat == 'transport' ||
+        cat == 'transport-colis' ||
+        cat.contains('colis') ||
+        cat.contains('transport');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -53,12 +62,15 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
 
   void _applyFilters() {
     final notifier = ref.read(marketplaceProvider.notifier);
+    notifier.selectCategory(_selectedCategoryId);
     notifier.setPriceRange(
       _minPriceController.text.isNotEmpty ? double.tryParse(_minPriceController.text) : null,
       _maxPriceController.text.isNotEmpty ? double.tryParse(_maxPriceController.text) : null,
     );
-    notifier.setLocation(_cityController.text.isEmpty ? null : _cityController.text, 
-                         _countryController.text.isEmpty ? null : _countryController.text);
+    notifier.setLocation(
+      _cityController.text.isEmpty ? null : _cityController.text,
+      _countryController.text.isEmpty ? null : _countryController.text,
+    );
     notifier.setCorridor(
       _departureCountryController.text.trim().isEmpty ? null : _departureCountryController.text.trim(),
       _arrivalCountryController.text.trim().isEmpty ? null : _arrivalCountryController.text.trim(),
@@ -91,39 +103,50 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             _buildHeader().animate().fadeIn(duration: 300.ms, delay: 100.ms).slideY(begin: 0.2, end: 0),
             Expanded(
               child: SingleChildScrollView(
-                controller: ScrollController(),
+                controller: scrollController,
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Category at top as requested
+                    _buildSectionTitle('Catégorie de service'),
+                    const SizedBox(height: 12),
+                    _buildCategorySelector(),
+                    const SizedBox(height: 24),
+
+                    // Corridor fields only appear if Transport de colis is selected
+                    if (_isParcelTransport) ...[
+                      _buildSectionTitle('Corridor de voyage (Colis) ✈️📦'),
+                      const SizedBox(height: 12),
+                      _buildCorridorFields(),
+                      const SizedBox(height: 24),
+                    ],
+
                     _buildSectionTitle('Tri'),
                     const SizedBox(height: 12),
                     _buildSortOptions(),
                     const SizedBox(height: 24),
-                    _buildSectionTitle('Prix (XOF)'),
+
+                    _buildSectionTitle('Prix'),
                     const SizedBox(height: 12),
                     _buildPriceRange(),
                     const SizedBox(height: 24),
+
                     _buildSectionTitle('Localisation'),
                     const SizedBox(height: 12),
                     _buildLocationFields(),
                     const SizedBox(height: 24),
-                    _buildSectionTitle('Corridor de voyage (Colis)'),
-                    const SizedBox(height: 12),
-                    _buildCorridorFields(),
-                    const SizedBox(height: 24),
+
                     _buildSectionTitle('Distance max (km)'),
                     const SizedBox(height: 12),
                     _buildDistanceSlider(),
                     const SizedBox(height: 24),
+
                     _buildSectionTitle('Disponibilité'),
                     const SizedBox(height: 12),
                     _buildAvailabilityToggle(),
-                    const SizedBox(height: 24),
-                    _buildSectionTitle('Catégorie'),
-                    const SizedBox(height: 12),
-                    _buildCategorySelector(),
                     const SizedBox(height: 32),
+
                     _buildActionButtons(),
                   ],
                 ),
@@ -151,26 +174,20 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Filtres',
+          const Text(
+            'Filtres de recherche',
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1A1A1A),
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          TextButton.icon(
-            onPressed: _clearAll,
-            icon: const Icon(Icons.clear_all_rounded, size: 18),
-            label: const Text('Réinitialiser'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              textStyle: const TextStyle(fontWeight: FontWeight.w600),
-            ),
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.close_rounded),
           ),
         ],
       ),
@@ -180,28 +197,154 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 16,
-        fontWeight: FontWeight.w700,
-        color: Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF1A1A1A),
+        fontWeight: FontWeight.bold,
       ),
     );
   }
 
+  Widget _buildCategorySelector() {
+    final categoriesAsync = ref.watch(marketplaceCategoriesProvider);
+
+    return categoriesAsync.when(
+      data: (categories) {
+        final hasTransport = categories.any((c) =>
+            c.id == 'transport-colis' ||
+            c.name.toLowerCase().contains('colis') ||
+            c.name.toLowerCase().contains('transport'));
+
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ChoiceChip(
+              label: const Text('Toutes'),
+              selected: _selectedCategoryId == null,
+              onSelected: (_) => setState(() => _selectedCategoryId = null),
+            ),
+            // Prominent Transport de colis chip
+            ChoiceChip(
+              label: const Text('Transport de colis ✈️📦'),
+              selected: _isParcelTransport,
+              onSelected: (_) => setState(() {
+                _selectedCategoryId = hasTransport
+                    ? categories.firstWhere((c) =>
+                        c.id == 'transport-colis' ||
+                        c.name.toLowerCase().contains('colis') ||
+                        c.name.toLowerCase().contains('transport')).id
+                    : 'transport-colis';
+              }),
+            ),
+            for (final category in categories)
+              if (!category.name.toLowerCase().contains('colis') &&
+                  !category.name.toLowerCase().contains('transport'))
+                ChoiceChip(
+                  label: Text('${category.name} (${category.count})'),
+                  selected: _selectedCategoryId == category.id,
+                  onSelected: (_) => setState(() => _selectedCategoryId = category.id),
+                ),
+          ],
+        );
+      },
+      loading: () => Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          ChoiceChip(
+            label: const Text('Toutes'),
+            selected: _selectedCategoryId == null,
+            onSelected: (_) => setState(() => _selectedCategoryId = null),
+          ),
+          ChoiceChip(
+            label: const Text('Transport de colis ✈️📦'),
+            selected: _selectedCategoryId == 'transport-colis',
+            onSelected: (_) => setState(() => _selectedCategoryId = 'transport-colis'),
+          ),
+        ],
+      ),
+      error: (_, __) => Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          ChoiceChip(
+            label: const Text('Toutes'),
+            selected: _selectedCategoryId == null,
+            onSelected: (_) => setState(() => _selectedCategoryId = null),
+          ),
+          ChoiceChip(
+            label: const Text('Transport de colis ✈️📦'),
+            selected: _selectedCategoryId == 'transport-colis',
+            onSelected: (_) => setState(() => _selectedCategoryId = 'transport-colis'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCorridorFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          key: const Key('filter_departure_country_field'),
+          controller: _departureCountryController,
+          decoration: InputDecoration(
+            labelText: 'Pays de départ (ex: Togo, TG)',
+            hintText: 'Togo ou TG',
+            prefixIcon: const Icon(Icons.flight_takeoff_rounded),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          key: const Key('filter_arrival_country_field'),
+          controller: _arrivalCountryController,
+          decoration: InputDecoration(
+            labelText: 'Pays d\'arrivée (ex: Russie, RU)',
+            hintText: 'Russie ou RU',
+            prefixIcon: const Icon(Icons.flight_land_rounded),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            ('TG', 'RU', '🇹🇬 Togo ➔ 🇷🇺 Russie'),
+            ('RU', 'TG', '🇷🇺 Russie ➔ 🇹🇬 Togo'),
+            ('TG', 'FR', '🇹🇬 Togo ➔ 🇫🇷 France'),
+            ('CI', 'RU', '🇨🇮 Côte d\'Ivoire ➔ 🇷🇺 Russie'),
+          ].map((c) {
+            return ActionChip(
+              label: Text(c.$3, style: const TextStyle(fontSize: 11)),
+              onPressed: () {
+                setState(() {
+                  _departureCountryController.text = c.$1;
+                  _arrivalCountryController.text = c.$2;
+                });
+              },
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSortOptions() {
-    final options = [
-      (ListingSortBy.relevance, 'Pertinence', Icons.recommend_rounded),
-      (ListingSortBy.newest, 'Plus récents', Icons.new_releases_rounded),
-      (ListingSortBy.ratingDesc, 'Mieux notés', Icons.star_rounded),
+    const sortOptions = [
+      (ListingSortBy.newest, 'Plus récent', Icons.access_time_rounded),
       (ListingSortBy.priceAsc, 'Prix croissant', Icons.arrow_upward_rounded),
       (ListingSortBy.priceDesc, 'Prix décroissant', Icons.arrow_downward_rounded),
-      (ListingSortBy.distance, 'Distance', Icons.near_me_rounded),
+      (ListingSortBy.rating, 'Meilleures notes', Icons.star_rounded),
+      (ListingSortBy.proximity, 'Plus proche', Icons.near_me_rounded),
     ];
 
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: options.map((option) {
+      children: sortOptions.map((option) {
         final isSelected = _sortBy == option.$1;
         return ChoiceChip(
           label: Row(
@@ -218,7 +361,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           checkmarkColor: AppColors.primary,
           labelStyle: TextStyle(
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: _isSelected(option.$1) ? AppColors.primary : null,
+            color: isSelected ? AppColors.primary : null,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -226,12 +369,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               color: isSelected ? AppColors.primary : Colors.grey[300]!,
             ),
           ),
-        ).animate().fadeIn(duration: 300.ms).slideX(begin: 0.1, end: 0);
+        );
       }).toList(),
     );
   }
-
-  bool _isSelected(ListingSortBy sortBy) => ref.read(marketplaceProvider).sortBy == sortBy;
 
   Widget _buildPriceRange() {
     return Row(
@@ -291,34 +432,6 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     );
   }
 
-  Widget _buildCorridorFields() {
-    return Column(
-      children: [
-        TextField(
-          key: const Key('filter_departure_country_field'),
-          controller: _departureCountryController,
-          decoration: InputDecoration(
-            labelText: 'Pays de départ (ex: Togo, TG)',
-            hintText: 'Togo ou TG',
-            prefixIcon: const Icon(Icons.flight_takeoff_rounded),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          key: const Key('filter_arrival_country_field'),
-          controller: _arrivalCountryController,
-          decoration: InputDecoration(
-            labelText: 'Pays d\'arrivée (ex: Russie, RU)',
-            hintText: 'Russie ou RU',
-            prefixIcon: const Icon(Icons.flight_land_rounded),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildDistanceSlider() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,52 +457,6 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       onChanged: (v) => setState(() => _availableNow = v),
       activeThumbColor: AppColors.primary,
       contentPadding: EdgeInsets.zero,
-    );
-  }
-
-  Widget _buildCategorySelector() {
-    // Loaded from GET /listings/categories (derived from real listing data)
-    // instead of the previous hardcoded 4-chip list, two of which
-    // ('products', 'events') didn't match any real category and always
-    // returned zero results when selected.
-    final categoriesAsync = ref.watch(marketplaceCategoriesProvider);
-
-    return categoriesAsync.when(
-      data: (categories) => Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          ChoiceChip(
-            label: const Text('Tous'),
-            selected: _selectedCategoryId == null,
-            onSelected: (_) => setState(() => _selectedCategoryId = null),
-          ),
-          for (final category in categories)
-            ChoiceChip(
-              label: Text('${category.name} (${category.count})'),
-              selected: _selectedCategoryId == category.id,
-              onSelected: (_) => setState(() => _selectedCategoryId = category.id),
-            ),
-        ],
-      ),
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 8),
-        child: SizedBox(
-          height: 20,
-          width: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      ),
-      error: (_, __) => Wrap(
-        spacing: 8,
-        children: [
-          ChoiceChip(
-            label: const Text('Tous'),
-            selected: _selectedCategoryId == null,
-            onSelected: (_) => setState(() => _selectedCategoryId = null),
-          ),
-        ],
-      ),
     );
   }
 
@@ -424,6 +491,6 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           ),
         ),
       ],
-    ).animate().fadeIn(duration: 300.ms, delay: 200.ms).slideY(begin: 0.2, end: 0);
+    );
   }
 }

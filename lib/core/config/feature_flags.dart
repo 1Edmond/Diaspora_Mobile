@@ -12,11 +12,11 @@ class FeatureFlags {
   static const bool enableWallet = true;
   static const bool enableDocuments = true;
   static const bool enableMarketplace = true;
-  static const bool enableProcedures = true;
+  static const bool enableProcedures = false;
   static const bool enableChat = true;
-  static const bool enableCommunity = true;
-  static const bool enableCommittee = true;
-  static const bool enableFreelance = true;
+  static const bool enableCommunity = false;
+  static const bool enableCommittee = false;
+  static const bool enableFreelance = false;
   static const bool enableServices = true;
   static const bool enableProfile = true;
   static const bool enableSettings = true;
