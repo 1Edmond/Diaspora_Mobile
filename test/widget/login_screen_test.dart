@@ -21,6 +21,7 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(child: MaterialApp(home: LoginScreen())),
     );
+    await tester.pump(const Duration(milliseconds: 700));
 
     expect(find.byType(MaterialApp), findsOneWidget);
     expect(find.byType(TextField), findsNWidgets(2));

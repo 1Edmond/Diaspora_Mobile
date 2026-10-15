@@ -22,6 +22,7 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
   String _status = 'Draft'; // Draft, Pending, Approved, Rejected
   String? _rejectionReason;
   List<Map<String, dynamic>> _documents = [];
+  List<Map<String, dynamic>> _dynamicRequirements = [];
   bool _isSubmitting = false;
 
   @override
@@ -50,7 +51,6 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
                 .map((d) => Map<String, dynamic>.from(d as Map))
                 .toList()
             : [];
-        _isLoading = false;
       });
     } catch (_) {
       // If no verification exists yet, create one
@@ -60,15 +60,64 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
           _kycId = (createRes is Map ? createRes['id'] : 'kyc_default')?.toString();
           _status = 'Draft';
           _documents = [];
-          _isLoading = false;
         });
-      } catch (e) {
-        setState(() => _isLoading = false);
-      }
+      } catch (_) {}
     }
+
+    // Charger les exigences dynamiques par type de profil
+    try {
+      final profile = ref.read(activeProfileProvider);
+      final profileTypeId = profile?.profileTypeId;
+      final reqUrl = (profileTypeId != null && profileTypeId.isNotEmpty)
+          ? '/kyc/requirements?profileTypeId=$profileTypeId'
+          : '/kyc/requirements';
+      final reqRes = await client.get(reqUrl);
+      if (reqRes is List && reqRes.isNotEmpty) {
+        setState(() {
+          _dynamicRequirements = reqRes
+              .map((r) => Map<String, dynamic>.from(r as Map))
+              .toList();
+        });
+      }
+    } catch (_) {}
+
+    setState(() => _isLoading = false);
+  }
+
+  IconData _iconForCode(String code) {
+    final lower = code.toLowerCase();
+    if (lower.contains('id') || lower.contains('identity') || lower.contains('passport') || lower.contains('cni')) {
+      return Icons.badge_outlined;
+    }
+    if (lower.contains('address') || lower.contains('domicile') || lower.contains('residence')) {
+      return Icons.home_outlined;
+    }
+    if (lower.contains('consular') || lower.contains('card') || lower.contains('consulaire')) {
+      return Icons.card_membership_outlined;
+    }
+    if (lower.contains('visa') || lower.contains('stay') || lower.contains('arrival') || lower.contains('sejour')) {
+      return Icons.flight_land_outlined;
+    }
+    return Icons.description_outlined;
   }
 
   List<_RequirementItem> _getRequirements(String countryCode) {
+    if (_dynamicRequirements.isNotEmpty) {
+      return _dynamicRequirements.map((req) {
+        final code = (req['documentTypeCode'] ?? req['DocumentTypeCode'] ?? 'Document').toString();
+        final purpose = (req['purpose'] ?? req['Purpose'] ?? '').toString();
+        final isRequired = (req['isRequired'] ?? req['IsRequired'] ?? true) == true;
+        return _RequirementItem(
+          code: code,
+          title: purpose.isNotEmpty ? purpose : code,
+          description: isRequired
+              ? 'Document requis pour votre pays ($countryCode)'
+              : 'Document complémentaire optionnel',
+          icon: _iconForCode(code),
+        );
+      }).toList();
+    }
+
     final code = countryCode.toUpperCase();
     final items = <_RequirementItem>[
       const _RequirementItem(
@@ -194,6 +243,7 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
                 children: [
+                  _buildLevelStepper(activeProfile?.verificationLevel ?? 0, isDark),
                   _buildStatusHero(isDark),
                   const SizedBox(height: 20),
                   Text(
@@ -418,6 +468,125 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
               ),
               child: const Text('Ajouter'),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLevelStepper(int currentLevel, bool isDark) {
+    final levels = [
+      (0, 'L0', 'Inscrit'),
+      (1, 'L1', 'Déclaré'),
+      (2, 'L2', 'Vérifié'),
+      (3, 'L3', 'Renforcé'),
+    ];
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Progression KYC',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF1E293B),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Niveau actuel : L$currentLevel',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: levels.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final (lvl, code, label) = entry.value;
+              final isReached = currentLevel >= lvl;
+              final isCurrent = currentLevel == lvl;
+              return Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isReached
+                                  ? (isCurrent ? AppColors.primary : AppColors.success)
+                                  : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                              border: isCurrent
+                                  ? Border.all(color: AppColors.primary, width: 2)
+                                  : null,
+                            ),
+                            child: Center(
+                              child: isReached && !isCurrent
+                                  ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                  : Text(
+                                      code,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: isReached ? Colors.white : Colors.grey,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                              color: isCurrent
+                                  ? AppColors.primary
+                                  : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (idx < levels.length - 1)
+                      Container(
+                        height: 2,
+                        width: 14,
+                        color: currentLevel > lvl
+                            ? AppColors.success
+                            : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                        margin: const EdgeInsets.only(bottom: 16),
+                      ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
         ],
       ),
     );

@@ -18,6 +18,11 @@ class Profile {
   final String? verifiedByAdminId;
 
   final String? country;
+  final String? countryCode;
+  final String? countryName;
+  final String? flag;
+  final int verificationLevel; // 0=L0, 1=L1, 2=L2, 3=L3
+
   final String? universityOrCompany;
   final String? localAddress;
   final String? localPhoneNumber;
@@ -31,21 +36,38 @@ class Profile {
 
   Color get effectiveColor {
     if (profileColor != null) return profileColor!;
-    return isInternal
-        ? const Color(0xFF0033A0)
-        : const Color(0xFF006B3F);
+    return const Color(0xFF0033A0);
   }
 
-  /// Short label describing what this profile is set up for. Prefers the
-  /// user-entered organization/company (e.g. "Université de Lomé"); falls
-  /// back to the technical Interne/Externe type when no organization was
-  /// provided, since that's the only other classification the data model
-  /// currently carries.
+  String get verificationLevelCode => 'L$verificationLevel';
+
+  String get verificationLevelLabel {
+    switch (verificationLevel) {
+      case 1:
+        return 'L1 - Identité déclarée';
+      case 2:
+        return 'L2 - Identité vérifiée';
+      case 3:
+        return 'L3 - Vérification renforcée';
+      default:
+        return 'L0 - Inscrit';
+    }
+  }
+
+  String get countryDisplay => '${flag ?? '🌍'} ${countryName ?? countryCode ?? 'Citoyen'}';
+
+  /// Label décrivant le profil (pays et code pays, plus de distinction interne/externe).
   String get displaySubtitle {
+    if (countryCode != null && countryCode!.isNotEmpty) {
+      return '$countryDisplay ($countryCode)';
+    }
+    if (countryName != null && countryName!.isNotEmpty) {
+      return countryDisplay;
+    }
     if (universityOrCompany != null && universityOrCompany!.trim().isNotEmpty) {
       return universityOrCompany!;
     }
-    return isInternal ? 'Interne' : 'Externe';
+    return 'Citoyen';
   }
 
   bool get isPending => status == ProfileStatus.PENDING;
@@ -60,20 +82,18 @@ class Profile {
       case ProfileStatus.REJECTED:
         return 'Rejeté';
       case ProfileStatus.VALIDATED:
-        return null; // validated is the default state, no badge needed
+        return null;
     }
   }
 
-  /// Color associated with the profile's validation state (used for the
-  /// small status dot and badge background).
   Color get statusColor {
     switch (status) {
       case ProfileStatus.PENDING:
-        return const Color(0xFFF59E0B); // amber
+        return const Color(0xFFF59E0B);
       case ProfileStatus.REJECTED:
-        return const Color(0xFFDC2626); // red
+        return const Color(0xFFDC2626);
       case ProfileStatus.VALIDATED:
-        return const Color(0xFF16A34A); // green
+        return const Color(0xFF10B981);
     }
   }
 
@@ -91,6 +111,10 @@ class Profile {
     this.verifiedAt,
     this.verifiedByAdminId,
     this.country,
+    this.countryCode,
+    this.countryName,
+    this.flag,
+    this.verificationLevel = 0,
     this.universityOrCompany,
     this.localAddress,
     this.localPhoneNumber,
@@ -105,7 +129,7 @@ class Profile {
       profileType:
           json['ProfileType'] as String? ??
           json['profileType'] as String? ??
-          'Internal',
+          'Citizen',
       profileTypeId:
           json['ProfileTypeId'] as String? ??
           json['profileTypeId'] as String? ??
@@ -140,6 +164,10 @@ class Profile {
           json['VerifiedByAdminId'] as String? ??
           json['verifiedByAdminId'] as String?,
       country: json['Country'] as String? ?? json['country'] as String?,
+      countryCode: json['CountryCode'] as String? ?? json['countryCode'] as String?,
+      countryName: json['ProfileTypeName'] as String? ?? json['profileTypeName'] as String? ?? json['Country'] as String? ?? json['country'] as String?,
+      flag: json['Flag'] as String? ?? json['flag'] as String?,
+      verificationLevel: _parseVerificationLevel(json['VerificationLevel'] ?? json['verificationLevel']),
       universityOrCompany:
           json['UniversityOrCompany'] as String? ??
           json['universityOrCompany'] as String?,
@@ -157,6 +185,16 @@ class Profile {
         json['ProfileColor'] as String? ?? json['profileColor'] as String?,
       ),
     );
+  }
+
+  static int _parseVerificationLevel(dynamic val) {
+    if (val == null) return 0;
+    if (val is int) return val;
+    final s = val.toString().toLowerCase();
+    if (s.contains('l3') || s.contains('enhanced')) return 3;
+    if (s.contains('l2') || s.contains('verified')) return 2;
+    if (s.contains('l1') || s.contains('declared')) return 1;
+    return int.tryParse(s) ?? 0;
   }
 
   static Color? _parseColor(String? hex) {
@@ -199,6 +237,10 @@ class Profile {
     DateTime? verifiedAt,
     String? verifiedByAdminId,
     String? country,
+    String? countryCode,
+    String? countryName,
+    String? flag,
+    int? verificationLevel,
     String? universityOrCompany,
     String? localAddress,
     String? localPhoneNumber,
@@ -219,6 +261,10 @@ class Profile {
       verifiedAt: verifiedAt ?? this.verifiedAt,
       verifiedByAdminId: verifiedByAdminId ?? this.verifiedByAdminId,
       country: country ?? this.country,
+      countryCode: countryCode ?? this.countryCode,
+      countryName: countryName ?? this.countryName,
+      flag: flag ?? this.flag,
+      verificationLevel: verificationLevel ?? this.verificationLevel,
       universityOrCompany: universityOrCompany ?? this.universityOrCompany,
       localAddress: localAddress ?? this.localAddress,
       localPhoneNumber: localPhoneNumber ?? this.localPhoneNumber,

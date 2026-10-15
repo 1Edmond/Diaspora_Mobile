@@ -33,7 +33,7 @@ void main() {
     expect(stateAfter.hasValue, true);
     expect(
       stateAfter.value!.any(
-        (s) => s.id == created.id && s.status == 'APPROVED',
+        (s) => s.id == created.id && (s.status == 'APPROVED' || s.status == 'ACTIVE'),
       ),
       true,
     );

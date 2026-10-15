@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/diaspora_ui_tokens.dart';
 
 class DiasporaEmptyState extends StatelessWidget {
   const DiasporaEmptyState({super.key, required this.title, required this.message, this.icon = Icons.inbox_outlined, this.action});

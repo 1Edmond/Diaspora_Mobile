@@ -46,9 +46,8 @@ void main() async {
     );
   }
 
-  final deepLinkService = DeepLinkService();
+  final deepLinkService = getIt<DeepLinkService>();
   await deepLinkService.initialize();
-  getIt.registerSingleton<DeepLinkService>(deepLinkService);
 
   runApp(const ProviderScope(child: MyApp()));
 }

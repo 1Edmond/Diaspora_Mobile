@@ -87,7 +87,7 @@ class BiometricService {
       final deviceId = await _keyService.getOrCreateDeviceId();
 
       final res = await _biometricDio.post<Map<String, dynamic>>(
-        '/auth/biometric/enroll',
+        'auth/biometric/enroll',
         data: {'DeviceId': deviceId, 'PublicKey': publicKeyBase64},
         options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
       );
@@ -138,7 +138,7 @@ class BiometricService {
       final deviceId = await _keyService.getOrCreateDeviceId();
 
       final challengeRes = await _biometricDio.post<Map<String, dynamic>>(
-        '/auth/biometric/challenge',
+        'auth/biometric/challenge',
         data: {'Email': email, 'DeviceId': deviceId},
       );
       if (challengeRes.statusCode == null ||
@@ -176,7 +176,7 @@ class BiometricService {
       }
 
       final loginRes = await _biometricDio.post<Map<String, dynamic>>(
-        '/auth/biometric/login',
+        'auth/biometric/login',
         data: {
           'Email': email,
           'DeviceId': deviceId,
@@ -214,18 +214,23 @@ class BiometricService {
     }
   }
 
-  Dio get _biometricDio => Dio(
-    BaseOptions(
-      baseUrl: AppConfig.realApiBaseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      validateStatus: (_) => true,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-client-key': AppConfig.clientKey,
-      },
-    ),
-  );
+  Dio get _biometricDio {
+    final base = AppConfig.realApiBaseUrl.endsWith('/')
+        ? AppConfig.realApiBaseUrl
+        : '${AppConfig.realApiBaseUrl}/';
+    return Dio(
+      BaseOptions(
+        baseUrl: base,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        validateStatus: (_) => true,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-client-key': AppConfig.clientKey,
+        },
+      ),
+    );
+  }
 
   String _messageFor(BiometricResult r) {
     switch (r) {

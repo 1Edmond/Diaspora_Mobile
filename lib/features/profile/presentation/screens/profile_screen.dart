@@ -62,12 +62,76 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      'Profil ${activeProfile.profileType}',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: activeProfile.effectiveColor,
-                        fontWeight: FontWeight.w500,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          activeProfile.countryDisplay,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: activeProfile.effectiveColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (activeProfile.countryCode != null && activeProfile.countryCode!.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              activeProfile.countryCode!,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: activeProfile.verificationLevel >= 2
+                            ? AppColors.success.withValues(alpha: 0.15)
+                            : Colors.orange.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: activeProfile.verificationLevel >= 2
+                              ? AppColors.success
+                              : Colors.orange,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            activeProfile.verificationLevel >= 2
+                                ? Icons.verified_rounded
+                                : Icons.shield_outlined,
+                            size: 14,
+                            color: activeProfile.verificationLevel >= 2
+                                ? AppColors.success
+                                : Colors.orange,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            activeProfile.verificationLevelLabel,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: activeProfile.verificationLevel >= 2
+                                  ? AppColors.success
+                                  : Colors.orange.shade800,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -90,6 +154,61 @@ class ProfileScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 16,
                         color: AppColors.getTextSecondary(context),
+                      ),
+                    ),
+                  ],
+                  if (activeProfile != null) ...[
+                    const SizedBox(height: 16),
+                    _buildGlassCard(
+                      context,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.info_outline_rounded, size: 18, color: AppColors.primary),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Détails du Profil Citoyen',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.getTextMain(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _buildInfoRow('Pays du profil', activeProfile.countryDisplay, context),
+                            const Divider(height: 16),
+                            _buildInfoRow('Code pays ISO', activeProfile.countryCode ?? 'N/A', context),
+                            const Divider(height: 16),
+                            _buildInfoRow(
+                              'Niveau KYC',
+                              activeProfile.verificationLevelLabel,
+                              context,
+                              highlight: true,
+                            ),
+                            if (activeProfile.dateOfBirth != null) ...[
+                              const Divider(height: 16),
+                              _buildInfoRow(
+                                'Date de naissance',
+                                '${activeProfile.dateOfBirth!.day.toString().padLeft(2, '0')}/${activeProfile.dateOfBirth!.month.toString().padLeft(2, '0')}/${activeProfile.dateOfBirth!.year}',
+                                context,
+                              ),
+                            ],
+                            if (activeProfile.localAddress != null && activeProfile.localAddress!.isNotEmpty) ...[
+                              const Divider(height: 16),
+                              _buildInfoRow('Adresse locale', activeProfile.localAddress!, context),
+                            ],
+                            if (activeProfile.localPhoneNumber != null && activeProfile.localPhoneNumber!.isNotEmpty) ...[
+                              const Divider(height: 16),
+                              _buildInfoRow('Téléphone local', activeProfile.localPhoneNumber!, context),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -311,6 +430,34 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInfoRow(
+    String label,
+    String value,
+    BuildContext context, {
+    bool highlight = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            color: AppColors.getTextSecondary(context),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: highlight ? FontWeight.bold : FontWeight.w600,
+            color: highlight ? AppColors.primary : AppColors.getTextMain(context),
+          ),
+        ),
+      ],
     );
   }
 }

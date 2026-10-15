@@ -62,6 +62,7 @@ import '../../features/settings/data/repositories/settings_repository_impl.dart'
 import '../../features/settings/domain/repositories/settings_repository.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../realtime/mock_realtime_service.dart';
+import '../deep_link/deep_link_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -186,6 +187,10 @@ void configureDependencies() {
   getIt.registerLazySingleton<ISettingsRepository>(
     () => SettingsRepositoryImpl(settingsBox: Hive.box('settings')),
   );
+
+  if (!getIt.isRegistered<DeepLinkService>()) {
+    getIt.registerLazySingleton<DeepLinkService>(() => DeepLinkService());
+  }
 }
 
 Dio _createRealApiDio() {

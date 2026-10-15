@@ -16,9 +16,13 @@ class ProfileService {
               ? GetIt.instance<Dio>()
               : _defaultDio());
 
-  static Dio _defaultDio() => Dio(
+  static Dio _defaultDio() {
+    final base = AppConfig.realApiBaseUrl.endsWith('/')
+        ? AppConfig.realApiBaseUrl
+        : '${AppConfig.realApiBaseUrl}/';
+    return Dio(
       BaseOptions(
-        baseUrl: AppConfig.realApiBaseUrl,
+        baseUrl: base,
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         validateStatus: (_) => true,
@@ -31,9 +35,10 @@ class ProfileService {
     ..interceptors.addAll([
       if (kDebugMode) LogInterceptor(requestBody: true, responseBody: true),
     ]);
+  }
 
   Future<List<Profile>> fetchProfiles() async {
-    final res = await _dio.get<Map<String, dynamic>>('/profiles/me');
+    final res = await _dio.get<Map<String, dynamic>>('profiles/me');
 
     if (res.statusCode != 200 || res.data == null) {
       throw DioException(
@@ -51,7 +56,7 @@ class ProfileService {
 
   Future<List<PublicProfileType>> fetchPublicProfileTypes() async {
     try {
-      final res = await _dio.get('/profile-types/public');
+      final res = await _dio.get('profile-types/public');
       if (res.statusCode == 200 && res.data is List) {
         return (res.data as List)
             .map((e) => PublicProfileType.fromJson(Map<String, dynamic>.from(e as Map)))

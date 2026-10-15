@@ -124,7 +124,8 @@ class AppLocalizations {
       _t('wrong_email_button') ?? 'Wrong email? Register again';
 
   static AppLocalizations of(BuildContext context) {
-    return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+    return Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+        AppLocalizations(const Locale('fr'));
   }
 }
 

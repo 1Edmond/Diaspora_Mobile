@@ -7,6 +7,8 @@ import '../../../../shared/widgets/containers/neumorphic_container.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../controllers/auth_notifier.dart';
+import '../../../profile/presentation/controllers/profile_providers.dart';
+import '../../../profile/data/models/public_profile_type_model.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -22,7 +24,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _dateOfBirth = TextEditingController();
   final _phone = TextEditingController();
   final _password = TextEditingController();
-  String _userType = 'BOURSIER';
+  PublicProfileType? _selectedProfileType;
   bool _isFirstNameFocused = false;
   bool _isLastNameFocused = false;
   bool _isEmailFocused = false;
@@ -44,6 +46,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authNotifierProvider);
+    final profileTypesAsync = ref.watch(publicProfileTypesProvider);
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
@@ -142,6 +145,62 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                                 const SizedBox(height: 20),
 
+                                _buildInputLabel('Pays du profil citoyen', context),
+                                const SizedBox(height: 8),
+                                profileTypesAsync.when(
+                                  data: (types) {
+                                    if (_selectedProfileType == null && types.isNotEmpty) {
+                                      _selectedProfileType = types.firstWhere(
+                                        (t) => t.countryCode == 'TG',
+                                        orElse: () => types.first,
+                                      );
+                                    }
+                                    return NeumorphicContainer(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      child: DropdownButtonHideUnderline(
+                                        child: DropdownButton<PublicProfileType>(
+                                          isExpanded: true,
+                                          value: _selectedProfileType,
+                                          items: types.map((type) {
+                                            return DropdownMenuItem<PublicProfileType>(
+                                              value: type,
+                                              child: Row(
+                                                children: [
+                                                  Text(type.flag, style: const TextStyle(fontSize: 18)),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      '${type.countryName} (${type.phoneIndicatif})',
+                                                      style: TextStyle(
+                                                        color: AppColors.getTextMain(context),
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          }).toList(),
+                                          onChanged: (newType) {
+                                            if (newType != null) {
+                                              setState(() => _selectedProfileType = newType);
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  loading: () => const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  ),
+                                  error: (_, __) => const SizedBox.shrink(),
+                                ).animate().fadeIn(delay: 350.ms).slideX(begin: -0.1),
+
+                                const SizedBox(height: 20),
+
                                 _buildInputLabel(l10n.phoneHint, context),
                                 const SizedBox(height: 8),
                                 Focus(
@@ -150,15 +209,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   child: NeumorphicContainer(
                                     isPressed: _isPhoneFocused,
                                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                                    child: TextField(
-                                      controller: _phone,
-                                      keyboardType: TextInputType.phone,
-                                      decoration: const InputDecoration(
-                                        border: InputBorder.none,
-                                      ),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          _selectedProfileType?.phoneIndicatif ?? '+228',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _phone,
+                                            keyboardType: TextInputType.phone,
+                                            decoration: const InputDecoration(
+                                              hintText: '90 12 34 56',
+                                              border: InputBorder.none,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
+                                ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.1),
 
                                 const SizedBox(height: 20),
 
@@ -178,35 +253,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                       ),
                                     ),
                                   ),
-                                ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.1),
-
-                                const SizedBox(height: 20),
-
-                                _buildInputLabel(l10n.userTypeLabel, context),
-                                const SizedBox(height: 8),
-                                NeumorphicContainer(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      isExpanded: true,
-                                      value: _userType,
-                                      items: [
-                                        DropdownMenuItem(
-                                          value: 'BOURSIER',
-                                          child: Text(l10n.userTypeScholar),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'CONTRACTUEL',
-                                          child: Text(l10n.userTypeContractor),
-                                        ),
-                                      ],
-                                      onChanged:
-                                          (v) => setState(
-                                            () => _userType = v ?? 'BOURSIER',
-                                          ),
-                                    ),
-                                  ),
-                                ).animate().fadeIn(delay: 500.ms).slideX(begin: -0.1),
+                                ).animate().fadeIn(delay: 450.ms).slideX(begin: -0.1),
 
                                 const SizedBox(height: 40),
 
@@ -400,15 +447,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
+    final indicatif = _selectedProfileType?.phoneIndicatif ?? '+228';
+    var cleanPhone = phone.replaceAll(' ', '').replaceAll('-', '');
+    if (cleanPhone.startsWith('0')) {
+      cleanPhone = cleanPhone.substring(1);
+    }
+    final fullPhone = cleanPhone.startsWith('+') ? cleanPhone : '$indicatif$cleanPhone';
+
     try {
       final ok = await ref.read(authNotifierProvider.notifier).register(
-            phone: phone,
+            phone: fullPhone,
             password: password,
             firstName: firstName,
             lastName: lastName,
             email: email,
             dateOfBirth: _selectedDate!,
-            userType: _userType,
+            userType: 'CITOYEN',
           );
 
       if (!mounted) return;

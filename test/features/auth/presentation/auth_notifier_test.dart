@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:diaspora_app/features/auth/presentation/controllers/auth_notifier.dart';
@@ -43,6 +44,34 @@ void main() {
     final dir = Directory.systemTemp.createTempSync('hive_test');
     Hive.init(dir.path);
     await Hive.openBox('settings');
+
+    final storage = <String, String?>{};
+    const storageChannel = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(storageChannel, (call) async {
+      final args = call.arguments;
+      String? key;
+      dynamic value;
+      if (args is Map) {
+        key = args['key'] as String?;
+        value = args['value'];
+      } else if (args is String) {
+        key = args;
+      }
+
+      switch (call.method) {
+        case 'read':
+          return storage[key];
+        case 'write':
+          storage[key!] = value as String?;
+          return null;
+        case 'delete':
+          storage.remove(key);
+          return null;
+        default:
+          return null;
+      }
+    });
   });
 
   test('AuthNotifier register/verify/login happy path', () async {
