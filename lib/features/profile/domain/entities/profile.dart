@@ -167,10 +167,21 @@ class Profile {
   }
 
   static ProfileStatus _parseStatus(dynamic val) {
-    if (val == 'VALIDATED' || val == 'Active' || val == 1) {
+    if (val == null) return ProfileStatus.PENDING;
+    if (val == 'VALIDATED' ||
+        val == 'Active' ||
+        val == 'Activate' ||
+        val == 'Verified' ||
+        val == 1 ||
+        val == 3) {
       return ProfileStatus.VALIDATED;
     }
-    if (val == 'REJECTED' || val == 2) return ProfileStatus.REJECTED;
+    if (val == 'REJECTED' ||
+        val == 'Suspended' ||
+        val == 'SUSPENDED' ||
+        val == 2) {
+      return ProfileStatus.REJECTED;
+    }
     return ProfileStatus.PENDING;
   }
 

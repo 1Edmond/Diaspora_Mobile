@@ -9,6 +9,7 @@ import '../../domain/entities/listing.dart';
 import '../controllers/marketplace_providers.dart';
 import '../widgets/photo_picker_grid.dart';
 import '../widgets/availability_widget.dart';
+import '../../../profile/presentation/controllers/profile_providers.dart';
 
 /// Guided 4-step wizard for creating a listing or parcel transport service:
 /// Step 1: Category & Corridor (Displays Category FIRST as requested)
@@ -148,6 +149,10 @@ class _CreateListingWizardScreenState
   }
 
   String? get _validationHint {
+    final activeProfile = ref.watch(activeProfileProvider);
+    if (activeProfile == null || !activeProfile.isValidated) {
+      return 'Votre profil doit être actif et validé pour publier une annonce.';
+    }
     switch (_step) {
       case 0:
         if (_isParcelTransport) {
@@ -211,6 +216,16 @@ class _CreateListingWizardScreenState
   }
 
   Future<void> _submit() async {
+    final activeProfile = ref.read(activeProfileProvider);
+    if (activeProfile == null || !activeProfile.isValidated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Seuls les profils actifs et validés peuvent publier une annonce.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     setState(() => _isSubmitting = true);
     try {
       final double? capacity = double.tryParse(_capacityController.text.trim());
@@ -367,6 +382,9 @@ class _CreateListingWizardScreenState
   }
 
   Widget _buildHeader(bool isDark) {
+    final activeProfile = ref.watch(activeProfileProvider);
+    final isInactive = activeProfile == null || !activeProfile.isValidated;
+
     return Container(
       color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -397,6 +415,33 @@ class _CreateListingWizardScreenState
               color: isDark ? Colors.white70 : Colors.grey[600],
             ),
           ),
+          if (isInactive) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Seuls les profils actifs et validés peuvent publier des annonces ou des trajets.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

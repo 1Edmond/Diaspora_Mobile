@@ -4,7 +4,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:diaspora_app/features/marketplace/data/models/listing_model.dart';
 import 'package:diaspora_app/features/marketplace/presentation/screens/book_parcel_screen.dart';
 
+import 'package:diaspora_app/core/constants/enums.dart';
+import 'package:diaspora_app/features/profile/domain/entities/profile.dart';
+import 'package:diaspora_app/features/profile/presentation/controllers/profile_providers.dart';
+
 void main() {
+  final mockActiveProfile = Profile(
+    id: 'profile-test-1',
+    userId: 'user-test-1',
+    profileType: 'Internal',
+    profileTypeId: 'pt-1',
+    firstName: 'Jean',
+    lastName: 'Dupont',
+    status: ProfileStatus.VALIDATED,
+    createdAt: DateTime.now(),
+  );
+
   final testTravelListing = ListingModel(
     id: 'travel-listing-1',
     providerId: 'traveler-user-1',
@@ -41,8 +56,11 @@ void main() {
     transportMode: 'Avion',
   );
 
-  Widget buildTestableWidget({ListingModel? listing}) {
+  Widget buildTestableWidget({ListingModel? listing, Profile? profile}) {
     return ProviderScope(
+      overrides: [
+        activeProfileProvider.overrideWithValue(profile ?? mockActiveProfile),
+      ],
       child: MaterialApp(
         home: BookParcelScreen(
           listingId: (listing ?? testTravelListing).id,
@@ -109,6 +127,17 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('supérieur à 0 kg'), findsOneWidget);
+    });
+
+    testWidgets('shows warning banner and disables booking when profile is not active', (tester) async {
+      final suspendedProfile = mockActiveProfile.copyWith(status: ProfileStatus.REJECTED);
+      await tester.pumpWidget(buildTestableWidget(profile: suspendedProfile));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Votre profil doit être actif et validé'), findsOneWidget);
+
+      final confirmBtn = tester.widget<ElevatedButton>(find.byKey(const Key('confirm_escrow_booking_button')));
+      expect(confirmBtn.onPressed, isNull);
     });
   });
 }

@@ -7,6 +7,7 @@ import '../../../../core/theme/design_system.dart';
 import '../../data/models/listing_model.dart';
 import '../../data/models/marketplace_dtos.dart';
 import '../controllers/marketplace_providers.dart';
+import '../../../profile/presentation/controllers/profile_providers.dart';
 
 class BookParcelScreen extends ConsumerStatefulWidget {
   final String listingId;
@@ -143,6 +144,17 @@ class _BookParcelScreenState extends ConsumerState<BookParcelScreen> {
   }
 
   Future<void> _submitBooking() async {
+    final activeProfile = ref.read(activeProfileProvider);
+    if (activeProfile == null || !activeProfile.isValidated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Seuls les profils actifs et validés peuvent réserver un colis.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (!_validateInputs()) return;
 
     setState(() => _isLoading = true);
@@ -238,6 +250,8 @@ class _BookParcelScreenState extends ConsumerState<BookParcelScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeProfile = ref.watch(activeProfileProvider);
+    final isProfileActive = activeProfile != null && activeProfile.isValidated;
 
     return Scaffold(
       appBar: AppBar(
@@ -253,6 +267,33 @@ class _BookParcelScreenState extends ConsumerState<BookParcelScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (!isProfileActive) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Votre profil doit être actif et validé pour réserver un envoi de colis.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.red[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               _buildListingSummaryCard(context, isDark),
               const SizedBox(height: 24),
               _buildWeightSelector(context, isDark),
@@ -611,12 +652,15 @@ class _BookParcelScreenState extends ConsumerState<BookParcelScreen> {
   }
 
   Widget _buildConfirmButton(BuildContext context) {
+    final activeProfile = ref.watch(activeProfileProvider);
+    final isProfileActive = activeProfile != null && activeProfile.isValidated;
+
     return SizedBox(
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
         key: const Key('confirm_escrow_booking_button'),
-        onPressed: _isLoading ? null : _submitBooking,
+        onPressed: _isLoading || !isProfileActive ? null : _submitBooking,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,

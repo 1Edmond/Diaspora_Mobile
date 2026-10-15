@@ -6,6 +6,7 @@ import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/home_back_button.dart';
 import '../controllers/marketplace_providers.dart';
 import '../widgets/skeleton_loader.dart';
+import '../../../profile/presentation/controllers/profile_providers.dart';
 
 /// Full-screen form to send a service request ("Demander un service") for a
 /// given listing. Previously the detail screen pushed `/marketplace/request/:id`
@@ -42,6 +43,15 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
   }
 
   Future<void> _submit() async {
+    final activeProfile = ref.read(activeProfileProvider);
+    if (activeProfile == null || !activeProfile.isValidated) {
+      setState(() {
+        _isSubmitting = false;
+        _error = 'Seuls les profils actifs et validés peuvent réserver un service.';
+      });
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
       _error = null;
@@ -71,6 +81,8 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final listingState = ref.watch(listingDetailProvider(widget.listingId));
     final listing = listingState.listing;
+    final activeProfile = ref.watch(activeProfileProvider);
+    final isProfileActive = activeProfile != null && activeProfile.isValidated;
 
     return Scaffold(
       backgroundColor:
@@ -93,6 +105,33 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (!isProfileActive) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Votre profil doit être actif et validé pour réserver un service.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.red[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               if (listingState.isLoading && listing == null)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
@@ -137,7 +176,7 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
               ],
               const SizedBox(height: 24),
               FilledButton(
-                onPressed: (listing != null && !_isSubmitting) ? _submit : null,
+                onPressed: (listing != null && !_isSubmitting && isProfileActive) ? _submit : null,
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(52),
                   backgroundColor: AppColors.primary,

@@ -92,7 +92,23 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
   }
 
   void _requestService() {
-    context.push('/marketplace/request/${widget.listingId}');
+    final activeProfile = ref.read(activeProfileProvider);
+    if (activeProfile == null || !activeProfile.isValidated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Seuls les profils actifs et validés peuvent réserver un service ou un trajet.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final listing = ref.read(listingDetailProvider(widget.listingId)).listing;
+    if (listing != null && listing.isTravelListing) {
+      context.push('/marketplace/parcel/book/${widget.listingId}', extra: listing);
+    } else {
+      context.push('/marketplace/request/${widget.listingId}');
+    }
   }
 
   void _writeReview() {
@@ -718,6 +734,9 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
   }
 
   Widget _buildBottomBar(bool isDark) {
+    final listing = ref.watch(listingDetailProvider(widget.listingId)).listing;
+    final isTravel = listing != null && listing.isTravelListing;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: BoxDecoration(
@@ -753,8 +772,8 @@ class _ListingDetailScreenState extends ConsumerState<ListingDetailScreen> {
               flex: 2,
               child: FilledButton.icon(
                 onPressed: _requestService,
-                icon: const Icon(Icons.local_offer_rounded),
-                label: const Text('Demander un service'),
+                icon: Icon(isTravel ? Icons.local_shipping_rounded : Icons.local_offer_rounded),
+                label: Text(isTravel ? 'Expédier un colis' : 'Demander un service'),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: AppColors.primary,

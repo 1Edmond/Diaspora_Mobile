@@ -7,6 +7,7 @@ import '../../../../core/theme/design_system.dart';
 import '../../data/models/marketplace_dtos.dart';
 import '../../domain/entities/listing.dart';
 import '../controllers/marketplace_providers.dart';
+import '../../../profile/presentation/controllers/profile_providers.dart';
 
 class CreateTravelListingScreen extends ConsumerStatefulWidget {
   const CreateTravelListingScreen({super.key});
@@ -203,6 +204,17 @@ class _CreateTravelListingScreenState
   }
 
   Future<void> _submitTravelListing() async {
+    final activeProfile = ref.read(activeProfileProvider);
+    if (activeProfile == null || !activeProfile.isValidated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Seuls les profils actifs et validés peuvent publier un trajet.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (!_validateCurrentStep()) return;
 
     setState(() => _isSubmitting = true);
@@ -330,10 +342,15 @@ class _CreateTravelListingScreenState
   Widget _buildProgressBar(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final stepLabels = ['Corridor', 'Dates', 'Capacité & Prix', 'Remise'];
+    final activeProfile = ref.watch(activeProfileProvider);
+    final isInactive = activeProfile == null || !activeProfile.isValidated;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
         children: List.generate(_totalSteps, (index) {
           final isCompleted = index < _currentStep;
           final isCurrent = index == _currentStep;
@@ -376,7 +393,36 @@ class _CreateTravelListingScreenState
           );
         }),
       ),
-    );
+      if (isInactive) ...[
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.red.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Seuls les profils actifs et validés peuvent publier des trajets.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red[700],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ],
+  ),
+);
   }
 
   Widget _buildStep1Corridor(BuildContext context) {
@@ -1135,13 +1181,35 @@ class _CreateTravelListingScreenState
           ),
           const SizedBox(height: 24),
 
-          // Submit button
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              key: const Key('submit_travel_listing_button'),
-              onPressed: _isSubmitting ? null : _submitTravelListing,
+          Builder(
+            builder: (context) {
+              final activeProfile = ref.watch(activeProfileProvider);
+              final isProfileActive = activeProfile != null && activeProfile.isValidated;
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!isProfileActive) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        'Votre profil doit être actif et validé pour publier ce trajet.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red[700],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                  // Submit button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      key: const Key('submit_travel_listing_button'),
+                      onPressed: _isSubmitting || !isProfileActive ? null : _submitTravelListing,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -1160,6 +1228,10 @@ class _CreateTravelListingScreenState
                     ),
             ),
           ),
+        ],
+      );
+    },
+  ),
         ],
       ),
     );
