@@ -255,13 +255,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   }
 
   Future<void> fetchProfiles() async {
-    final current = state.valueOrNull;
-    if (current == null) return;
     try {
       _ref?.read(profileListProvider.notifier).setLoading();
       final profiles = await _profileService.fetchProfiles();
       _ref?.read(profileListProvider.notifier).setProfiles(profiles);
-      state = AsyncValue.data(current.copyWith(profiles: profiles));
+
+      final current = state.valueOrNull;
+      if (current != null) {
+        state = AsyncValue.data(current.copyWith(profiles: profiles));
+      }
 
       final activeId = _ref?.read(activeProfileIdProvider);
       if (activeId == null && profiles.isNotEmpty) {

@@ -8,7 +8,7 @@ import '../../../../shared/widgets/diaspora_app_bar.dart';
 import '../../domain/entities/service.dart';
 import '../controllers/services_notifier.dart';
 import '../../data/models/service_model.dart';
-import '../../marketplace/presentation/controllers/marketplace_providers.dart';
+import '../../../marketplace/presentation/controllers/marketplace_providers.dart' show marketplaceCategoriesProvider;
 import '../widgets/service_card.dart';
 
 class ServicesHomeScreen extends ConsumerStatefulWidget {

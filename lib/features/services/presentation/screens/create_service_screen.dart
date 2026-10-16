@@ -5,7 +5,7 @@ import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/containers/neumorphic_container.dart';
 import '../../domain/entities/service.dart';
 import '../controllers/services_notifier.dart';
-import '../../marketplace/presentation/controllers/marketplace_providers.dart';
+import '../../../marketplace/presentation/controllers/marketplace_providers.dart' show marketplaceCategoriesProvider;
 
 class CreateServiceScreen extends ConsumerStatefulWidget {
   final String? editServiceId;

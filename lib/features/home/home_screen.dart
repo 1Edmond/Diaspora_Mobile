@@ -125,8 +125,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
 
     ref.listen(profileListProvider, (prev, next) {
-      final profiles = next.valueOrNull;
-      if (profiles != null && profiles.isEmpty && ref.read(activeProfileProvider) == null && mounted) {
+      if (prev?.isLoading == true &&
+          next.hasValue &&
+          next.value!.isEmpty &&
+          ref.read(activeProfileProvider) == null &&
+          mounted) {
         context.go('/auth/login');
       }
     });
