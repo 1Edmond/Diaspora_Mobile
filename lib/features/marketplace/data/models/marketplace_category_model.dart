@@ -19,7 +19,11 @@ class MarketplaceCategoryModel {
     return MarketplaceCategoryModel(
       id: json['Id'] as String? ?? json['id'] as String? ?? '',
       name: json['Name'] as String? ?? json['name'] as String? ?? '',
-      count: json['Count'] as int? ?? json['count'] as int? ?? 0,
+      count: json['Count'] as int? ??
+          json['count'] as int? ??
+          json['ListingCount'] as int? ??
+          json['listingCount'] as int? ??
+          0,
     );
   }
 }

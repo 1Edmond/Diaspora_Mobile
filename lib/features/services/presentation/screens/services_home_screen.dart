@@ -8,6 +8,7 @@ import '../../../../shared/widgets/diaspora_app_bar.dart';
 import '../../domain/entities/service.dart';
 import '../controllers/services_notifier.dart';
 import '../../data/models/service_model.dart';
+import '../../marketplace/presentation/controllers/marketplace_providers.dart';
 import '../widgets/service_card.dart';
 
 class ServicesHomeScreen extends ConsumerStatefulWidget {
@@ -21,6 +22,7 @@ class _ServicesHomeScreenState extends ConsumerState<ServicesHomeScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
   ServiceCategory? _selectedCategory;
+  String? _selectedCategoryName;
   String _sortBy = 'rating'; // rating, price_asc, price_desc, newest
 
   @override
@@ -46,7 +48,15 @@ class _ServicesHomeScreenState extends ConsumerState<ServicesHomeScreen> {
       ).toList();
     }
 
-    if (_selectedCategory != null) {
+    if (_selectedCategoryName != null) {
+      final filter = _selectedCategoryName!.toLowerCase();
+      result = result.where((s) {
+        final catName = s.category.toString().split('.').last.toLowerCase().replaceAll('_', ' ');
+        return catName == filter ||
+            s.title.toLowerCase().contains(filter) ||
+            s.description.toLowerCase().contains(filter);
+      }).toList();
+    } else if (_selectedCategory != null) {
       result = result.where((s) => s.category == _selectedCategory!).toList();
     }
 
@@ -72,6 +82,8 @@ class _ServicesHomeScreenState extends ConsumerState<ServicesHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(servicesProvider);
+    final categoriesAsync = ref.watch(marketplaceCategoriesProvider);
+    final dynamicCategories = categoriesAsync.valueOrNull ?? [];
     final categories = ServiceCategory.values;
 
     return Scaffold(
@@ -142,14 +154,30 @@ class _ServicesHomeScreenState extends ConsumerState<ServicesHomeScreen> {
                       children: [
                         _FilterChip(
                           label: 'Tous',
-                          selected: _selectedCategory == null,
-                          onTap: () => setState(() => _selectedCategory = null),
+                          selected: _selectedCategoryName == null && _selectedCategory == null,
+                          onTap: () => setState(() {
+                            _selectedCategoryName = null;
+                            _selectedCategory = null;
+                          }),
                         ),
-                        ...categories.map((c) => _FilterChip(
-                          label: c.toString().split('.').last.replaceAll('_', ' '),
-                          selected: _selectedCategory == c,
-                          onTap: () => setState(() => _selectedCategory = c),
-                        )),
+                        if (dynamicCategories.isNotEmpty)
+                          ...dynamicCategories.map((c) => _FilterChip(
+                            label: c.name,
+                            selected: _selectedCategoryName == c.name,
+                            onTap: () => setState(() {
+                              _selectedCategoryName = c.name;
+                              _selectedCategory = null;
+                            }),
+                          ))
+                        else
+                          ...categories.map((c) => _FilterChip(
+                            label: c.toString().split('.').last.replaceAll('_', ' '),
+                            selected: _selectedCategory == c,
+                            onTap: () => setState(() {
+                              _selectedCategory = c;
+                              _selectedCategoryName = null;
+                            }),
+                          )),
                       ],
                     ),
                   ),

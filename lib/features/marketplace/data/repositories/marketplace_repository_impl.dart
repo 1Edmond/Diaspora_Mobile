@@ -22,7 +22,12 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
 
   @override
   Future<List<MarketplaceCategoryModel>> getCategories() async {
-    final res = await _client.get('/listings/categories');
+    dynamic res;
+    try {
+      res = await _client.get('/category');
+    } catch (_) {
+      res = await _client.get('/listings/categories');
+    }
     final list = (res as List<dynamic>? ?? []);
     return list
         .map((json) => MarketplaceCategoryModel.fromJson(json as Map<String, dynamic>))

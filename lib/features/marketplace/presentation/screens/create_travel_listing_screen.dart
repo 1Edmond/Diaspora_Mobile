@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../data/models/marketplace_dtos.dart';
 import '../../domain/entities/listing.dart';
@@ -240,7 +240,7 @@ class _CreateTravelListingScreenState
           'Objets interdits : $prohibitedDesc.';
 
       final dto = CreateListingDto(
-        categoryId: 'travel-parcels',
+        categoryId: AppConfig.parcelTransportCategoryId,
         title: title,
         description: description,
         contactInfo: _meetingPointsController.text.trim(),
@@ -663,7 +663,6 @@ class _CreateTravelListingScreenState
 
   Widget _buildStep2Dates(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dateFormat = DateFormat('dd/MM/yyyy');
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -1185,13 +1184,21 @@ class _CreateTravelListingScreenState
             builder: (context) {
               final activeProfile = ref.watch(activeProfileProvider);
               final isProfileActive = activeProfile != null && activeProfile.isValidated;
+              if (isProfileActive) return const SizedBox.shrink();
 
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!isProfileActive) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+              return Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.red[700], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
                       child: Text(
                         'Votre profil doit être actif et validé pour publier ce trajet.',
                         style: TextStyle(
@@ -1199,39 +1206,13 @@ class _CreateTravelListingScreenState
                           fontWeight: FontWeight.w600,
                           color: Colors.red[700],
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ),
                   ],
-                  // Submit button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      key: const Key('submit_travel_listing_button'),
-                      onPressed: _isSubmitting || !isProfileActive ? null : _submitTravelListing,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 2,
-              ),
-              child: _isSubmitting
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : const Text(
-                      'Publier mon trajet de transport',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                    ),
-            ),
+                ),
+              );
+            },
           ),
-        ],
-      );
-    },
-  ),
         ],
       ),
     );
@@ -1259,9 +1240,9 @@ class _CreateTravelListingScreenState
   }
 
   Widget _buildBottomBar(BuildContext context, bool isDark) {
-    if (_currentStep == _totalSteps - 1) {
-      return const SizedBox.shrink();
-    }
+    final activeProfile = ref.watch(activeProfileProvider);
+    final isProfileActive = activeProfile != null && activeProfile.isValidated;
+    final isLastStep = _currentStep == _totalSteps - 1;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1269,30 +1250,53 @@ class _CreateTravelListingScreenState
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
       ),
-      child: Row(
-        children: [
-          if (_currentStep > 0)
-            TextButton.icon(
-              onPressed: _previousStep,
-              icon: const Icon(Icons.arrow_back_rounded),
-              label: const Text('Précédent'),
-            )
-          else
-            const SizedBox.shrink(),
-          const Spacer(),
-          ElevatedButton.icon(
-            key: const Key('wizard_next_button'),
-            onPressed: _nextStep,
-            icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-            label: const Text('Suivant'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-          ),
-        ],
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            if (_currentStep > 0)
+              TextButton.icon(
+                onPressed: _isSubmitting ? null : _previousStep,
+                icon: const Icon(Icons.arrow_back_rounded),
+                label: const Text('Précédent'),
+              )
+            else
+              const SizedBox.shrink(),
+            const Spacer(),
+            if (!isLastStep)
+              ElevatedButton.icon(
+                key: const Key('wizard_next_button'),
+                onPressed: _nextStep,
+                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                label: const Text('Suivant'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              )
+            else
+              ElevatedButton.icon(
+                key: const Key('submit_travel_listing_button'),
+                onPressed: _isSubmitting || !isProfileActive ? null : _submitTravelListing,
+                icon: _isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check_circle_outline_rounded, size: 18),
+                label: Text(_isSubmitting ? 'Publication...' : 'Publier mon trajet'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/containers/glass_container.dart';
 import '../../../../shared/widgets/containers/neumorphic_container.dart';
 import '../../domain/entities/service.dart';
+import '../../marketplace/presentation/controllers/marketplace_providers.dart';
 
-class ServiceSettingsScreen extends StatefulWidget {
+class ServiceSettingsScreen extends ConsumerStatefulWidget {
   const ServiceSettingsScreen({super.key});
 
   @override
-  State<ServiceSettingsScreen> createState() => _ServiceSettingsScreenState();
+  ConsumerState<ServiceSettingsScreen> createState() => _ServiceSettingsScreenState();
 }
 
-class _ServiceSettingsScreenState extends State<ServiceSettingsScreen> {
+class _ServiceSettingsScreenState extends ConsumerState<ServiceSettingsScreen> {
   String _selectedPaymentMethod = 'Carte bancaire';
-  final Set<ServiceCategory> _selectedCategories = {ServiceCategory.TUTORING, ServiceCategory.ADMINISTRATIVE_HELP};
+  final Set<String> _selectedCategories = {'Soutien scolaire & Cours', 'Démarches & Aide administrative'};
   ServiceScope _selectedScope = ServiceScope.CITY_ONLY;
 
   final _paymentMethods = ['Carte bancaire', 'Mobile Money', 'Virement', 'Espèces'];
-  final _allCategories = ServiceCategory.values;
   final _scopeOptions = <ServiceScope>[ServiceScope.CITY_ONLY, ServiceScope.DEPARTMENT_LIST, ServiceScope.COUNTRY_WIDE];
 
   @override
@@ -142,21 +143,26 @@ class _ServiceSettingsScreenState extends State<ServiceSettingsScreen> {
   }
 
   void _showCategoriesPicker(BuildContext context) {
+    final categoriesAsync = ref.read(marketplaceCategoriesProvider);
+    final dynamicCategories = categoriesAsync.valueOrNull ?? [];
+    final categoryNames = dynamicCategories.isNotEmpty
+        ? dynamicCategories.map((c) => c.name).toList()
+        : ServiceCategory.values.map((c) => c.toString().split('.').last.replaceAll('_', ' ')).toList();
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
-          final localSelected = Set<ServiceCategory>.from(_selectedCategories);
           return _OptionSheet(
             title: 'Catégories',
-            options: _allCategories.map((c) => c.toString().split('.').last.replaceAll('_', ' ')).toList(),
+            options: categoryNames,
             selected: '',
             isSingle: false,
-            multiSelected: _allCategories.map((c) => _selectedCategories.contains(c)).toList(),
+            multiSelected: categoryNames.map((c) => _selectedCategories.contains(c)).toList(),
             onMultiToggle: (i) {
-              final cat = _allCategories[i];
+              final cat = categoryNames[i];
               setState(() {
                 if (_selectedCategories.contains(cat)) {
                   _selectedCategories.remove(cat);

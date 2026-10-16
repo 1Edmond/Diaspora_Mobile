@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/config/app_config.dart';
 import '../../core/config/feature_flags.dart';
+import '../../core/network/token_service.dart';
 import '../../core/theme/design_system.dart';
 import '../../shared/widgets/containers/glass_container.dart';
 import '../../shared/widgets/containers/neumorphic_container.dart';
@@ -15,6 +17,7 @@ import '../procedures/presentation/controllers/procedures_notifier.dart';
 import '../profile/presentation/controllers/profile_providers.dart';
 import '../profile/presentation/widgets/profile_switcher_header.dart';
 import '../auth/presentation/controllers/auth_notifier.dart';
+import '../auth/presentation/controllers/auth_restore_provider.dart';
 import '../settings/presentation/controllers/settings_notifier.dart';
 import '../settings/domain/entities/settings_entity.dart';
 
@@ -41,6 +44,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_handleScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAuthAndProfiles();
+    });
+  }
+
+  Future<void> _checkAuthAndProfiles() async {
+    if (!mounted) return;
+
+    // 1. Check token validity in real mode
+    if (!AppConfig.useMockData) {
+      final tokenService = TokenService();
+      final authRestored = ref.read(authRestoredProvider);
+      final isRefreshTokenExpired = tokenService.isRefreshTokenExpired;
+      final hasAnyToken = tokenService.hasAccessToken || tokenService.hasRefreshToken;
+
+      if (authRestored == false || !hasAnyToken || (tokenService.hasRefreshToken && isRefreshTokenExpired)) {
+        if (mounted) {
+          context.go('/auth/login');
+        }
+        return;
+      }
+    }
+
+    // 2. Check profile availability
+    var activeProfile = ref.read(activeProfileProvider);
+    var profiles = ref.read(profileListProvider).valueOrNull ?? [];
+
+    if (activeProfile == null && profiles.isEmpty) {
+      await ref.read(authNotifierProvider.notifier).fetchProfiles();
+      if (!mounted) return;
+      activeProfile = ref.read(activeProfileProvider);
+      profiles = ref.read(profileListProvider).valueOrNull ?? [];
+
+      if (activeProfile == null && profiles.isEmpty) {
+        if (mounted) {
+          context.go('/auth/login');
+        }
+        return;
+      }
+    }
   }
 
   void _handleScroll() {
@@ -75,6 +118,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authRestoredProvider, (prev, next) {
+      if (next == false && mounted) {
+        context.go('/auth/login');
+      }
+    });
+
+    ref.listen(profileListProvider, (prev, next) {
+      final profiles = next.valueOrNull;
+      if (profiles != null && profiles.isEmpty && ref.read(activeProfileProvider) == null && mounted) {
+        context.go('/auth/login');
+      }
+    });
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {

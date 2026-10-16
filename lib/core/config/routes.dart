@@ -107,13 +107,14 @@ class AppRouter {
       }
 
       // 4. Not authenticated: route to onboarding (first launch) or login.
-      if (_isEntryLocation(state.matchedLocation)) {
+      if (!state.matchedLocation.startsWith('/auth') && state.matchedLocation != '/onboarding') {
         return hasSeenOnboarding() ? '/auth/login' : '/onboarding';
       }
       return null;
     },
     routes: [
       GoRoute(path: '/', builder: (c, s) => const SplashPlaceholder()),
+      GoRoute(path: '/login', redirect: (c, s) => '/auth/login'),
       GoRoute(path: '/onboarding', builder: (c, s) => const OnboardingScreen()),
       GoRoute(
         path: '/auth',
@@ -520,7 +521,8 @@ class AppRouter {
         location == '/home' ||
         location == '/onboarding' ||
         location == '/auth' ||
-        location == '/auth/login';
+        location == '/auth/login' ||
+        location == '/login';
   }
 }
 

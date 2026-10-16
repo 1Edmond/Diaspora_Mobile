@@ -5,6 +5,7 @@ import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/containers/neumorphic_container.dart';
 import '../../domain/entities/service.dart';
 import '../controllers/services_notifier.dart';
+import '../../marketplace/presentation/controllers/marketplace_providers.dart';
 
 class CreateServiceScreen extends ConsumerStatefulWidget {
   final String? editServiceId;
@@ -20,6 +21,8 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
   final _priceCtrl = TextEditingController();
   PriceType _priceType = PriceType.FIXED;
   ServiceCategory _category = ServiceCategory.OTHER;
+  String? _selectedCategoryId;
+  String? _selectedCategoryName;
   ServiceScope _scope = ServiceScope.CITY_ONLY;
   bool _loaded = false;
 
@@ -67,7 +70,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
       'price': double.tryParse(_priceCtrl.text.trim().replaceAll(' ', '')) ?? 0.0,
       'currency': 'EUR',
       'priceType': _priceType.toString().split('.').last,
-      'category': _category.toString().split('.').last,
+      'category': _selectedCategoryId ?? _selectedCategoryName ?? _category.toString().split('.').last,
       'images': <String>[],
       'scope': _scope.toString().split('.').last,
       'allowedDepartments': null,
@@ -87,6 +90,9 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final categoriesAsync = ref.watch(marketplaceCategoriesProvider);
+    final dynamicCategories = categoriesAsync.valueOrNull ?? [];
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -182,17 +188,40 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
                 children: [
                   _Label(text: 'Catégorie'),
                   const SizedBox(height: 6),
-                  DropdownButtonFormField<ServiceCategory>(
-                    value: _category,
-                    decoration: _inputDecoration(''),
-                    items: ServiceCategory.values.map((c) {
-                      return DropdownMenuItem(
-                        value: c,
-                        child: Text(c.toString().split('.').last.replaceAll('_', ' ')),
-                      );
-                    }).toList(),
-                    onChanged: (v) => setState(() => _category = v ?? ServiceCategory.OTHER),
-                  ),
+                  if (dynamicCategories.isNotEmpty)
+                    DropdownButtonFormField<String>(
+                      value: _selectedCategoryId ?? (dynamicCategories.any((c) => c.name.toLowerCase() == _category.name.toLowerCase())
+                          ? dynamicCategories.firstWhere((c) => c.name.toLowerCase() == _category.name.toLowerCase()).id
+                          : dynamicCategories.first.id),
+                      decoration: _inputDecoration(''),
+                      items: dynamicCategories.map((c) {
+                        return DropdownMenuItem(
+                          value: c.id,
+                          child: Text(c.name),
+                        );
+                      }).toList(),
+                      onChanged: (v) {
+                        setState(() {
+                          _selectedCategoryId = v;
+                          final match = dynamicCategories.where((c) => c.id == v).firstOrNull;
+                          if (match != null) {
+                            _selectedCategoryName = match.name;
+                          }
+                        });
+                      },
+                    )
+                  else
+                    DropdownButtonFormField<ServiceCategory>(
+                      value: _category,
+                      decoration: _inputDecoration(''),
+                      items: ServiceCategory.values.map((c) {
+                        return DropdownMenuItem(
+                          value: c,
+                          child: Text(c.toString().split('.').last.replaceAll('_', ' ')),
+                        );
+                      }).toList(),
+                      onChanged: (v) => setState(() => _category = v ?? ServiceCategory.OTHER),
+                    ),
                   const SizedBox(height: 16),
                   _Label(text: 'Zone de service'),
                   const SizedBox(height: 6),

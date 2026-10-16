@@ -655,10 +655,12 @@ class _MockInterceptor extends Interceptor {
       // this file had the routes in the wrong order, and triplicated by
       // an accidental paste — this block replaces all of that).
 
-      // GET /listings/categories — must come before the generic
+      // GET /listings/categories or /category — must come before the generic
       // /listings/:id detail route below (same lesson as /listings/my and
       // /listings/pending: literal-suffix routes go first).
-      if (method == 'GET' && _matches(path, r'^/listings/categories(?:/)?$')) {
+      if (method == 'GET' &&
+          (_matches(path, r'^/listings/categories(?:/)?$') ||
+           _matches(path, r'^/category(?:/)?$'))) {
         final data = await MockApi.getMarketplaceCategories();
         return handler.resolve(
           Response(requestOptions: options, data: data, statusCode: 200),
