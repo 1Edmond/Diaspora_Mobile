@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../data/models/listing_summary_model.dart';
 

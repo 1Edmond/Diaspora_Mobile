@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/containers/neumorphic_container.dart';
 import '../../data/models/service_model.dart';
@@ -18,7 +17,6 @@ class ServiceCard extends StatelessWidget {
       case PriceType.NEGOTIABLE:
         return 'Négociable';
       case PriceType.FIXED:
-      default:
         return '${service.price.toStringAsFixed(0)} ${service.currency}';
     }
   }
