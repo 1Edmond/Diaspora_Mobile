@@ -38,7 +38,7 @@ class ProfileService {
   }
 
   Future<List<Profile>> fetchProfiles() async {
-    final res = await _dio.get<Map<String, dynamic>>('profiles/me');
+    final res = await _dio.get<Map<String, dynamic>>('/profiles/me');
 
     if (res.statusCode != 200 || res.data == null) {
       throw DioException(
@@ -56,7 +56,7 @@ class ProfileService {
 
   Future<List<PublicProfileType>> fetchPublicProfileTypes() async {
     try {
-      final res = await _dio.get('profile-types/public');
+      final res = await _dio.get('/profile-types/public');
       if (res.statusCode == 200 && res.data is List) {
         return (res.data as List)
             .map((e) => PublicProfileType.fromJson(Map<String, dynamic>.from(e as Map)))
