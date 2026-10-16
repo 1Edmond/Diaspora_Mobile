@@ -7,19 +7,34 @@ class FeatureFlags {
   FeatureFlags._();
 
   // ===========================================================================
-  // MODULE SWITCHES (Modifiables directement dans le code)
+  // MODULE SWITCHES (Modifiables directement dans le code ou via bootstrap)
   // ===========================================================================
-  static const bool enableWallet = true;
-  static const bool enableDocuments = true;
-  static const bool enableMarketplace = true;
-  static const bool enableProcedures = false;
-  static const bool enableChat = true;
-  static const bool enableCommunity = false;
-  static const bool enableCommittee = false;
-  static const bool enableFreelance = false;
-  static const bool enableServices = true;
-  static const bool enableProfile = true;
-  static const bool enableSettings = true;
+  static bool enableWallet = true;
+  static bool enableDocuments = true;
+  static bool enableMarketplace = true;
+  static bool enableProcedures = false;
+  static bool enableChat = true;
+  static bool enableCommunity = false;
+  static bool enableCommittee = false;
+  static bool enableFreelance = false;
+  static bool enableServices = true;
+  static bool enableProfile = true;
+  static bool enableSettings = true;
+
+  /// Met à jour les flags depuis la configuration reçue du serveur.
+  static void updateFromRemote(Map<String, dynamic> remoteFlags) {
+    if (remoteFlags.containsKey('wallet')) enableWallet = remoteFlags['wallet'] == true;
+    if (remoteFlags.containsKey('documents')) enableDocuments = remoteFlags['documents'] == true;
+    if (remoteFlags.containsKey('marketplace')) enableMarketplace = remoteFlags['marketplace'] == true;
+    if (remoteFlags.containsKey('procedures')) enableProcedures = remoteFlags['procedures'] == true;
+    if (remoteFlags.containsKey('chat')) enableChat = remoteFlags['chat'] == true;
+    if (remoteFlags.containsKey('community')) enableCommunity = remoteFlags['community'] == true;
+    if (remoteFlags.containsKey('committee')) enableCommittee = remoteFlags['committee'] == true;
+    if (remoteFlags.containsKey('freelance')) enableFreelance = remoteFlags['freelance'] == true;
+    if (remoteFlags.containsKey('services')) enableServices = remoteFlags['services'] == true;
+    if (remoteFlags.containsKey('profile')) enableProfile = remoteFlags['profile'] == true;
+    if (remoteFlags.containsKey('settings')) enableSettings = remoteFlags['settings'] == true;
+  }
 
   /// Vérifie si l'accès à une route donnée est activé d'après les flags configurés.
   ///

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../domain/entities/enums.dart';
 import '../controllers/marketplace_providers.dart';
@@ -27,7 +28,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   bool get _isParcelTransport {
     if (_selectedCategoryId == null) return false;
     final cat = _selectedCategoryId!.toLowerCase();
-    return cat == 'transport' ||
+    return cat == AppConfig.parcelTransportCategoryId.toLowerCase() ||
+        cat == 'transport' ||
         cat == 'transport-colis' ||
         cat.contains('colis') ||
         cat.contains('transport');

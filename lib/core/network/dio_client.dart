@@ -127,6 +127,35 @@ class _MockInterceptor extends Interceptor {
       // ignore: avoid_print
       print('MockInterceptor: normalized $method $path');
 
+      // Mobile Bootstrap Configuration
+      if (method == 'GET' && (path == '/config/mobile' || path == '/api/config/mobile')) {
+        return handler.resolve(
+          Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: {
+              'activeModules': {
+                'wallet': true,
+                'documents': true,
+                'marketplace': true,
+                'procedures': false,
+                'chat': true,
+                'community': false,
+                'committee': false,
+                'freelance': false,
+                'services': true,
+                'settings': true,
+                'profile': true,
+              },
+              'parcelTransportCategoryId': '019248a0-6b3a-7182-9a84-7c6d9e0f1234',
+              'defaultLocale': 'fr',
+              'supportedLocales': ['fr', 'en', 'ru'],
+              'minAppVersion': '1.0.0',
+            },
+          ),
+        );
+      }
+
       // Services: specific detail route must be checked BEFORE the collection
       if (method == 'GET' && _matches(path, r'^/services/')) {
         final id = path.split('/').last;

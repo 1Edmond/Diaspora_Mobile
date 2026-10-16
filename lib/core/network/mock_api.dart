@@ -1997,14 +1997,31 @@ class MockApi {
   // listings actually exist.
   static Future<List<Map<String, dynamic>>> getMarketplaceCategories() async {
     await Future.delayed(const Duration(milliseconds: 150));
+    final defaultCategories = [
+      {'Id': '019248a0-6b3a-7182-9a84-7c6d9e0f1234', 'Name': 'Transport de colis', 'Count': 12},
+      {'Id': 'cat_housing', 'Name': 'Logement & Hébergement', 'Count': 8},
+      {'Id': 'cat_translation', 'Name': 'Traduction & Interprétariat', 'Count': 6},
+      {'Id': 'cat_admin', 'Name': 'Démarches & Aide administrative', 'Count': 5},
+      {'Id': 'cat_groceries', 'Name': 'Courses & Achats', 'Count': 4},
+      {'Id': 'cat_tutoring', 'Name': 'Soutien scolaire & Cours', 'Count': 7},
+      {'Id': 'cat_cleaning', 'Name': 'Ménage & Entretien', 'Count': 3},
+      {'Id': 'cat_repair', 'Name': 'Réparation & Bricolage', 'Count': 4},
+      {'Id': 'cat_it', 'Name': 'Informatique & Numérique', 'Count': 9},
+      {'Id': 'cat_health', 'Name': 'Santé & Accompagnement', 'Count': 2},
+      {'Id': 'cat_catering', 'Name': 'Restauration & Événements', 'Count': 5},
+      {'Id': 'cat_other', 'Name': 'Autre prestation', 'Count': 3},
+    ];
     final counts = <String, int>{};
     final names = <String, String>{};
+    for (final def in defaultCategories) {
+      counts[def['Id'] as String] = def['Count'] as int;
+      names[def['Id'] as String] = def['Name'] as String;
+    }
     for (final l in mockListings) {
       counts[l.categoryId] = (counts[l.categoryId] ?? 0) + 1;
       names[l.categoryId] = l.categoryName;
     }
-    final entries = counts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final entries = counts.entries.toList();
     return entries
         .map((e) => {
               'Id': e.key,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../data/models/availability_slot_model.dart';
 import '../../data/models/marketplace_dtos.dart';
@@ -42,8 +43,8 @@ class _CreateListingWizardScreenState
 
   // Category & Kind
   _ListingKind _kind = _ListingKind.service;
-  ServiceCategory _serviceCategory = ServiceCategory.transport;
-  String _categoryId = 'transport-colis';
+  String _categoryId = AppConfig.parcelTransportCategoryId;
+  String _categoryName = 'Transport de colis';
 
   // Travel / Corridor fields
   final _departureCountryController = TextEditingController(text: 'TG');
@@ -79,35 +80,54 @@ class _CreateListingWizardScreenState
   final List<AvailabilitySlotModel> _availabilitySlots = [];
   bool _isSubmitting = false;
 
-  bool get _isParcelTransport => _serviceCategory == ServiceCategory.transport;
+  bool get _isParcelTransport =>
+      _categoryId.toLowerCase() == AppConfig.parcelTransportCategoryId.toLowerCase() ||
+      _categoryName.toLowerCase().contains('colis') ||
+      _categoryName.toLowerCase().contains('parcel');
 
-  static const _categoryIcons = {
-    ServiceCategory.transport: Icons.flight_takeoff_rounded,
-    ServiceCategory.housing: Icons.home_rounded,
-    ServiceCategory.translation: Icons.translate_rounded,
-    ServiceCategory.administrativeHelp: Icons.description_rounded,
-    ServiceCategory.groceries: Icons.shopping_basket_rounded,
-    ServiceCategory.tutoring: Icons.school_rounded,
-    ServiceCategory.cleaning: Icons.cleaning_services_rounded,
-    ServiceCategory.repair: Icons.build_rounded,
-    ServiceCategory.other: Icons.more_horiz_rounded,
-  };
-
-  static const _categoryLabels = {
-    ServiceCategory.transport: 'Transport de colis ✈️📦',
-    ServiceCategory.housing: 'Logement & Hébergement',
-    ServiceCategory.translation: 'Traduction & Interprétariat',
-    ServiceCategory.administrativeHelp: 'Démarches & Aide administrative',
-    ServiceCategory.groceries: 'Courses & Achats',
-    ServiceCategory.tutoring: 'Soutien scolaire & Cours',
-    ServiceCategory.cleaning: 'Ménage & Entretien',
-    ServiceCategory.repair: 'Réparation & Bricolage',
-    ServiceCategory.other: 'Autre prestation',
-  };
+  static IconData _getCategoryIcon(String name, String id) {
+    final lower = name.toLowerCase();
+    if (lower.contains('colis') || lower.contains('parcel') || id.toLowerCase() == AppConfig.parcelTransportCategoryId.toLowerCase()) {
+      return Icons.flight_takeoff_rounded;
+    }
+    if (lower.contains('logement') || lower.contains('hébergement') || lower.contains('housing')) {
+      return Icons.home_rounded;
+    }
+    if (lower.contains('traduction') || lower.contains('translation') || lower.contains('interprétariat')) {
+      return Icons.translate_rounded;
+    }
+    if (lower.contains('administrat') || lower.contains('démarche')) {
+      return Icons.description_rounded;
+    }
+    if (lower.contains('course') || lower.contains('achat') || lower.contains('grocer') || lower.contains('shopping')) {
+      return Icons.shopping_basket_rounded;
+    }
+    if (lower.contains('scolaire') || lower.contains('cours') || lower.contains('tutor') || lower.contains('formation')) {
+      return Icons.school_rounded;
+    }
+    if (lower.contains('ménage') || lower.contains('entretien') || lower.contains('clean')) {
+      return Icons.cleaning_services_rounded;
+    }
+    if (lower.contains('réparation') || lower.contains('bricolage') || lower.contains('repair') || lower.contains('handyman')) {
+      return Icons.build_rounded;
+    }
+    if (lower.contains('informatique') || lower.contains('numérique') || lower.contains('it ') || lower.contains('tech')) {
+      return Icons.computer_rounded;
+    }
+    if (lower.contains('santé') || lower.contains('médical') || lower.contains('health')) {
+      return Icons.health_and_safety_rounded;
+    }
+    if (lower.contains('restauration') || lower.contains('événement') || lower.contains('traiteur') || lower.contains('catering')) {
+      return Icons.restaurant_rounded;
+    }
+    return Icons.category_rounded;
+  }
 
   @override
   void initState() {
     super.initState();
+    _categoryId = AppConfig.parcelTransportCategoryId;
+    _categoryName = 'Transport de colis';
     _departureDate = DateTime.now().add(const Duration(days: 7));
     _arrivalDate = DateTime.now().add(const Duration(days: 8));
     _pickupDeadline = DateTime.now().add(const Duration(days: 6));
@@ -252,7 +272,7 @@ class _CreateListingWizardScreenState
         country: _isParcelTransport
             ? _departureCountryController.text.trim().toUpperCase()
             : (_countryController.text.trim().isEmpty ? null : _countryController.text.trim().toUpperCase()),
-        serviceCategory: _serviceCategory,
+        serviceCategory: _isParcelTransport ? ServiceCategory.transport : null,
         priceType: _isParcelTransport ? PriceType.fixed : _priceType,
         serviceScope: _serviceScope,
         allowedDepartments: _serviceScope == ServiceScope.departmentList
@@ -554,69 +574,103 @@ class _CreateListingWizardScreenState
             ),
           ),
           const SizedBox(height: 16),
-          // Grid of Categories
-          ...ServiceCategory.values.map((cat) {
-            final isSelected = _serviceCategory == cat;
-            final isTransport = cat == ServiceCategory.transport;
+          // Dynamic Categories from API
+          Consumer(
+            builder: (context, ref, _) {
+              final categoriesAsync = ref.watch(marketplaceCategoriesProvider);
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: InkWell(
-                onTap: () {
-                  setState(() {
-                    _serviceCategory = cat;
-                    _categoryId = isTransport ? 'transport-colis' : cat.name;
-                    _updateDefaultTitle();
-                  });
-                },
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.primary.withValues(alpha: 0.12)
-                        : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isSelected ? AppColors.primary : (isDark ? Colors.white12 : Colors.grey[200]!),
-                      width: isSelected ? 2 : 1,
+              return categoriesAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (err, _) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Center(
+                    child: TextButton.icon(
+                      onPressed: () => ref.refresh(marketplaceCategoriesProvider),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Réessayer le chargement des catégories'),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: (isSelected ? AppColors.primary : Colors.grey[400]!).withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _categoryIcons[cat] ?? Icons.category_rounded,
-                          color: isSelected ? AppColors.primary : (isDark ? Colors.white70 : Colors.grey[700]),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _categoryLabels[cat] ?? cat.name,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                            color: isSelected
-                                ? AppColors.primary
-                                : (isDark ? Colors.white : const Color(0xFF1A1A1A)),
+                ),
+                data: (categories) {
+                  if (categories.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Text('Aucune catégorie disponible'),
+                    );
+                  }
+
+                  return Column(
+                    children: categories.map((cat) {
+                      final isSelected = _categoryId.toLowerCase() == cat.id.toLowerCase() ||
+                          (_categoryId.isEmpty && cat.id.toLowerCase() == AppConfig.parcelTransportCategoryId.toLowerCase());
+                      final icon = _getCategoryIcon(cat.name, cat.id);
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: InkWell(
+                          onTap: () {
+                            setState(() {
+                              _categoryId = cat.id;
+                              _categoryName = cat.name;
+                              _updateDefaultTitle();
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primary.withValues(alpha: 0.12)
+                                  : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isSelected ? AppColors.primary : (isDark ? Colors.white12 : Colors.grey[200]!),
+                                width: isSelected ? 2 : 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: (isSelected ? AppColors.primary : Colors.grey[400]!).withValues(alpha: 0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    icon,
+                                    color: isSelected ? AppColors.primary : (isDark ? Colors.white70 : Colors.grey[700]),
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    cat.name,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : (isDark ? Colors.white : const Color(0xFF1A1A1A)),
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      if (isSelected)
-                        Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
+                      );
+                    }).toList(),
+                  );
+                },
+              );
+            },
+          ),
 
           // If Transport de colis is selected -> Corridor fields unlocked directly
           if (_isParcelTransport) ...[
@@ -1129,7 +1183,7 @@ class _CreateListingWizardScreenState
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          _categoryIcons[_serviceCategory] ?? Icons.category_rounded,
+                          _getCategoryIcon(_categoryName, _categoryId),
                           color: AppColors.primary,
                         ),
                       ),
@@ -1139,7 +1193,7 @@ class _CreateListingWizardScreenState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _categoryLabels[_serviceCategory] ?? _serviceCategory.name,
+                              _categoryName,
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,

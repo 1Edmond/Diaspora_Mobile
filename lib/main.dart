@@ -16,6 +16,7 @@ import 'features/notifications/data/services/firebase_messaging_service.dart';
 import 'features/notifications/presentation/providers/sse_provider.dart';
 import 'features/notifications/presentation/providers/notifications_providers.dart';
 import 'features/documents/data/local_storage/document_local_storage.dart';
+import 'core/services/bootstrap_service.dart';
 import 'core/theme/theme_provider.dart';
 
 void main() async {
@@ -36,6 +37,7 @@ void main() async {
   await DocumentLocalStorage.initialize();
 
   configureDependencies();
+  await BootstrapService.initialize();
 
   final firebaseMessagingService = getIt<FirebaseMessagingService>();
   if (Firebase.apps.isNotEmpty) {

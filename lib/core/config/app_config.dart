@@ -16,4 +16,7 @@ class AppConfig {
 
   static const appName = 'Diaspora';
   static const defaultLocale = 'fr';
+  static String parcelTransportCategoryId =
+      '019248a0-6b3a-7182-9a84-7c6d9e0f1234';
+  static List<String> supportedLocales = ['fr', 'en', 'ru'];
 }
