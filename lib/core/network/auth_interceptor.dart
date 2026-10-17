@@ -38,7 +38,7 @@ class AuthInterceptor extends Interceptor {
         try {
           final options = err.requestOptions
             ..headers['Authorization'] = 'Bearer $refreshed';
-          final response = await Dio().fetch(options);
+          final response = await _refreshDio.fetch(options);
           handler.resolve(response);
           return;
         } catch (e) {

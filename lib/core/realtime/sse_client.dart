@@ -60,12 +60,18 @@ class SseClient {
   Future<void> _doConnect() async {
     if (_disposed) return;
     try {
+      final headers = <String, dynamic>{
+        'Accept': 'text/event-stream',
+      };
+      if (_accessToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $_accessToken';
+      }
+
       _response = await _dio.get<ResponseBody>(
         _url,
-        queryParameters: {'access_token': _accessToken},
         options: Options(
           responseType: ResponseType.stream,
-          headers: {'Accept': 'text/event-stream'},
+          headers: headers,
           receiveTimeout: const Duration(minutes: 5),
         ),
       );

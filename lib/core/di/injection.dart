@@ -207,7 +207,6 @@ Dio _createRealApiDio() {
     baseUrl: AppConfig.realApiBaseUrl,
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
-    validateStatus: (_) => true,
     headers: {
       'Content-Type': 'application/json',
       'x-client-key': AppConfig.clientKey,
