@@ -43,9 +43,13 @@ class SseClient {
     required Dio dio,
     required String url,
     required String accessToken,
+    String? lastEventId,
   }) : _dio = dio,
        _url = url,
-       _accessToken = accessToken;
+       _accessToken = accessToken,
+       _lastEventId = lastEventId;
+
+  String? get lastEventId => _lastEventId;
 
   /// Opens the SSE connection and returns a [Stream<SseEvent>].
   /// Completes the stream when the connection closes or errors.
@@ -65,6 +69,9 @@ class SseClient {
       };
       if (_accessToken.isNotEmpty) {
         headers['Authorization'] = 'Bearer $_accessToken';
+      }
+      if (_lastEventId != null && _lastEventId!.isNotEmpty) {
+        headers['Last-Event-ID'] = _lastEventId;
       }
 
       _response = await _dio.get<ResponseBody>(

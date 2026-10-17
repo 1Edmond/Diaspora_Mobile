@@ -27,6 +27,50 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     super.dispose();
   }
 
+  Future<String?> _promptPinDialog({required bool isPinSet}) async {
+    final pinController = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          isPinSet
+              ? 'Code PIN Portefeuille'
+              : 'Créer un code PIN Portefeuille',
+        ),
+        content: TextField(
+          controller: pinController,
+          keyboardType: TextInputType.number,
+          obscureText: true,
+          maxLength: 4,
+          decoration: InputDecoration(
+            labelText: isPinSet
+                ? 'Saisissez votre PIN à 4 chiffres'
+                : 'Choisissez un PIN à 4 chiffres',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = pinController.text.trim();
+              if (text.length == 4) {
+                Navigator.of(ctx).pop(text);
+              }
+            },
+            child: const Text('Valider'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _send() async {
     final amountText = _amountController.text.trim();
     final recipient = _recipientController.text.trim();
@@ -47,27 +91,45 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       return;
     }
 
+    final notifier = ref.read(walletProvider.notifier);
+    final pinSet = await notifier.isPinSet();
+    final canBio = await notifier.canCheckBiometrics();
+
+    bool useBiometrics = false;
+    String? pin;
+
+    if (canBio && pinSet) {
+      useBiometrics = true;
+    } else {
+      if (!mounted) return;
+      pin = await _promptPinDialog(isPinSet: pinSet);
+      if (pin == null || pin.isEmpty) {
+        return;
+      }
+    }
+
     setState(() => _isLoading = true);
     try {
-      await ref
-          .read(walletProvider.notifier)
-          .sendMoney(
-            recipientId: recipient,
-            amount: amount,
-            currency: Currency(
-              code: 'XOF',
-              symbol: 'CFA',
-              name: 'XOF',
-              flag: '',
-            ),
-            note: _noteController.text.trim(),
-          );
+      await notifier.transferWithAuth(
+        recipient,
+        amount,
+        Currency(
+          code: 'XOF',
+          symbol: 'CFA',
+          name: 'XOF',
+          flag: '',
+        ),
+        pin: pin,
+        useBiometrics: useBiometrics,
+        note: _noteController.text.trim(),
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Transfert réussi !')));
       context.pop();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Erreur: $e')));

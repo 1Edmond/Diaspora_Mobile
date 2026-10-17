@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../data/models/listing_model.dart';
 import '../../data/models/marketplace_dtos.dart';
@@ -166,12 +167,22 @@ class _BookParcelScreenState extends ConsumerState<BookParcelScreen> {
           'Valeur déclarée : ${_formatAmount(declaredVal)} $_currency. '
           '${_messageController.text.trim()}';
 
-      await repo.createRequest(
+      final created = await repo.createRequest(
         CreateServiceRequestDto(
           listingId: widget.listingId,
           message: message,
+          weightKg: _requestedWeight,
+          declaredValue: declaredVal,
+          packageContentCategory: _selectedNature,
+          packageDescription: _messageController.text.trim(),
+          agreedPrice: _totalEscrowAmount,
+          agreedCurrency: _currency,
         ),
       );
+
+      if (!AppConfig.useMockData && created.id.isNotEmpty) {
+        await repo.payRequest(created.id);
+      }
 
       if (!mounted) return;
 

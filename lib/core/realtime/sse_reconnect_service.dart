@@ -26,6 +26,7 @@ class SseReconnectService {
   bool _disposed = false;
   bool _paused = false;
   int _attempt = 0;
+  String? _lastEventId;
 
   final void Function(SseEvent event)? onEvent;
   final void Function(SseConnectionState state)? onConnectionStateChanged;
@@ -35,6 +36,7 @@ class SseReconnectService {
     required Dio dio,
     required String url,
     required String accessToken,
+    String? lastEventId,
     this.initialDelay = const Duration(seconds: 2),
     this.maxDelay = const Duration(seconds: 30),
     this.stableThreshold = const Duration(seconds: 30),
@@ -43,7 +45,8 @@ class SseReconnectService {
     this.onError,
   }) : _dio = dio,
        _url = url,
-       _accessToken = accessToken;
+       _accessToken = accessToken,
+       _lastEventId = lastEventId;
 
   /// Starts the connection. Safe to call multiple times — if already connected, does nothing.
   void start() {
@@ -75,12 +78,20 @@ class SseReconnectService {
 
     onConnectionStateChanged?.call(SseConnectionState.connecting);
 
-    final client = SseClient(dio: _dio, url: _url, accessToken: _accessToken);
+    final client = SseClient(
+      dio: _dio,
+      url: _url,
+      accessToken: _accessToken,
+      lastEventId: _lastEventId,
+    );
     _currentClient = client;
 
     final stream = client.connect();
     _eventSub = stream.listen(
       (event) {
+        if (event.id != null && event.id!.isNotEmpty) {
+          _lastEventId = event.id;
+        }
         // Connection is stable — reset backoff
         _stableTimer?.cancel();
         _stableTimer = Timer(stableThreshold, () {
@@ -124,6 +135,10 @@ class SseReconnectService {
   }
 
   void _closeCurrent() {
+    if (_currentClient?.lastEventId != null &&
+        _currentClient!.lastEventId!.isNotEmpty) {
+      _lastEventId = _currentClient!.lastEventId;
+    }
     _eventSub?.cancel();
     _eventSub = null;
     _currentClient?.dispose();
@@ -153,12 +168,20 @@ class SseReconnectService {
   void _connectWithNewToken(String newToken) {
     onConnectionStateChanged?.call(SseConnectionState.connecting);
 
-    final client = SseClient(dio: _dio, url: _url, accessToken: newToken);
+    final client = SseClient(
+      dio: _dio,
+      url: _url,
+      accessToken: newToken,
+      lastEventId: _lastEventId,
+    );
     _currentClient = client;
 
     final stream = client.connect();
     _eventSub = stream.listen(
       (event) {
+        if (event.id != null && event.id!.isNotEmpty) {
+          _lastEventId = event.id;
+        }
         _stableTimer?.cancel();
         _stableTimer = Timer(stableThreshold, () {
           _attempt = 0;

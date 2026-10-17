@@ -60,6 +60,7 @@ import '../../features/procedures/data/services/procedure_service.dart';
 // Settings
 import '../../features/settings/data/repositories/settings_repository_impl.dart';
 import '../../features/settings/domain/repositories/settings_repository.dart';
+import '../../shared/services/storage_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../realtime/mock_realtime_service.dart';
 import '../deep_link/deep_link_service.dart';
@@ -67,6 +68,15 @@ import '../deep_link/deep_link_service.dart';
 final getIt = GetIt.instance;
 
 void configureDependencies() {
+  if (!getIt.isRegistered<StorageService>()) {
+    getIt.registerLazySingleton<StorageService>(() => StorageService());
+  }
+  if (!getIt.isRegistered<TokenService>()) {
+    getIt.registerLazySingleton<TokenService>(
+      () => TokenService(storage: getIt<StorageService>()),
+    );
+  }
+
   // Register low-level utilities
   getIt.registerSingleton<DioClient>(DioClient());
 
@@ -194,7 +204,7 @@ void configureDependencies() {
 }
 
 Dio _createRealApiDio() {
-  final tokenService = TokenService();
+  final tokenService = getIt<TokenService>();
   // Separate Dio for refresh calls to avoid infinite loop with AuthInterceptor
   final refreshDio = Dio(BaseOptions(
     baseUrl: AppConfig.realApiBaseUrl,

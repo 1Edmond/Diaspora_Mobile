@@ -1,7 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:get_it/get_it.dart';
 import '../config/app_config.dart';
+import 'auth_interceptor.dart';
 import 'mock_api.dart';
+import 'token_service.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -15,9 +18,33 @@ class DioClient {
   final Dio dio;
 
   DioClient({Dio? client}) : dio = client ?? Dio(_defaultOptions()) {
-    // Mock interceptor routes HTTP calls to in-app MockApi so the app
-    // can use a realistic network surface while remaining offline.
-    dio.interceptors.add(_MockInterceptor());
+    if (AppConfig.useMockData) {
+      // Mock interceptor routes HTTP calls to in-app MockApi so the app
+      // can use a realistic network surface while remaining offline.
+      dio.interceptors.add(_MockInterceptor());
+    } else {
+      if (client == null) {
+        dio.options.baseUrl = AppConfig.realApiBaseUrl;
+        dio.options.headers['x-client-key'] = AppConfig.clientKey;
+      }
+      final tokenService = GetIt.instance.isRegistered<TokenService>()
+          ? GetIt.instance<TokenService>()
+          : TokenService();
+      final refreshDio = Dio(
+        BaseOptions(
+          baseUrl: AppConfig.realApiBaseUrl,
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+          headers: {
+            'Content-Type': 'application/json',
+            'x-client-key': AppConfig.clientKey,
+          },
+        ),
+      );
+      dio.interceptors.add(
+        AuthInterceptor(tokenService, refreshDio),
+      );
+    }
 
     // Pass errors through (Dio 5 uses DioException). Keep default behaviour
     dio.interceptors.add(
@@ -36,10 +63,15 @@ class DioClient {
   }
 
   static BaseOptions _defaultOptions() => BaseOptions(
-    baseUrl: AppConfig.apiBaseUrl,
+    baseUrl: AppConfig.useMockData
+        ? AppConfig.apiBaseUrl
+        : AppConfig.realApiBaseUrl,
     connectTimeout: const Duration(seconds: 50),
     receiveTimeout: const Duration(seconds: 50),
-    headers: {'Content-Type': 'application/json'},
+    headers: {
+      'Content-Type': 'application/json',
+      if (!AppConfig.useMockData) 'x-client-key': AppConfig.clientKey,
+    },
   );
 
   Future<T> get<T>(
@@ -121,6 +153,12 @@ class _MockInterceptor extends Interceptor {
       String path = options.uri.path;
       if (path.startsWith('/api')) {
         path = path.substring(4);
+      }
+      if (path.startsWith('/servicelisting')) {
+        path = '/listings${path.substring('/servicelisting'.length)}';
+      }
+      if (path.startsWith('/freelance/')) {
+        path = path.substring('/freelance'.length);
       }
       final method = options.method.toUpperCase();
       // debug aid for flaky matching in tests
@@ -326,12 +364,50 @@ class _MockInterceptor extends Interceptor {
       }
 
       // Wallet
+      if (method == 'GET' && _matches(path, r'^/wallet/profile/[^/]+$')) {
+        final profileId = path.split('/').last;
+        return handler.resolve(
+          Response(
+            requestOptions: options,
+            data: {
+              'id': 'wallet_mock_1',
+              'externalProfileId': profileId,
+              'balance': 150000.0,
+              'currency': 'XOF',
+              'isActive': true,
+            },
+            statusCode: 200,
+          ),
+        );
+      }
+
       if (method == 'GET' && _matches(path, r'^/wallet/balance')) {
         final userId =
             options.queryParameters['userId'] as String? ?? 'unknown';
         final data = await MockApi.walletBalance(userId);
         return handler.resolve(
           Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
+      if (method == 'GET' &&
+          _matches(path, r'^/wallet/transactions/profile/[^/]+$')) {
+        final profileId = path.split('/').last;
+        final items = await MockApi.walletTransactions(
+          profileId,
+          page: options.queryParameters['pageNumber'] as int? ?? 1,
+        );
+        return handler.resolve(
+          Response(
+            requestOptions: options,
+            data: {
+              'items': items,
+              'totalCount': items.length,
+              'pageNumber': options.queryParameters['pageNumber'] as int? ?? 1,
+              'pageSize': options.queryParameters['pageSize'] as int? ?? 20,
+            },
+            statusCode: 200,
+          ),
         );
       }
 
@@ -347,11 +423,25 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
-      if (method == 'POST' && _matches(path, r'^/wallet/transfer')) {
+      if (method == 'POST' &&
+          (_matches(path, r'^/wallet/transfer') ||
+              _matches(path, r'^/wallet/transactions/transfer'))) {
         final payload = options.data as Map<String, dynamic>? ?? {};
         final data = await MockApi.walletTransfer(payload);
         return handler.resolve(
           Response(requestOptions: options, data: data, statusCode: 201),
+        );
+      }
+
+      if (method == 'POST' &&
+          (_matches(path, r'^/wallet/withdraw') ||
+              _matches(path, r'^/wallet/profile/[^/]+/withdraw'))) {
+        return handler.resolve(
+          Response(
+            requestOptions: options,
+            data: {'transactionId': 'tx_withdraw_mock', 'status': 'Completed'},
+            statusCode: 200,
+          ),
         );
       }
 
@@ -916,8 +1006,9 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
-      // GET /service-requests/my — must come before /service-requests/:id
-      if (method == 'GET' && _matches(path, r'^/service-requests/my(?:/)?$')) {
+      // GET /service-requests/my or /service-requests/sent — must come before /service-requests/:id
+      if (method == 'GET' &&
+          _matches(path, r'^/service-requests/(?:my|sent)(?:/)?$')) {
         final data = await MockApi.getMySentRequests(
           page: options.queryParameters['page'] as int? ?? 1,
           pageSize: options.queryParameters['pageSize'] as int? ?? 20,
@@ -985,6 +1076,54 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
+      // POST /service-requests/:id/confirm-handover
+      if (method == 'POST' &&
+          _matches(path, r'^/service-requests/[^/]+/confirm-handover')) {
+        return handler.resolve(
+          Response(
+            requestOptions: options,
+            data: {'message': 'Handover confirmed'},
+            statusCode: 200,
+          ),
+        );
+      }
+
+      // POST /service-requests/:id/mark-in-transit
+      if (method == 'POST' &&
+          _matches(path, r'^/service-requests/[^/]+/mark-in-transit')) {
+        return handler.resolve(
+          Response(
+            requestOptions: options,
+            data: {'message': 'In transit'},
+            statusCode: 200,
+          ),
+        );
+      }
+
+      // POST /service-requests/:id/mark-arrived
+      if (method == 'POST' &&
+          _matches(path, r'^/service-requests/[^/]+/mark-arrived')) {
+        return handler.resolve(
+          Response(
+            requestOptions: options,
+            data: {'message': 'Arrived at destination'},
+            statusCode: 200,
+          ),
+        );
+      }
+
+      // POST /service-requests/:id/confirm-delivery
+      if (method == 'POST' &&
+          _matches(path, r'^/service-requests/[^/]+/confirm-delivery')) {
+        return handler.resolve(
+          Response(
+            requestOptions: options,
+            data: {'message': 'Delivery confirmed'},
+            statusCode: 200,
+          ),
+        );
+      }
+
       // POST /service-requests/:id/chat-thread
       if (method == 'POST' && _matches(path, r'^/service-requests/[^/]+/chat-thread')) {
         final id = path.split('/')[2];
@@ -1011,6 +1150,20 @@ class _MockInterceptor extends Interceptor {
         );
         return handler.resolve(
           Response(requestOptions: options, data: data, statusCode: 201),
+        );
+      }
+
+      // POST /disputes
+      if (method == 'POST' && _matches(path, r'^/disputes(?:/)?$')) {
+        return handler.resolve(
+          Response(
+            requestOptions: options,
+            data: {
+              'id': 'disp_${DateTime.now().millisecondsSinceEpoch}',
+              'status': 'Open',
+            },
+            statusCode: 201,
+          ),
         );
       }
 
@@ -1150,6 +1303,15 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
+      if (method == 'GET' &&
+          (_matches(path, r'^/job-templates/my(?:/)?$') ||
+              _matches(path, r'^/job-templates(?:/)?$'))) {
+        final data = await MockApi.myJobTemplates();
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 200),
+        );
+      }
+
       if (method == 'PUT' && _matches(path, r'^/job-templates/[^/]+$')) {
         final id = path.split('/').last;
         final data = await MockApi.updateJobTemplate(
@@ -1165,13 +1327,6 @@ class _MockInterceptor extends Interceptor {
         await MockApi.deleteJobTemplate(path.split('/').last);
         return handler.resolve(
           Response(requestOptions: options, data: {}, statusCode: 204),
-        );
-      }
-
-      if (method == 'GET' && _matches(path, r'^/job-templates/my(?:/)?$')) {
-        final data = await MockApi.myJobTemplates();
-        return handler.resolve(
-          Response(requestOptions: options, data: data, statusCode: 200),
         );
       }
 
@@ -1309,7 +1464,23 @@ class _MockInterceptor extends Interceptor {
       }
 
       // Applications — literal action routes BEFORE generic /:id
-      if (method == 'GET' && _matches(path, r'^/applications/my(?:/)?$')) {
+      // Also support /job-applications/... prefix
+      if (path.startsWith('/job-applications')) {
+        path = '/applications${path.substring('/job-applications'.length)}';
+      }
+
+      if (method == 'POST' && _matches(path, r'^/applications(?:/)?$')) {
+        final body = options.data as Map<String, dynamic>? ?? {};
+        final jobPostingId =
+            (body['jobPostingId'] ?? body['JobPostingId'] ?? '').toString();
+        final data = await MockApi.applyToJob(jobPostingId, body);
+        return handler.resolve(
+          Response(requestOptions: options, data: data, statusCode: 201),
+        );
+      }
+
+      if (method == 'GET' &&
+          _matches(path, r'^/applications/(?:my|sent|received)(?:/)?$')) {
         final data = await MockApi.myApplications(
           page: options.queryParameters['page'] as int? ?? 1,
           pageSize: options.queryParameters['pageSize'] as int? ?? 20,
@@ -1367,33 +1538,44 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
-      // POST /applications/:id/check-ins
-      if (method == 'POST' && _matches(path, r'^/applications/[^/]+/check-ins$')) {
-        final id = path.split('/')[2];
-        final data = await MockApi.createJobCheckIn(
-          id,
-          options.data as Map<String, dynamic>? ?? {},
-        );
+      // POST /applications/:id/check-ins or POST /job-check-ins/check-in
+      if (method == 'POST' &&
+          (_matches(path, r'^/applications/[^/]+/check-ins$') ||
+              _matches(path, r'^/job-check-ins/check-in$'))) {
+        final body = options.data as Map<String, dynamic>? ?? {};
+        final id = _matches(path, r'^/applications/[^/]+/check-ins$')
+            ? path.split('/')[2]
+            : (body['jobApplicationId'] ?? body['JobApplicationId'] ?? '')
+                .toString();
+        final data = await MockApi.createJobCheckIn(id, body);
         return handler.resolve(
           Response(requestOptions: options, data: data, statusCode: 201),
         );
       }
 
-      // GET /applications/:id/check-ins
-      if (method == 'GET' && _matches(path, r'^/applications/[^/]+/check-ins$')) {
-        final data = await MockApi.applicationCheckIns(path.split('/')[2]);
+      // GET /applications/:id/check-ins or GET /job-check-ins
+      if (method == 'GET' &&
+          (_matches(path, r'^/applications/[^/]+/check-ins$') ||
+              _matches(path, r'^/job-check-ins(?:/)?$'))) {
+        final id = _matches(path, r'^/applications/[^/]+/check-ins$')
+            ? path.split('/')[2]
+            : (options.queryParameters['applicationId'] ?? '').toString();
+        final data = await MockApi.applicationCheckIns(id);
         return handler.resolve(
           Response(requestOptions: options, data: data, statusCode: 200),
         );
       }
 
-      // POST /applications/:id/reviews
-      if (method == 'POST' && _matches(path, r'^/applications/[^/]+/reviews$')) {
-        final id = path.split('/')[2];
-        await MockApi.createJobReview(
-          id,
-          options.data as Map<String, dynamic>? ?? {},
-        );
+      // POST /applications/:id/reviews or POST /job-reviews
+      if (method == 'POST' &&
+          (_matches(path, r'^/applications/[^/]+/reviews$') ||
+              _matches(path, r'^/job-reviews(?:/)?$'))) {
+        final body = options.data as Map<String, dynamic>? ?? {};
+        final id = _matches(path, r'^/applications/[^/]+/reviews$')
+            ? path.split('/')[2]
+            : (body['jobApplicationId'] ?? body['JobApplicationId'] ?? '')
+                .toString();
+        await MockApi.createJobReview(id, body);
         return handler.resolve(
           Response(requestOptions: options, data: {}, statusCode: 201),
         );
@@ -1407,9 +1589,15 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
-      // POST /check-ins/:checkInId/check-out
-      if (method == 'POST' && _matches(path, r'^/check-ins/[^/]+/check-out')) {
-        await MockApi.jobCheckOut(path.split('/')[2]);
+      // POST /check-ins/:checkInId/check-out or POST /job-check-ins/check-out
+      if (method == 'POST' &&
+          (_matches(path, r'^/check-ins/[^/]+/check-out') ||
+              _matches(path, r'^/job-check-ins/check-out'))) {
+        final body = options.data as Map<String, dynamic>? ?? {};
+        final checkInId = _matches(path, r'^/check-ins/[^/]+/check-out')
+            ? path.split('/')[2]
+            : (body['checkInId'] ?? body['jobApplicationId'] ?? '').toString();
+        await MockApi.jobCheckOut(checkInId);
         return handler.resolve(
           Response(requestOptions: options, data: {}, statusCode: 200),
         );
@@ -1428,8 +1616,9 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
-      // Job preferences
-      if (method == 'POST' && _matches(path, r'^/job-preferences(?:/)?$')) {
+      // Job preferences (/job-preferences or /worker-preferences)
+      if ((method == 'POST' || method == 'PUT') &&
+          _matches(path, r'^/(?:job-preferences|worker-preferences)(?:/)?$')) {
         final data = await MockApi.createJobPreference(
           options.data as Map<String, dynamic>? ?? {},
         );
@@ -1438,14 +1627,17 @@ class _MockInterceptor extends Interceptor {
         );
       }
 
-      if (method == 'DELETE' && _matches(path, r'^/job-preferences/[^/]+$')) {
+      if (method == 'DELETE' &&
+          _matches(path, r'^/(?:job-preferences|worker-preferences)(?:/[^/]+)?$')) {
         await MockApi.deleteJobPreference(path.split('/').last);
         return handler.resolve(
           Response(requestOptions: options, data: {}, statusCode: 204),
         );
       }
 
-      if (method == 'GET' && _matches(path, r'^/job-preferences/my(?:/)?$')) {
+      if (method == 'GET' &&
+          (_matches(path, r'^/job-preferences/my(?:/)?$') ||
+              _matches(path, r'^/worker-preferences(?:/my)?(?:/)?$'))) {
         final data = await MockApi.myJobPreferences();
         return handler.resolve(
           Response(requestOptions: options, data: data, statusCode: 200),

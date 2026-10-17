@@ -51,7 +51,6 @@ class ChatRepositoryImpl implements IChatRepository {
     String? mediaUrl,
     int? duration,
   }) async {
-    // Placeholder message construction
     final msg = Message(
       id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
       conversationId: conversationId,
@@ -69,12 +68,34 @@ class ChatRepositoryImpl implements IChatRepository {
       // Simulate delay
       await Future.delayed(const Duration(milliseconds: 200));
       _messageController.add(msg);
+      return msg;
     }
+
+    final res = await _client.post(
+      '/chat/conversations/$conversationId/messages',
+      data: {
+        'conversationId': conversationId,
+        'content': content,
+        'type': type.name,
+        if (mediaUrl != null) 'mediaUrl': mediaUrl,
+        if (duration != null) 'duration': duration,
+      },
+    );
+    if (res is Map<String, dynamic>) {
+      final created = MessageModel.fromJson(res);
+      _messageController.add(created);
+      return created;
+    }
+    _messageController.add(msg);
     return msg;
   }
 
   @override
-  Future<void> markMessagesAsRead(String conversationId) async {}
+  Future<void> markMessagesAsRead(String conversationId) async {
+    if (!AppConfig.useMockData) {
+      await _client.post('/chat/conversations/$conversationId/read');
+    }
+  }
 
   @override
   Future<Conversation> createConversation(
@@ -92,8 +113,10 @@ class ChatRepositoryImpl implements IChatRepository {
   Future<String> resolveChatProfileByExternal(String externalProfileId) async {
     final res = await _client.get('/chat/profiles/by-external/$externalProfileId');
     final map = res as Map<String, dynamic>;
-    return map['chatProfileId'] as String? ??
-        map['ChatProfileId'] as String? ??
+    return (map['id'] ??
+            map['Id'] ??
+            map['chatProfileId'] ??
+            map['ChatProfileId']) as String? ??
         'chatprofile_$externalProfileId';
   }
 

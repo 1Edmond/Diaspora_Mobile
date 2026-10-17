@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/app_config.dart';
 import '../../core/config/feature_flags.dart';
+import '../../core/di/injection.dart';
 import '../../core/network/token_service.dart';
 import '../../core/theme/design_system.dart';
 import '../../shared/widgets/containers/glass_container.dart';
@@ -54,7 +55,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // 1. Check token validity in real mode
     if (!AppConfig.useMockData) {
-      final tokenService = TokenService();
+      final tokenService = getIt.isRegistered<TokenService>()
+          ? getIt<TokenService>()
+          : TokenService();
       final authRestored = ref.read(authRestoredProvider);
       final isRefreshTokenExpired = tokenService.isRefreshTokenExpired;
       final hasAnyToken = tokenService.hasAccessToken || tokenService.hasRefreshToken;
@@ -670,7 +673,7 @@ class _MenuGridSection extends StatelessWidget {
     _MenuItem(
       Icons.handyman_rounded,
       'Services',
-      '/services',
+      '/marketplace',
       Color(0xFF0D9488),
     ),
     _MenuItem(

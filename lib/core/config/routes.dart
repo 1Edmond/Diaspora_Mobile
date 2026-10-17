@@ -137,6 +137,7 @@ class AppRouter {
         ],
       ),
       GoRoute(path: '/home', builder: (c, s) => const HomeScreen()),
+      GoRoute(path: '/services', redirect: (c, s) => '/marketplace'),
       GoRoute(path: '/profile', builder: (c, s) => const ProfileScreen()),
       GoRoute(path: '/profile/kyc', builder: (c, s) => const KycVerificationScreen()),
       GoRoute(path: '/profiles', builder: (c, s) => const ProfileListScreen()),

@@ -32,8 +32,8 @@ class AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    if (err.response?.statusCode == 401 || err.response?.statusCode == 403) {
-      final refreshed = await _refreshAccessToken(_tokenService.refreshToken ?? '');
+    if (err.response?.statusCode == 401) {
+      final refreshed = await _tokenService.refresh(_refreshAccessToken);
       if (refreshed != null) {
         try {
           final options = err.requestOptions
@@ -42,8 +42,11 @@ class AuthInterceptor extends Interceptor {
           handler.resolve(response);
           return;
         } catch (e) {
-          _tokenService.clearTokens();
+          handler.next(e is DioException ? e : err);
+          return;
         }
+      } else {
+        _tokenService.clearTokens();
       }
     }
     handler.next(err);

@@ -1,3 +1,4 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 import '../../data/models/paged_result.dart';
@@ -26,7 +27,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     try {
       res = await _client.get('/category');
     } catch (_) {
-      res = await _client.get('/listings/categories');
+      res = await _client.get('/servicelisting/categories');
     }
     final list = (res as List<dynamic>? ?? []);
     return list
@@ -72,7 +73,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     if (isStandardService != null) queryParams['isStandardService'] = isStandardService;
     if (serviceCategory != null) queryParams['serviceCategory'] = serviceCategory.name;
 
-    final res = await _client.get('/listings', queryParameters: queryParams);
+    final res = await _client.get('/servicelisting', queryParameters: queryParams);
     return PagedResult.fromJson(
       res as Map<String, dynamic>,
       (json) => ListingSummaryModel.fromJson(json),
@@ -112,7 +113,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     if (maxDistanceKm != null) queryParams['maxDistanceKm'] = maxDistanceKm;
     if (availableNow) queryParams['availableNow'] = true;
 
-    final res = await _client.get('/listings', queryParameters: queryParams);
+    final res = await _client.get('/servicelisting', queryParameters: queryParams);
     return PagedResult.fromJson(
       res as Map<String, dynamic>,
       (json) => ListingSummaryModel.fromJson(json),
@@ -121,7 +122,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
 
   @override
   Future<ListingModel> getListing(String id) async {
-    final res = await _client.get('/listings/$id');
+    final res = await _client.get('/servicelisting/$id');
     return ListingModel.fromJson(res as Map<String, dynamic>);
   }
 
@@ -139,7 +140,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
     if (status != null) queryParams['status'] = status;
     if (isStandardService != null) queryParams['isStandardService'] = isStandardService;
 
-    final res = await _client.get('/listings/my', queryParameters: queryParams);
+    final res = await _client.get('/servicelisting/my', queryParameters: queryParams);
     return PagedResult.fromJson(
       res as Map<String, dynamic>,
       (json) => ListingSummaryModel.fromJson(json),
@@ -155,7 +156,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
       'page': page,
       'pageSize': pageSize,
     };
-    final res = await _client.get('/listings/pending', queryParameters: queryParams);
+    final res = await _client.get('/servicelisting/pending', queryParameters: queryParams);
     return PagedResult.fromJson(
       res as Map<String, dynamic>,
       (json) => ListingSummaryModel.fromJson(json),
@@ -164,50 +165,50 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
 
   @override
   Future<ListingModel> createListing(CreateListingDto dto) async {
-    final res = await _client.post('/listings', data: dto.toJson());
+    final res = await _client.post('/servicelisting', data: dto.toJson());
     return ListingModel.fromJson(res as Map<String, dynamic>);
   }
 
   @override
   Future<ListingModel> updateListing(String id, UpdateListingDto dto) async {
-    final res = await _client.put('/listings/$id', data: dto.toJson());
+    final res = await _client.put('/servicelisting/$id', data: dto.toJson());
     return ListingModel.fromJson(res as Map<String, dynamic>);
   }
 
   @override
   Future<void> deleteListing(String id) async {
-    await _client.delete('/listings/$id');
+    await _client.delete('/servicelisting/$id');
   }
 
   @override
   Future<void> approveListing(String id) async {
-    await _client.post('/listings/$id/approve');
+    await _client.post('/servicelisting/$id/approve');
   }
 
   @override
   Future<void> rejectListing(String id, String reason) async {
-    await _client.post('/listings/$id/reject', data: {'reason': reason});
+    await _client.post('/servicelisting/$id/reject', data: {'reason': reason});
   }
 
   @override
   Future<void> suspendListing(String id) async {
-    await _client.post('/listings/$id/suspend');
+    await _client.post('/servicelisting/$id/suspend');
   }
 
   @override
   Future<void> addListingImage(String id, String imagePath) async {
-    await _client.post('/listings/$id/images', data: {'imagePath': imagePath});
+    await _client.post('/servicelisting/$id/images', data: {'imagePath': imagePath});
   }
 
   @override
   Future<void> removeListingImage(String id, String imagePath) async {
-    await _client.delete('/listings/$id/images', data: {'imagePath': imagePath});
+    await _client.delete('/servicelisting/$id/images', data: {'imagePath': imagePath});
   }
 
   @override
   Future<void> setAvailability(String id, List<AvailabilitySlotModel> slots) async {
     await _client.put(
-      '/listings/$id/availability',
+      '/servicelisting/$id/availability',
       data: {'slots': slots.map((e) => e.toJson()).toList()},
     );
   }
@@ -223,7 +224,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
       'pageSize': pageSize,
     };
     final res = await _client.get(
-      '/listings/$listingId/reviews',
+      '/servicelisting/$listingId/reviews',
       queryParameters: queryParams,
     );
     return PagedResult.fromJson(
@@ -234,37 +235,37 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
 
   @override
   Future<ReviewModel> createReview(String listingId, CreateReviewDto dto) async {
-    final res = await _client.post('/listings/$listingId/reviews', data: dto.toJson());
+    final res = await _client.post('/servicelisting/$listingId/reviews', data: dto.toJson());
     return ReviewModel.fromJson(res as Map<String, dynamic>);
   }
 
   @override
   Future<ReviewModel> updateReview(String listingId, String reviewId, UpdateReviewDto dto) async {
-    final res = await _client.put('/listings/$listingId/reviews/$reviewId', data: dto.toJson());
+    final res = await _client.put('/servicelisting/$listingId/reviews/$reviewId', data: dto.toJson());
     return ReviewModel.fromJson(res as Map<String, dynamic>);
   }
 
   @override
   Future<void> deleteReview(String listingId, String reviewId) async {
-    await _client.delete('/listings/$listingId/reviews/$reviewId');
+    await _client.delete('/servicelisting/$listingId/reviews/$reviewId');
   }
 
   @override
   Future<void> replyToReview(String listingId, String reviewId, String replyText) async {
     await _client.post(
-      '/listings/$listingId/reviews/$reviewId/reply',
+      '/servicelisting/$listingId/reviews/$reviewId/reply',
       data: {'replyText': replyText},
     );
   }
 
   @override
   Future<void> addFavorite(String listingId) async {
-    await _client.post('/listings/$listingId/favorite');
+    await _client.post('/servicelisting/$listingId/favorite');
   }
 
   @override
   Future<void> removeFavorite(String listingId) async {
-    await _client.delete('/listings/$listingId/favorite');
+    await _client.delete('/servicelisting/$listingId/favorite');
   }
 
   @override
@@ -298,7 +299,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
       'page': page,
       'pageSize': pageSize,
     };
-    final res = await _client.get('/service-requests/my', queryParameters: queryParams);
+    final res = await _client.get('/service-requests/sent', queryParameters: queryParams);
     return PagedResult.fromJson(
       res as Map<String, dynamic>,
       (json) => ServiceRequestModel.fromJson(json),
@@ -353,6 +354,86 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
   }
 
   @override
+  Future<Either<Failure, Unit>> confirmHandover(
+    String requestId,
+    String otp, {
+    String? proofPhotoUrl,
+  }) async {
+    try {
+      await _client.post(
+        '/service-requests/$requestId/confirm-handover',
+        data: {
+          'Otp': otp,
+          if (proofPhotoUrl != null) 'ProofPhotoUrl': proofPhotoUrl,
+        },
+      );
+      return const Right(unit);
+    } catch (e) {
+      return Left(Failure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> markInTransit(String requestId) async {
+    try {
+      await _client.post('/service-requests/$requestId/mark-in-transit');
+      return const Right(unit);
+    } catch (e) {
+      return Left(Failure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> markArrived(String requestId) async {
+    try {
+      await _client.post('/service-requests/$requestId/mark-arrived');
+      return const Right(unit);
+    } catch (e) {
+      return Left(Failure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> confirmDelivery(
+    String requestId,
+    String otp, {
+    String? proofPhotoUrl,
+  }) async {
+    try {
+      await _client.post(
+        '/service-requests/$requestId/confirm-delivery',
+        data: {
+          'Otp': otp,
+          if (proofPhotoUrl != null) 'ProofPhotoUrl': proofPhotoUrl,
+        },
+      );
+      return const Right(unit);
+    } catch (e) {
+      return Left(Failure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> openDispute(
+    String requestId,
+    String reason,
+  ) async {
+    try {
+      await _client.post(
+        '/disputes',
+        data: {
+          'ServiceRequestId': requestId,
+          'Reason': reason,
+          'Description': reason,
+        },
+      );
+      return const Right(unit);
+    } catch (e) {
+      return Left(Failure(e.toString()));
+    }
+  }
+
+  @override
   Future<void> linkChatThread(String requestId, String chatThreadId) async {
     await _client.post(
       '/service-requests/$requestId/chat-thread',
@@ -362,7 +443,7 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
 
   @override
   Future<ProviderStatsModel> getMyProviderStats() async {
-    final res = await _client.get('/listings/stats/my');
+    final res = await _client.get('/servicelisting/stats/my');
     return ProviderStatsModel.fromJson(res as Map<String, dynamic>);
   }
 

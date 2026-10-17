@@ -6,7 +6,9 @@ import '../../domain/entities/user.dart';
 import '../../data/models/user_model.dart';
 import '../../../profile/data/services/profile_service.dart';
 import '../../../profile/presentation/controllers/profile_providers.dart';
+import '../../../documents/data/local_storage/document_local_storage.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/services/biometric_key_service.dart';
 import '../../../../core/services/device_identity_service.dart';
 import '../../../../shared/services/storage_service.dart';
 import 'pending_verification_provider.dart';
@@ -36,9 +38,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     Ref? ref,
     StorageService? storage,
     DeviceIdentityService? deviceIdentity,
-  }) : _tokenService = tokenService ?? TokenService(),
+  }) : _tokenService = tokenService ??
+           (getIt.isRegistered<TokenService>()
+               ? getIt<TokenService>()
+               : TokenService()),
        _ref = ref,
-       _storage = storage ?? StorageService(),
+       _storage = storage ??
+           (getIt.isRegistered<StorageService>()
+               ? getIt<StorageService>()
+               : StorageService()),
        _deviceIdentity = deviceIdentity ?? DeviceIdentityService(),
        super(const AsyncValue.data(null)) {
     _restorePendingVerification();
@@ -247,6 +255,24 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     } catch (e) {
       debugPrint('logout failed: $e');
     } finally {
+      _tokenService.clearTokens();
+      _lastAccessToken = null;
+      try {
+        await DocumentLocalStorage.clearAll();
+      } catch (e) {
+        debugPrint('DocumentLocalStorage clearAll failed: $e');
+      }
+      try {
+        await _deviceIdentity.clearBoundDeviceId();
+      } catch (e) {
+        debugPrint('DeviceIdentityService clear failed: $e');
+      }
+      try {
+        await BiometricKeyService().clear();
+      } catch (e) {
+        debugPrint('BiometricKeyService clear failed: $e');
+      }
+      _ref?.read(profileListProvider.notifier).setProfiles([]);
       _ref?.read(activeProfileIdProvider.notifier).clear();
       _ref?.read(authRestoredProvider.notifier).state = false;
       authRestoreTick.value++;

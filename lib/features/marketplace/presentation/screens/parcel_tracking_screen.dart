@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_it/get_it.dart';
+import '../../../../core/config/app_config.dart';
+import '../../../../core/network/dio_client.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../data/models/service_request_model.dart';
+import '../../data/repositories/marketplace_repository_impl.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/listing.dart';
+import '../../domain/repositories/marketplace_repository.dart';
 import '../widgets/otp_code_display_dialog.dart';
 import '../widgets/otp_code_input_dialog.dart';
 
-class ParcelTrackingScreen extends StatefulWidget {
+class ParcelTrackingScreen extends ConsumerStatefulWidget {
   final String requestId;
   final ServiceRequestModel? request;
   final bool isTravelerRole;
@@ -19,14 +25,21 @@ class ParcelTrackingScreen extends StatefulWidget {
   });
 
   @override
-  State<ParcelTrackingScreen> createState() => _ParcelTrackingScreenState();
+  ConsumerState<ParcelTrackingScreen> createState() => _ParcelTrackingScreenState();
 }
 
-class _ParcelTrackingScreenState extends State<ParcelTrackingScreen> {
+class _ParcelTrackingScreenState extends ConsumerState<ParcelTrackingScreen> {
   late ParcelTrackingStep _currentStep;
   late bool _isInDispute;
   String? _pickupProof;
   String? _deliveryProof;
+
+  IMarketplaceRepository _resolveRepo() {
+    if (GetIt.instance.isRegistered<IMarketplaceRepository>()) {
+      return ref.read(marketplaceRepositoryProvider);
+    }
+    return MarketplaceRepositoryImpl(client: DioClient());
+  }
 
   @override
   void initState() {
@@ -71,6 +84,15 @@ class _ParcelTrackingScreenState extends State<ParcelTrackingScreen> {
         subtitle: 'Saisissez le code OTP à 6 chiffres fourni par l\'expéditeur',
         actionLabel: 'Confirmer la prise en charge',
         onConfirm: (code, proofUrl) async {
+          final res = await _resolveRepo().confirmHandover(
+            widget.requestId,
+            code,
+            proofPhotoUrl: proofUrl,
+          );
+          if (!AppConfig.useMockData && res.isLeft()) {
+            throw Exception(res.fold((f) => f.message, (_) => 'Erreur'));
+          }
+          if (!mounted) return;
           setState(() {
             _currentStep = ParcelTrackingStep.parcelHandedOver;
             _pickupProof = proofUrl;
@@ -88,6 +110,15 @@ class _ParcelTrackingScreenState extends State<ParcelTrackingScreen> {
         subtitle: 'Saisissez le code OTP à 6 chiffres fourni par le destinataire',
         actionLabel: 'Confirmer la livraison & libérer fonds',
         onConfirm: (code, proofUrl) async {
+          final res = await _resolveRepo().confirmDelivery(
+            widget.requestId,
+            code,
+            proofPhotoUrl: proofUrl,
+          );
+          if (!AppConfig.useMockData && res.isLeft()) {
+            throw Exception(res.fold((f) => f.message, (_) => 'Erreur'));
+          }
+          if (!mounted) return;
           setState(() {
             _currentStep = ParcelTrackingStep.delivered;
             _deliveryProof = proofUrl;
@@ -136,8 +167,24 @@ class _ParcelTrackingScreenState extends State<ParcelTrackingScreen> {
             child: const Text('Annuler'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              final reason = reasonController.text.trim().isNotEmpty
+                  ? reasonController.text.trim()
+                  : 'Litige signalé sur la livraison';
               Navigator.of(ctx).pop();
+              final res = await _resolveRepo().openDispute(widget.requestId, reason);
+              if (!AppConfig.useMockData && res.isLeft()) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erreur : ${res.fold((f) => f.message, (_) => '')}'),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                return;
+              }
+              if (!mounted) return;
               setState(() => _isInDispute = true);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -593,7 +640,18 @@ class _ParcelTrackingScreenState extends State<ParcelTrackingScreen> {
 
       if (_currentStep == ParcelTrackingStep.parcelHandedOver) {
         return ElevatedButton.icon(
-          onPressed: () => setState(() => _currentStep = ParcelTrackingStep.inTransit),
+          onPressed: () async {
+            final res = await _resolveRepo().markInTransit(widget.requestId);
+            if (!AppConfig.useMockData && res.isLeft()) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Erreur : ${res.fold((f) => f.message, (_) => '')}')),
+              );
+              return;
+            }
+            if (!mounted) return;
+            setState(() => _currentStep = ParcelTrackingStep.inTransit);
+          },
           icon: const Icon(Icons.flight_takeoff_rounded),
           label: const Text('Marquer en transit (vol démarré)'),
           style: ElevatedButton.styleFrom(
@@ -607,7 +665,18 @@ class _ParcelTrackingScreenState extends State<ParcelTrackingScreen> {
 
       if (_currentStep == ParcelTrackingStep.inTransit) {
         return ElevatedButton.icon(
-          onPressed: () => setState(() => _currentStep = ParcelTrackingStep.arrivedAtDestination),
+          onPressed: () async {
+            final res = await _resolveRepo().markArrived(widget.requestId);
+            if (!AppConfig.useMockData && res.isLeft()) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Erreur : ${res.fold((f) => f.message, (_) => '')}')),
+              );
+              return;
+            }
+            if (!mounted) return;
+            setState(() => _currentStep = ParcelTrackingStep.arrivedAtDestination);
+          },
           icon: const Icon(Icons.flight_land_rounded),
           label: const Text('Confirmer l\'arrivée dans la ville'),
           style: ElevatedButton.styleFrom(

@@ -1,19 +1,20 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:get_it/get_it.dart';
 import '../../../../core/config/app_config.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/network/token_service.dart';
 import '../../../../core/realtime/sse_reconnect_service.dart';
-import '../../../../shared/services/storage_service.dart';
 import '../../../auth/presentation/controllers/auth_notifier.dart';
 import '../../../auth/domain/entities/user.dart';
 import '../../domain/entities/notification.dart';
 import 'notifications_providers.dart';
 
-/// Reads the access token from Hive storage.
+/// Reads the access token from TokenService.
 final accessTokenProvider = Provider<String?>((ref) {
-  final storage = GetIt.instance<StorageService>();
-  return storage.get<String>('accessToken');
+  return getIt.isRegistered<TokenService>()
+      ? getIt<TokenService>().accessToken
+      : null;
 });
 
 /// Dio instance dedicated to SSE streaming (long receive timeout, no mock interceptor).

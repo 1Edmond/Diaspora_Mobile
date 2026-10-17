@@ -35,6 +35,8 @@ class DeviceIdentityService {
   /// action) — never call this automatically just to work around a
   /// mismatch, or the binding guarantee becomes meaningless.
   Future<void> clear() => _storage.delete(key: _boundDeviceIdKey);
+
+  Future<void> clearBoundDeviceId() => clear();
 }
 
 /// Thrown by [AuthNotifier.login] when the backend's device id for this

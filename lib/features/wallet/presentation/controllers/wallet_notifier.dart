@@ -60,10 +60,21 @@ class WalletNotifier extends StateNotifier<AsyncValue<Wallet?>> {
       if (useBiometrics) {
         ok = await authService.authenticateWithBiometrics();
       } else {
-        if (pin == null) throw ArgumentError('PIN required');
+        if (pin == null || pin.isEmpty) throw ArgumentError('PIN required');
         ok = await authService.verifyPin(pin);
       }
       if (!ok) throw StateError('Authentication failed');
+    } else {
+      if (useBiometrics) {
+        final ok = await authService.authenticateWithBiometrics();
+        if (!ok) throw StateError('Authentication failed');
+      } else if (pin != null && pin.isNotEmpty) {
+        await authService.setPin(pin);
+        final ok = await authService.verifyPin(pin);
+        if (!ok) throw StateError('Authentication failed');
+      } else {
+        throw ArgumentError('PIN or biometric authentication required');
+      }
     }
 
     await repository.sendMoney(

@@ -1,3 +1,4 @@
+import 'package:dartz/dartz.dart';
 import '../../data/models/paged_result.dart';
 import '../../data/models/listing_summary_model.dart';
 import '../../data/models/listing_model.dart';
@@ -10,6 +11,13 @@ import '../../data/models/availability_slot_model.dart';
 import '../../data/models/marketplace_category_model.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/listing.dart';
+
+class Failure {
+  final String message;
+  const Failure(this.message);
+  @override
+  String toString() => message;
+}
 
 abstract class IMarketplaceRepository {
   /// Distinct listing categories, derived from live listing data rather
@@ -132,6 +140,27 @@ abstract class IMarketplaceRepository {
   Future<void> cancelRequest(String id, String reason);
 
   Future<void> payRequest(String id);
+
+  Future<Either<Failure, Unit>> confirmHandover(
+    String requestId,
+    String otp, {
+    String? proofPhotoUrl,
+  });
+
+  Future<Either<Failure, Unit>> markInTransit(String requestId);
+
+  Future<Either<Failure, Unit>> markArrived(String requestId);
+
+  Future<Either<Failure, Unit>> confirmDelivery(
+    String requestId,
+    String otp, {
+    String? proofPhotoUrl,
+  });
+
+  Future<Either<Failure, Unit>> openDispute(
+    String requestId,
+    String reason,
+  );
 
   Future<void> linkChatThread(String requestId, String chatThreadId);
 

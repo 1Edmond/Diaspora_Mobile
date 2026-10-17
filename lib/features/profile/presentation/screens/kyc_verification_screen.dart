@@ -1,6 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../../../shared/widgets/home_back_button.dart';
@@ -170,15 +173,40 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
     if (_kycId == null) return;
     final client = GetIt.instance<DioClient>();
     try {
-      await client.post(
-        '/kyc/$_kycId/documents',
-        queryParameters: {'documentType': docType},
-      );
+      if (AppConfig.useMockData) {
+        await client.post(
+          '/kyc/$_kycId/documents',
+          queryParameters: {'documentType': docType},
+        );
+      } else {
+        final picker = ImagePicker();
+        final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+        if (pickedFile == null) return;
+
+        final bytes = await pickedFile.readAsBytes();
+        final formData = FormData.fromMap({
+          'documentType': docType,
+          'file': MultipartFile.fromBytes(
+            bytes,
+            filename: pickedFile.name.isNotEmpty
+                ? pickedFile.name
+                : '$docType.jpg',
+          ),
+        });
+
+        await client.post(
+          '/kyc/$_kycId/documents',
+          data: formData,
+          queryParameters: {'documentType': docType},
+        );
+      }
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Document téléversé avec succès')),
       );
       await _loadKycData();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur de téléversement : $e')),
       );

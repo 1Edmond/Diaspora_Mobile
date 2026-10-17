@@ -243,15 +243,34 @@ class UpdateReviewDto {
 class CreateServiceRequestDto {
   final String listingId;
   final String message;
+  final double? weightKg;
+  final double? declaredValue;
+  final String? packageContentCategory;
+  final String? packageDescription;
+  final double? agreedPrice;
+  final String? agreedCurrency;
 
   const CreateServiceRequestDto({
     required this.listingId,
     required this.message,
+    this.weightKg,
+    this.declaredValue,
+    this.packageContentCategory,
+    this.packageDescription,
+    this.agreedPrice,
+    this.agreedCurrency,
   });
 
   Map<String, dynamic> toJson() => {
     'ListingId': listingId,
     'Message': message,
+    if (weightKg != null) 'WeightKg': weightKg,
+    if (declaredValue != null) 'DeclaredValue': declaredValue,
+    if (packageContentCategory != null)
+      'PackageContentCategory': packageContentCategory,
+    if (packageDescription != null) 'PackageDescription': packageDescription,
+    if (agreedPrice != null) 'AgreedPrice': agreedPrice,
+    if (agreedCurrency != null) 'AgreedCurrency': agreedCurrency,
   };
 }
 

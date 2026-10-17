@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../../../core/config/app_config.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/network/token_service.dart';
 import '../../../../shared/services/storage_service.dart';
 
@@ -16,7 +17,10 @@ class AuthRepositoryImpl implements IAuthRepository {
               if (kDebugMode)
                 LogInterceptor(requestBody: true, responseBody: true),
             ]),
-      _tokenService = tokenService ?? TokenService(storage: storage);
+      _tokenService = tokenService ??
+          (getIt.isRegistered<TokenService>()
+              ? getIt<TokenService>()
+              : TokenService(storage: storage));
 
   static BaseOptions _defaultOptions() => BaseOptions(
     baseUrl: AppConfig.realApiBaseUrl,

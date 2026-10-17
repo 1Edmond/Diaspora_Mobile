@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Feature flags allowing activation and deactivation of application modules directly in code.
 ///
 /// Modifiez simplement les valeurs statiques ci-dessous pour activer ou désactiver
@@ -44,6 +46,9 @@ class FeatureFlags {
     final uri = Uri.tryParse(location);
     final path = uri?.path.toLowerCase() ?? location.toLowerCase();
 
+    if (path.startsWith('/debug/realtime')) {
+      return kDebugMode;
+    }
     if (path.startsWith('/wallet')) {
       return enableWallet;
     }
@@ -56,7 +61,9 @@ class FeatureFlags {
     if (path.startsWith('/procedures')) {
       return enableProcedures;
     }
-    if (path.startsWith('/chat') || path.startsWith('/story')) {
+    if (path.startsWith('/chat') ||
+        path.startsWith('/story') ||
+        path.startsWith('/contact-profile')) {
       return enableChat;
     }
     if (path.startsWith('/community')) {
@@ -65,7 +72,7 @@ class FeatureFlags {
     if (path.startsWith('/committee')) {
       return enableCommittee;
     }
-    if (path.startsWith('/freelance')) {
+    if (path.startsWith('/freelance') || path.startsWith('/reputation')) {
       return enableFreelance;
     }
     if (path.startsWith('/services')) {
