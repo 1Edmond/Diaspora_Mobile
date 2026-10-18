@@ -6,6 +6,7 @@ import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/design_system.dart';
 import '../../data/models/listing_model.dart';
 import '../../data/models/marketplace_dtos.dart';
+import '../../data/models/payment_policy_model.dart';
 import '../../domain/entities/enums.dart';
 import '../controllers/marketplace_providers.dart';
 import '../../../profile/presentation/controllers/profile_providers.dart';
@@ -35,7 +36,18 @@ class _BookParcelScreenState extends ConsumerState<BookParcelScreen> {
 
   PaymentSettlementType _selectedSettlementType = PaymentSettlementType.walletEscrow;
   DirectCashTiming _selectedCashTiming = DirectCashTiming.atPickup;
-  final double _platformDirectFee = 0.0;
+  PaymentPolicyModel? _paymentPolicy;
+  bool _loadingPolicy = false;
+
+  AllowedSettlementPolicy get _effectivePolicy {
+    if (widget.policy != null) return widget.policy!;
+    return _paymentPolicy?.allowedPolicy ?? AllowedSettlementPolicy.both;
+  }
+
+  double get _platformDirectFee {
+    if (_paymentPolicy == null) return 0.0;
+    return _paymentPolicy!.calculateDirectPlatformFee(_travelerAmount);
+  }
 
   String _selectedNature = 'Vêtements & Textiles';
   bool _isLoading = false;
@@ -64,6 +76,43 @@ class _BookParcelScreenState extends ConsumerState<BookParcelScreen> {
       _selectedSettlementType = PaymentSettlementType.directHandover;
     } else {
       _selectedSettlementType = PaymentSettlementType.walletEscrow;
+    }
+
+    _fetchPaymentPolicy();
+  }
+
+  Future<void> _fetchPaymentPolicy() async {
+    if (widget.policy != null) return;
+    try {
+      setState(() => _loadingPolicy = true);
+      final repo = ref.read(marketplaceRepositoryProvider);
+      final profileTypeId = widget.listing?.providerProfileId;
+      final countryCode = widget.listing?.arrivalCountryCode ??
+          widget.listing?.country ??
+          widget.listing?.providerCountryCode;
+      final policy = await repo.getPaymentPolicy(
+        profileTypeId: profileTypeId,
+        countryCode: countryCode,
+      );
+      if (!mounted) return;
+      setState(() {
+        _paymentPolicy = policy;
+        _loadingPolicy = false;
+        if (policy != null) {
+          if (policy.allowedPolicy == AllowedSettlementPolicy.directHandoverOnly) {
+            _selectedSettlementType = PaymentSettlementType.directHandover;
+          } else if (policy.allowedPolicy == AllowedSettlementPolicy.walletEscrowOnly) {
+            _selectedSettlementType = PaymentSettlementType.walletEscrow;
+          }
+          if (policy.defaultCashTiming != DirectCashTiming.freeChoice) {
+            _selectedCashTiming = policy.defaultCashTiming;
+          }
+        }
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _loadingPolicy = false);
+      }
     }
   }
 
@@ -604,8 +653,8 @@ class _BookParcelScreenState extends ConsumerState<BookParcelScreen> {
   }
 
   Widget _buildSettlementSelector(BuildContext context, bool isDark) {
-    final allowEscrow = widget.policy != AllowedSettlementPolicy.directHandoverOnly;
-    final allowDirect = widget.policy != AllowedSettlementPolicy.walletEscrowOnly;
+    final allowEscrow = _effectivePolicy != AllowedSettlementPolicy.directHandoverOnly;
+    final allowDirect = _effectivePolicy != AllowedSettlementPolicy.walletEscrowOnly;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

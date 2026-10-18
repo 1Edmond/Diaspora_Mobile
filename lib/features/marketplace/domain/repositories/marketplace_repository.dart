@@ -9,6 +9,7 @@ import '../../data/models/service_request_model.dart';
 import '../../data/models/marketplace_dtos.dart';
 import '../../data/models/availability_slot_model.dart';
 import '../../data/models/marketplace_category_model.dart';
+import '../../data/models/payment_policy_model.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/listing.dart';
 
@@ -174,4 +175,9 @@ abstract class IMarketplaceRepository {
   });
 
   Future<void> resolveReport(String id, int status, String? notes);
+
+  Future<PaymentPolicyModel> getPaymentPolicy({
+    String? profileTypeId,
+    String? countryCode,
+  });
 }

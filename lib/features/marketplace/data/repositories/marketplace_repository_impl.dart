@@ -11,6 +11,7 @@ import '../../data/models/service_request_model.dart';
 import '../../data/models/marketplace_dtos.dart';
 import '../../data/models/availability_slot_model.dart';
 import '../../data/models/marketplace_category_model.dart';
+import '../../data/models/payment_policy_model.dart';
 import '../../domain/repositories/marketplace_repository.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/listing.dart';
@@ -475,9 +476,37 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
   @override
   Future<void> resolveReport(String id, int status, String? notes) async {
     await _client.post('/reports/$id/resolve', data: {
-      'status': status,
-      if (notes != null) 'notes': notes,
+      'newStatus': status,
+      'resolutionNotes': notes,
     });
+  }
+
+  @override
+  Future<PaymentPolicyModel> getPaymentPolicy({
+    String? profileTypeId,
+    String? countryCode,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (profileTypeId != null && profileTypeId.isNotEmpty) {
+        queryParams['profileTypeId'] = profileTypeId;
+      }
+      if (countryCode != null && countryCode.isNotEmpty) {
+        queryParams['countryCode'] = countryCode;
+      }
+
+      final res = await _client.get(
+        '/marketplace/payment-policies/resolve',
+        queryParameters: queryParams,
+      );
+
+      if (res is Map<String, dynamic>) {
+        return PaymentPolicyModel.fromJson(res);
+      }
+    } catch (_) {
+      // Fallback gracieux en mode hors-ligne ou erreur réseau
+    }
+    return PaymentPolicyModel.defaultPolicy(countryCode: countryCode ?? 'TG');
   }
 }
 
