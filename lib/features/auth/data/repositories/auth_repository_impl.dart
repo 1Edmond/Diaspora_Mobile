@@ -101,7 +101,7 @@ class AuthRepositoryImpl implements IAuthRepository {
         message: 'Registration failed with status ${res.statusCode}',
       );
     }
-    final data = (res.data as Map<String, dynamic>?) ?? <String, dynamic>{};
+    final data = res.data ?? <String, dynamic>{};
     await _saveTokens(data);
     return data;
   }
@@ -121,7 +121,7 @@ class AuthRepositoryImpl implements IAuthRepository {
         message: 'Email verification failed with status ${res.statusCode}',
       );
     }
-    final data = (res.data as Map<String, dynamic>?) ?? <String, dynamic>{};
+    final data = res.data ?? <String, dynamic>{};
     await _saveTokens(data);
     return data['ok'] as bool? ?? true;
   }
@@ -152,7 +152,7 @@ class AuthRepositoryImpl implements IAuthRepository {
         message: 'Login failed with status ${res.statusCode}',
       );
     }
-    final data = (res.data as Map<String, dynamic>?) ?? <String, dynamic>{};
+    final data = res.data ?? <String, dynamic>{};
     await _saveTokens(data);
     return data;
   }
@@ -172,7 +172,7 @@ class AuthRepositoryImpl implements IAuthRepository {
           res.statusCode! >= 300) {
         return null;
       }
-      final data = (res.data as Map<String, dynamic>?) ?? <String, dynamic>{};
+      final data = res.data ?? <String, dynamic>{};
       final newAccess = data['accessToken'] as String?;
       if (newAccess == null || newAccess.isEmpty) return null;
       await _saveTokens(data);

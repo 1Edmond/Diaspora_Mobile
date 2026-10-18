@@ -28,8 +28,6 @@ class BookParcelScreen extends ConsumerStatefulWidget {
 }
 
 class _BookParcelScreenState extends ConsumerState<BookParcelScreen> {
-  final _formKey = GlobalKey<FormState>();
-
   late TextEditingController _weightController;
   late TextEditingController _declaredValueController;
   late TextEditingController _messageController;
@@ -37,7 +35,6 @@ class _BookParcelScreenState extends ConsumerState<BookParcelScreen> {
   PaymentSettlementType _selectedSettlementType = PaymentSettlementType.walletEscrow;
   DirectCashTiming _selectedCashTiming = DirectCashTiming.atPickup;
   PaymentPolicyModel? _paymentPolicy;
-  bool _loadingPolicy = false;
 
   AllowedSettlementPolicy get _effectivePolicy {
     if (widget.policy != null) return widget.policy!;
@@ -84,7 +81,6 @@ class _BookParcelScreenState extends ConsumerState<BookParcelScreen> {
   Future<void> _fetchPaymentPolicy() async {
     if (widget.policy != null) return;
     try {
-      setState(() => _loadingPolicy = true);
       final repo = ref.read(marketplaceRepositoryProvider);
       final profileTypeId = widget.listing?.providerProfileId;
       final countryCode = widget.listing?.arrivalCountryCode ??
@@ -97,23 +93,16 @@ class _BookParcelScreenState extends ConsumerState<BookParcelScreen> {
       if (!mounted) return;
       setState(() {
         _paymentPolicy = policy;
-        _loadingPolicy = false;
-        if (policy != null) {
-          if (policy.allowedPolicy == AllowedSettlementPolicy.directHandoverOnly) {
-            _selectedSettlementType = PaymentSettlementType.directHandover;
-          } else if (policy.allowedPolicy == AllowedSettlementPolicy.walletEscrowOnly) {
-            _selectedSettlementType = PaymentSettlementType.walletEscrow;
-          }
-          if (policy.defaultCashTiming != DirectCashTiming.freeChoice) {
-            _selectedCashTiming = policy.defaultCashTiming;
-          }
+        if (policy.allowedPolicy == AllowedSettlementPolicy.directHandoverOnly) {
+          _selectedSettlementType = PaymentSettlementType.directHandover;
+        } else if (policy.allowedPolicy == AllowedSettlementPolicy.walletEscrowOnly) {
+          _selectedSettlementType = PaymentSettlementType.walletEscrow;
+        }
+        if (policy.defaultCashTiming != DirectCashTiming.freeChoice) {
+          _selectedCashTiming = policy.defaultCashTiming;
         }
       });
-    } catch (_) {
-      if (mounted) {
-        setState(() => _loadingPolicy = false);
-      }
-    }
+    } catch (_) {}
   }
 
   @override

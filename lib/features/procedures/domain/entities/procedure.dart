@@ -1,5 +1,3 @@
-import 'task.dart';
-
 enum ProcedureStatus { LOCKED, NOT_STARTED, IN_PROGRESS, COMPLETED }
 enum ProcedureCategory { VISA, REGISTRATION, BANK, EDUCATION, OTHER }
 enum ProfileType { INTERNAL, EXTERNAL }

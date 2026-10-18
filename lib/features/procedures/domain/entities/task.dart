@@ -1,6 +1,3 @@
-import '../../../procedures/domain/entities/task_location.dart';
-import '../../../procedures/domain/entities/required_document.dart';
-
 enum TaskStatus { PENDING, COMPLETED }
 
 class Task {

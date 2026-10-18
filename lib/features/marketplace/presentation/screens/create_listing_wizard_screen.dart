@@ -9,7 +9,6 @@ import '../../data/models/marketplace_dtos.dart';
 import '../../domain/entities/listing.dart';
 import '../controllers/marketplace_providers.dart';
 import '../widgets/photo_picker_grid.dart';
-import '../widgets/availability_widget.dart';
 import '../../../profile/presentation/controllers/profile_providers.dart';
 
 /// Guided 4-step wizard for creating a listing or parcel transport service:
@@ -27,8 +26,6 @@ class CreateListingWizardScreen extends ConsumerStatefulWidget {
       _CreateListingWizardScreenState();
 }
 
-enum _ListingKind { service, annonce }
-
 class _CreateListingWizardScreenState
     extends ConsumerState<CreateListingWizardScreen> {
   final PageController _pageController = PageController();
@@ -42,7 +39,6 @@ class _CreateListingWizardScreenState
   ];
 
   // Category & Kind
-  _ListingKind _kind = _ListingKind.service;
   String _categoryId = AppConfig.parcelTransportCategoryId;
   String _categoryName = 'Transport de colis';
 
@@ -70,7 +66,6 @@ class _CreateListingWizardScreenState
   final _priceController = TextEditingController();
   int _paymentMode = 1; // 0: gratuit, 1: fixe, 2: négociable
   String _currency = 'XOF';
-  bool _availableNow = true;
   ServiceScope _serviceScope = ServiceScope.countryWide;
   PriceType _priceType = PriceType.fixed;
   List<String> _selectedDepartments = [];

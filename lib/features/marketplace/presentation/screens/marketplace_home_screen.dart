@@ -405,7 +405,7 @@ actions: [
     if (error != null && items.isEmpty) {
       return SliverFillRemaining(
         hasScrollBody: false,
-        child: _errorView(isDark, error!),
+        child: _errorView(isDark, error),
       );
     }
 

@@ -639,29 +639,3 @@ final mockPendingReports = <Map<String, dynamic>>[
     'status': 0, // pending
   },
 ];
-
-// Helper to build PagedResult-like response
-Map<String, dynamic> _buildPagedResult({
-  required List<dynamic> items,
-  required int page,
-  required int pageSize,
-  required int totalCount,
-}) {
-  final totalPages = (totalCount / pageSize).ceil();
-  final start = (page - 1) * pageSize;
-  final end = start + pageSize;
-  final paginatedItems =
-      start < items.length
-          ? items.sublist(start, end > items.length ? items.length : end)
-          : <dynamic>[];
-
-  return {
-    'items': paginatedItems,
-    'pageNumber': page,
-    'pageSize': pageSize,
-    'totalCount': totalCount,
-    'totalPages': totalPages,
-    'hasPrevious': page > 1,
-    'hasNext': page < totalPages,
-  };
-}

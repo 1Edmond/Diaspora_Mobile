@@ -1,7 +1,6 @@
 import '../../domain/entities/service.dart';
 import '../../domain/repositories/service_repository.dart';
 import '../../../../data/mock/mock_services.dart';
-import '../../../../core/config/app_config.dart';
 
 class ServiceRepositoryImpl implements IServiceRepository {
   List<Service>? _localStore;

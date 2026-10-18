@@ -218,13 +218,6 @@ class ServiceRequestModel {
     if (val == null) return null;
     return val as String;
   }
-
-  static int _int(Map<String, dynamic> json, String pascal, String camel) {
-    final val = json[pascal] ?? json[camel];
-    if (val == null) return 0;
-    return (val as num).toInt();
-  }
-
   static double? _double(Map<String, dynamic> json, String pascal, String camel) {
     final val = json[pascal] ?? json[camel];
     if (val == null) return null;
