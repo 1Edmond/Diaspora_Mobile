@@ -118,7 +118,11 @@ class _ReceivedServiceRequestsScreenState
         ),
         _buildList(
           state.receivedItems
-              .where((r) => r.status == ServiceRequestStatus.accepted)
+              .where((r) =>
+                  r.status == ServiceRequestStatus.accepted ||
+                  r.status == ServiceRequestStatus.packageHandedOver ||
+                  r.status == ServiceRequestStatus.inTransit ||
+                  r.status == ServiceRequestStatus.arrivedAtDestination)
               .toList(),
           isDark,
         ),
@@ -127,6 +131,7 @@ class _ReceivedServiceRequestsScreenState
               .where(
                 (r) =>
                     r.status == ServiceRequestStatus.completed ||
+                    r.status == ServiceRequestStatus.delivered ||
                     r.status == ServiceRequestStatus.declined ||
                     r.status == ServiceRequestStatus.cancelled,
               )
@@ -410,7 +415,40 @@ class _ReceivedServiceRequestsScreenState
       );
     }
 
-    if (request.status == ServiceRequestStatus.accepted) {
+    final isParcelInProgress = request.isParcelRequest &&
+        (request.status == ServiceRequestStatus.accepted ||
+            request.status == ServiceRequestStatus.packageHandedOver ||
+            request.status == ServiceRequestStatus.inTransit ||
+            request.status == ServiceRequestStatus.arrivedAtDestination);
+
+    if (isParcelInProgress) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            onPressed: () => _openChat(request),
+            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
+            tooltip: 'Discuter avec l\'expéditeur',
+          ),
+          const SizedBox(width: 4),
+          FilledButton.icon(
+            onPressed: () => context.push(
+              '/marketplace/parcel/track/${request.id}?role=traveler',
+              extra: request,
+            ),
+            icon: const Icon(Icons.local_shipping_rounded, size: 16),
+            label: const Text('Gérer le colis'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: const Size(60, 32),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (request.status == ServiceRequestStatus.accepted && !request.isParcelRequest) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -564,6 +602,14 @@ class _ReceivedServiceRequestsScreenState
         return 'Complétée';
       case ServiceRequestStatus.cancelled:
         return 'Annulée';
+      case ServiceRequestStatus.packageHandedOver:
+        return 'Colis remis';
+      case ServiceRequestStatus.inTransit:
+        return 'En transit';
+      case ServiceRequestStatus.arrivedAtDestination:
+        return 'Arrivé à destination';
+      case ServiceRequestStatus.delivered:
+        return 'Livré';
     }
   }
 
@@ -579,6 +625,14 @@ class _ReceivedServiceRequestsScreenState
         return Colors.green;
       case ServiceRequestStatus.cancelled:
         return Colors.grey;
+      case ServiceRequestStatus.packageHandedOver:
+        return Colors.teal;
+      case ServiceRequestStatus.inTransit:
+        return Colors.indigo;
+      case ServiceRequestStatus.arrivedAtDestination:
+        return Colors.amber;
+      case ServiceRequestStatus.delivered:
+        return Colors.green;
     }
   }
 

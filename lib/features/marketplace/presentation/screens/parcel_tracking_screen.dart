@@ -1,6 +1,9 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/theme/design_system.dart';
@@ -46,6 +49,8 @@ class _ParcelTrackingScreenState extends ConsumerState<ParcelTrackingScreen> {
     super.initState();
     _currentStep = widget.request?.trackingStep ?? ParcelTrackingStep.bookingConfirmed;
     _isInDispute = widget.request?.isInDispute ?? false;
+    _pickupProof = widget.request?.pickupProofUrl;
+    _deliveryProof = widget.request?.deliveryProofUrl;
   }
 
   void _showPickupOtpDisplay() {
@@ -561,40 +566,87 @@ class _ParcelTrackingScreenState extends ConsumerState<ParcelTrackingScreen> {
         );
       }
 
-      if (_currentStep == ParcelTrackingStep.arrivedAtDestination) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Colis arrivé à destination !',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Transmettez votre code de livraison au voyageur ou à votre destinataire pour confirmer la remise.',
-                style: TextStyle(fontSize: 12),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                key: const Key('view_delivery_otp_button'),
-                onPressed: _showDeliveryOtpDisplay,
-                icon: const Icon(Icons.verified_rounded, size: 18),
-                label: const Text('Voir le code de livraison OTP'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[700],
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      if (_currentStep == ParcelTrackingStep.inTransit ||
+          _currentStep == ParcelTrackingStep.arrivedAtDestination) {
+        final isArrived = _currentStep == ParcelTrackingStep.arrivedAtDestination;
+        final code = widget.request?.deliveryOtpCode ?? '739104';
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: (isArrived ? Colors.green : AppColors.primary).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: (isArrived ? Colors.green : AppColors.primary).withValues(alpha: 0.3),
                 ),
               ),
-            ],
-          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        isArrived ? Icons.flight_land_rounded : Icons.flight_takeoff_rounded,
+                        color: isArrived ? Colors.green[700] : AppColors.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          isArrived ? 'Colis arrivé à destination !' : 'Colis en cours d\'acheminement',
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    isArrived
+                        ? 'Le voyageur est sur place. Transmettez le code OTP à votre destinataire pour la remise finale.'
+                        : 'Le transport est en cours. Vous pouvez déjà transmettre le code secret de livraison à votre destinataire.',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          key: const Key('view_delivery_otp_button'),
+                          onPressed: _showDeliveryOtpDisplay,
+                          icon: const Icon(Icons.verified_rounded, size: 18),
+                          label: const Text('Voir le code OTP'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isArrived ? Colors.green[700] : AppColors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Share.share(
+                            'Bonjour, voici le code secret Diaspora pour réceptionner le colis : $code.\n'
+                            'Ne donnez ce code au voyageur qu\'au moment de la remise physique en main propre après vérification du colis.',
+                            subject: 'Code de réception colis Diaspora',
+                          );
+                        },
+                        icon: const Icon(Icons.share_rounded, size: 18),
+                        label: const Text('Partager'),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (_pickupProof != null && _pickupProof!.isNotEmpty)
+              _buildProofPhotoCard(_pickupProof!, 'Photo de prise en charge initiale', isDark),
+          ],
         );
       }
     }
@@ -639,95 +691,270 @@ class _ParcelTrackingScreenState extends ConsumerState<ParcelTrackingScreen> {
       }
 
       if (_currentStep == ParcelTrackingStep.parcelHandedOver) {
-        return ElevatedButton.icon(
-          onPressed: () async {
-            final res = await _resolveRepo().markInTransit(widget.requestId);
-            if (!AppConfig.useMockData && res.isLeft()) {
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Erreur : ${res.fold((f) => f.message, (_) => '')}')),
-              );
-              return;
-            }
-            if (!mounted) return;
-            setState(() => _currentStep = ParcelTrackingStep.inTransit);
-          },
-          icon: const Icon(Icons.flight_takeoff_rounded),
-          label: const Text('Marquer en transit (vol démarré)'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () async {
+                final res = await _resolveRepo().markInTransit(widget.requestId);
+                if (!AppConfig.useMockData && res.isLeft()) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur : ${res.fold((f) => f.message, (_) => '')}')),
+                  );
+                  return;
+                }
+                if (!mounted) return;
+                setState(() => _currentStep = ParcelTrackingStep.inTransit);
+              },
+              icon: const Icon(Icons.flight_takeoff_rounded),
+              label: const Text('Marquer en transit (vol démarré)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+            if (_pickupProof != null && _pickupProof!.isNotEmpty)
+              _buildProofPhotoCard(_pickupProof!, 'Photo de prise en charge', isDark),
+          ],
         );
       }
 
       if (_currentStep == ParcelTrackingStep.inTransit) {
-        return ElevatedButton.icon(
-          onPressed: () async {
-            final res = await _resolveRepo().markArrived(widget.requestId);
-            if (!AppConfig.useMockData && res.isLeft()) {
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Erreur : ${res.fold((f) => f.message, (_) => '')}')),
-              );
-              return;
-            }
-            if (!mounted) return;
-            setState(() => _currentStep = ParcelTrackingStep.arrivedAtDestination);
-          },
-          icon: const Icon(Icons.flight_land_rounded),
-          label: const Text('Confirmer l\'arrivée dans la ville'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () async {
+                final res = await _resolveRepo().markArrived(widget.requestId);
+                if (!AppConfig.useMockData && res.isLeft()) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur : ${res.fold((f) => f.message, (_) => '')}')),
+                  );
+                  return;
+                }
+                if (!mounted) return;
+                setState(() => _currentStep = ParcelTrackingStep.arrivedAtDestination);
+              },
+              icon: const Icon(Icons.flight_land_rounded),
+              label: const Text('Confirmer l\'arrivée dans la ville'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+            if (_pickupProof != null && _pickupProof!.isNotEmpty)
+              _buildProofPhotoCard(_pickupProof!, 'Photo de prise en charge', isDark),
+          ],
         );
       }
 
       if (_currentStep == ParcelTrackingStep.arrivedAtDestination) {
-        return ElevatedButton.icon(
-          key: const Key('enter_delivery_otp_button'),
-          onPressed: _showDeliveryOtpInput,
-          icon: const Icon(Icons.task_alt_rounded),
-          label: const Text('Saisir le code livraison OTP'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green[700],
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ElevatedButton.icon(
+              key: const Key('enter_delivery_otp_button'),
+              onPressed: _showDeliveryOtpInput,
+              icon: const Icon(Icons.task_alt_rounded),
+              label: const Text('Saisir le code livraison OTP'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[700],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+            if (_pickupProof != null && _pickupProof!.isNotEmpty)
+              _buildProofPhotoCard(_pickupProof!, 'Photo de prise en charge', isDark),
+          ],
         );
       }
     }
 
     if (_currentStep == ParcelTrackingStep.delivered) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.green.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          children: const [
-            Icon(Icons.check_circle_rounded, color: Colors.green, size: 28),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Livraison réussie et validée ! Les fonds séquestrés ont été libérés au voyageur.',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.green),
-              ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
             ),
-          ],
-        ),
+            child: const Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Colors.green, size: 28),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Livraison réussie et validée ! Les fonds séquestrés ont été libérés au voyageur.',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.green),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_deliveryProof != null && _deliveryProof!.isNotEmpty)
+            _buildProofPhotoCard(_deliveryProof!, 'Photo de remise au destinataire', isDark),
+          if (_pickupProof != null && _pickupProof!.isNotEmpty)
+            _buildProofPhotoCard(_pickupProof!, 'Photo de prise en charge initiale', isDark),
+        ],
       );
     }
 
     return const SizedBox.shrink();
+  }
+
+  Widget _buildProofPhotoCard(String proofUrl, String label, bool isDark) {
+    final isNetwork = proofUrl.startsWith('http://') || proofUrl.startsWith('https://');
+
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF252525) : Colors.grey[100],
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.photo_camera_rounded, size: 18, color: Colors.green),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Preuve photo',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.green[800],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: GestureDetector(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => Dialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppBar(
+                          title: Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          leading: IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(ctx),
+                          ),
+                          elevation: 0,
+                          backgroundColor: Colors.transparent,
+                        ),
+                        Flexible(
+                          child: isNetwork
+                              ? Image.network(
+                                  proofUrl,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => const Padding(
+                                    padding: EdgeInsets.all(24),
+                                    child: Text('Impossible de charger l\'image'),
+                                  ),
+                                )
+                              : (!kIsWeb && File(proofUrl).existsSync()
+                                  ? Image.file(File(proofUrl), fit: BoxFit.contain)
+                                  : Image.network(
+                                      proofUrl,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, __, ___) => const Padding(
+                                        padding: EdgeInsets.all(24),
+                                        child: Text('Image locale non disponible'),
+                                      ),
+                                    )),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
+                );
+              },
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    height: 140,
+                    width: double.infinity,
+                    child: isNetwork
+                        ? Image.network(
+                            proofUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: Colors.grey[300],
+                              child: const Center(
+                                child: Icon(Icons.broken_image, color: Colors.grey),
+                              ),
+                            ),
+                          )
+                        : (!kIsWeb && File(proofUrl).existsSync()
+                            ? Image.file(File(proofUrl), fit: BoxFit.cover)
+                            : Image.network(
+                                proofUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: Colors.grey[300],
+                                  child: const Center(
+                                    child: Icon(Icons.broken_image, color: Colors.grey),
+                                  ),
+                                ),
+                              )),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.zoom_in, color: Colors.white, size: 16),
+                        SizedBox(width: 4),
+                        Text(
+                          'Agrandir la photo',
+                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildContactAndDisputeRow(BuildContext context, bool isDark) {

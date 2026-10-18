@@ -97,7 +97,8 @@ class ServiceRequestModel {
       parcelWeightKg: _double(json, 'ParcelWeightKg', 'parcelWeightKg'),
       parcelNature: _strOrNull(json, 'ParcelNature', 'parcelNature'),
       declaredValue: _double(json, 'DeclaredValue', 'declaredValue'),
-      pickupOtpCode: _strOrNull(json, 'PickupOtpCode', 'pickupOtpCode'),
+      pickupOtpCode: _strOrNull(json, 'HandoverOtpCode', 'handoverOtpCode') ??
+          _strOrNull(json, 'PickupOtpCode', 'pickupOtpCode'),
       deliveryOtpCode: _strOrNull(json, 'DeliveryOtpCode', 'deliveryOtpCode'),
       trackingStep: _parseTrackingStep(json),
       departureCountryCode: _strOrNull(json, 'DepartureCountryCode', 'departureCountryCode'),
@@ -106,7 +107,8 @@ class ServiceRequestModel {
       arrivalCity: _strOrNull(json, 'ArrivalCity', 'arrivalCity'),
       departureDate: _parseDateTime(json, 'DepartureDate', 'departureDate'),
       arrivalDate: _parseDateTime(json, 'ArrivalDate', 'arrivalDate'),
-      pickupProofUrl: _strOrNull(json, 'PickupProofUrl', 'pickupProofUrl'),
+      pickupProofUrl: _strOrNull(json, 'HandoverProofUrl', 'handoverProofUrl') ??
+          _strOrNull(json, 'PickupProofUrl', 'pickupProofUrl'),
       deliveryProofUrl: _strOrNull(json, 'DeliveryProofUrl', 'deliveryProofUrl'),
       isInDispute: _bool(json, 'IsInDispute', 'isInDispute'),
       disputeReason: _strOrNull(json, 'DisputeReason', 'disputeReason'),
@@ -114,6 +116,24 @@ class ServiceRequestModel {
   }
 
   static ParcelTrackingStep _parseTrackingStep(Map<String, dynamic> json) {
+    final status = _parseStatus(json);
+    switch (status) {
+      case ServiceRequestStatus.packageHandedOver:
+        return ParcelTrackingStep.parcelHandedOver;
+      case ServiceRequestStatus.inTransit:
+        return ParcelTrackingStep.inTransit;
+      case ServiceRequestStatus.arrivedAtDestination:
+        return ParcelTrackingStep.arrivedAtDestination;
+      case ServiceRequestStatus.delivered:
+      case ServiceRequestStatus.completed:
+        return ParcelTrackingStep.delivered;
+      case ServiceRequestStatus.accepted:
+      case ServiceRequestStatus.pending:
+      case ServiceRequestStatus.declined:
+      case ServiceRequestStatus.cancelled:
+        break;
+    }
+
     final val = json['TrackingStep'] ?? json['trackingStep'];
     if (val is int && val >= 0 && val < ParcelTrackingStep.values.length) {
       return ParcelTrackingStep.values[val];

@@ -160,6 +160,14 @@ class ServiceRequest {
         return 'Complétée';
       case ServiceRequestStatus.cancelled:
         return 'Annulée';
+      case ServiceRequestStatus.packageHandedOver:
+        return 'Colis remis';
+      case ServiceRequestStatus.inTransit:
+        return 'En transit';
+      case ServiceRequestStatus.arrivedAtDestination:
+        return 'Arrivé à destination';
+      case ServiceRequestStatus.delivered:
+        return 'Livré';
     }
   }
 
@@ -175,6 +183,14 @@ class ServiceRequest {
         return Colors.green;
       case ServiceRequestStatus.cancelled:
         return Colors.grey;
+      case ServiceRequestStatus.packageHandedOver:
+        return Colors.teal;
+      case ServiceRequestStatus.inTransit:
+        return Colors.indigo;
+      case ServiceRequestStatus.arrivedAtDestination:
+        return Colors.amber;
+      case ServiceRequestStatus.delivered:
+        return Colors.green;
     }
   }
 

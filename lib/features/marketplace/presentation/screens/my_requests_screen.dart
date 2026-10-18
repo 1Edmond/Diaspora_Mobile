@@ -258,6 +258,24 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (request.isParcelRequest &&
+            request.status != ServiceRequestStatus.pending &&
+            request.status != ServiceRequestStatus.declined &&
+            request.status != ServiceRequestStatus.cancelled) ...[
+          FilledButton.icon(
+            onPressed: () {
+              context.push('/marketplace/parcel/track/${request.id}', extra: request);
+            },
+            icon: const Icon(Icons.local_shipping_rounded, size: 14),
+            label: const Text('Suivi du colis'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: const Size(60, 32),
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
         if (request.canPay)
           FilledButton.icon(
             onPressed: () async {
@@ -288,7 +306,7 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
               minimumSize: const Size(60, 32),
             ),
           )
-        else if (request.isHeld)
+        else if (request.isHeld && !request.isParcelRequest)
           FilledButton.icon(
             onPressed: () async {
               try {
@@ -401,6 +419,14 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
         return 'Complétée';
       case ServiceRequestStatus.cancelled:
         return 'Annulée';
+      case ServiceRequestStatus.packageHandedOver:
+        return 'Colis remis';
+      case ServiceRequestStatus.inTransit:
+        return 'En transit';
+      case ServiceRequestStatus.arrivedAtDestination:
+        return 'Arrivé à destination';
+      case ServiceRequestStatus.delivered:
+        return 'Livré';
     }
   }
 
@@ -416,6 +442,14 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
         return Colors.green;
       case ServiceRequestStatus.cancelled:
         return Colors.grey;
+      case ServiceRequestStatus.packageHandedOver:
+        return Colors.teal;
+      case ServiceRequestStatus.inTransit:
+        return Colors.indigo;
+      case ServiceRequestStatus.arrivedAtDestination:
+        return Colors.amber;
+      case ServiceRequestStatus.delivered:
+        return Colors.green;
     }
   }
 

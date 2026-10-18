@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/design_system.dart';
 
 class OtpCodeInputDialog extends StatefulWidget {
@@ -21,14 +24,76 @@ class OtpCodeInputDialog extends StatefulWidget {
 
 class _OtpCodeInputDialogState extends State<OtpCodeInputDialog> {
   final TextEditingController _otpController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
   String? _errorMessage;
-  String? _simulatedPhotoPath;
+  String? _pickedPhotoPath;
 
   @override
   void dispose() {
     _otpController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickPhoto() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Prendre une photo justificative',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+                  title: const Text('Appareil photo (Recommandé)'),
+                  subtitle: const Text('Prendre en photo le colis lors de la remise'),
+                  onTap: () => Navigator.of(ctx).pop(ImageSource.camera),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+                  title: const Text('Galerie de photos'),
+                  onTap: () => Navigator.of(ctx).pop(ImageSource.gallery),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (source == null) return;
+
+    try {
+      final picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        setState(() {
+          _pickedPhotoPath = picked.path;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Impossible d\'accéder à la caméra : $e')),
+        );
+      }
+    }
   }
 
   Future<void> _handleConfirm() async {
@@ -44,7 +109,7 @@ class _OtpCodeInputDialogState extends State<OtpCodeInputDialog> {
     });
 
     try {
-      await widget.onConfirm(code, _simulatedPhotoPath);
+      await widget.onConfirm(code, _pickedPhotoPath);
       if (mounted) {
         Navigator.of(context).pop(true);
       }
@@ -136,36 +201,88 @@ class _OtpCodeInputDialogState extends State<OtpCodeInputDialog> {
 
             const SizedBox(height: 16),
 
-            // Photo justificative button
-            OutlinedButton.icon(
-              key: const Key('take_proof_photo_button'),
-              onPressed: () {
-                setState(() {
-                  _simulatedPhotoPath = 'proof_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
-                });
-              },
-              icon: Icon(
-                _simulatedPhotoPath != null
-                    ? Icons.check_circle_rounded
-                    : Icons.camera_alt_rounded,
-                color: _simulatedPhotoPath != null ? Colors.green : null,
-                size: 20,
-              ),
-              label: Text(
-                _simulatedPhotoPath != null
-                    ? 'Photo de justificatif jointe'
-                    : 'Prendre photo justificative (pesée/remise)',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: _simulatedPhotoPath != null ? Colors.green : null,
+            // Photo justificative
+            if (_pickedPhotoPath != null)
+              Container(
+                height: 120,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
+                ),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(13),
+                      child: !kIsWeb
+                          ? Image.file(
+                              File(_pickedPhotoPath!),
+                              width: double.infinity,
+                              height: 120,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.network(
+                              _pickedPhotoPath!,
+                              width: double.infinity,
+                              height: 120,
+                              fit: BoxFit.cover,
+                            ),
+                    ),
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: CircleAvatar(
+                        radius: 14,
+                        backgroundColor: Colors.black54,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
+                          onPressed: () => setState(() => _pickedPhotoPath = null),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 6,
+                      left: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle_rounded, color: Colors.greenAccent, size: 14),
+                            SizedBox(width: 4),
+                            Text(
+                              'Preuve photo jointe',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              OutlinedButton.icon(
+                key: const Key('take_proof_photo_button'),
+                onPressed: _pickPhoto,
+                icon: const Icon(Icons.camera_alt_rounded, size: 20),
+                label: const Text(
+                  'Prendre photo justificative (remise/pesée)',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                style: OutlinedButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
-              style: OutlinedButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
 
             const SizedBox(height: 24),
 

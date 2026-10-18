@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/theme/design_system.dart';
 
 class OtpCodeDisplayDialog extends StatelessWidget {
@@ -87,21 +88,39 @@ class OtpCodeDisplayDialog extends StatelessWidget {
             ),
             const SizedBox(height: 14),
 
-            // Copy button
-            TextButton.icon(
-              key: const Key('copy_otp_code_button'),
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: otpCode));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Code OTP copié dans le presse-papier !'),
-                    duration: Duration(seconds: 2),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              icon: const Icon(Icons.copy_rounded, size: 18),
-              label: const Text('Copier le code'),
+            // Copy & Share buttons
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                TextButton.icon(
+                  key: const Key('copy_otp_code_button'),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: otpCode));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Code OTP copié dans le presse-papier !'),
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy_rounded, size: 18),
+                  label: const Text('Copier'),
+                ),
+                TextButton.icon(
+                  key: const Key('share_otp_code_button'),
+                  onPressed: () {
+                    Share.share(
+                      'Bonjour, voici ton code secret Diaspora pour réceptionner le colis : $otpCode. Ne donne ce code au voyageur qu\'au moment précis où il te remet le colis en main propre.',
+                      subject: 'Code de réception Colis Diaspora',
+                    );
+                  },
+                  icon: const Icon(Icons.share_rounded, size: 18),
+                  label: const Text('Partager au destinataire'),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 

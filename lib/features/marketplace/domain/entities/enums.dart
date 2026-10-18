@@ -21,11 +21,15 @@ enum ReportStatus {
 }
 
 enum ServiceRequestStatus {
-  pending,
-  accepted,
-  declined,
-  completed,
-  cancelled,
+  pending,              // 0
+  accepted,             // 1
+  declined,             // 2
+  completed,            // 3
+  cancelled,            // 4
+  packageHandedOver,    // 5
+  inTransit,            // 6
+  arrivedAtDestination, // 7
+  delivered,            // 8
 }
 
 enum PaymentStatus {
