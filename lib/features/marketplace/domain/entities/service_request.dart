@@ -37,6 +37,10 @@ class ServiceRequest {
   final String? deliveryProofUrl;
   final bool isInDispute;
   final String? disputeReason;
+  final PaymentSettlementType settlementType;
+  final DirectCashTiming? cashTiming;
+  final double platformDirectFeeAmount;
+  final bool isDirectCashSettled;
 
   const ServiceRequest({
     required this.id,
@@ -72,6 +76,10 @@ class ServiceRequest {
     this.deliveryProofUrl,
     this.isInDispute = false,
     this.disputeReason,
+    this.settlementType = PaymentSettlementType.walletEscrow,
+    this.cashTiming,
+    this.platformDirectFeeAmount = 0.0,
+    this.isDirectCashSettled = false,
   });
 
   bool get isParcelRequest => parcelWeightKg != null && parcelWeightKg! > 0;
@@ -110,6 +118,10 @@ class ServiceRequest {
     String? deliveryProofUrl,
     bool? isInDispute,
     String? disputeReason,
+    PaymentSettlementType? settlementType,
+    DirectCashTiming? cashTiming,
+    double? platformDirectFeeAmount,
+    bool? isDirectCashSettled,
   }) {
     return ServiceRequest(
       id: id ?? this.id,
@@ -145,6 +157,10 @@ class ServiceRequest {
       deliveryProofUrl: deliveryProofUrl ?? this.deliveryProofUrl,
       isInDispute: isInDispute ?? this.isInDispute,
       disputeReason: disputeReason ?? this.disputeReason,
+      settlementType: settlementType ?? this.settlementType,
+      cashTiming: cashTiming ?? this.cashTiming,
+      platformDirectFeeAmount: platformDirectFeeAmount ?? this.platformDirectFeeAmount,
+      isDirectCashSettled: isDirectCashSettled ?? this.isDirectCashSettled,
     );
   }
 

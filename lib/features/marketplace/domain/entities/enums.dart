@@ -49,3 +49,20 @@ enum ParcelTrackingStep {
   arrivedAtDestination, // 4. Arrivé dans la ville de destination
   delivered,        // 5. Colis livré au destinataire (validé par Code Livraison OTP)
 }
+
+enum PaymentSettlementType {
+  walletEscrow,
+  directHandover,
+}
+
+enum DirectCashTiming {
+  atPickup,
+  atDelivery,
+  freeChoice,
+}
+
+enum AllowedSettlementPolicy {
+  walletEscrowOnly,
+  directHandoverOnly,
+  both,
+}

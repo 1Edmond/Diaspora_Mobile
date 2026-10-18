@@ -36,6 +36,10 @@ class ServiceRequestModel {
   final String? deliveryProofUrl;
   final bool isInDispute;
   final String? disputeReason;
+  final PaymentSettlementType settlementType;
+  final DirectCashTiming? cashTiming;
+  final double platformDirectFeeAmount;
+  final bool isDirectCashSettled;
 
   const ServiceRequestModel({
     required this.id,
@@ -71,6 +75,10 @@ class ServiceRequestModel {
     this.deliveryProofUrl,
     this.isInDispute = false,
     this.disputeReason,
+    this.settlementType = PaymentSettlementType.walletEscrow,
+    this.cashTiming,
+    this.platformDirectFeeAmount = 0.0,
+    this.isDirectCashSettled = false,
   });
 
   bool get isParcelRequest => parcelWeightKg != null && parcelWeightKg! > 0;
@@ -112,6 +120,10 @@ class ServiceRequestModel {
       deliveryProofUrl: _strOrNull(json, 'DeliveryProofUrl', 'deliveryProofUrl'),
       isInDispute: _bool(json, 'IsInDispute', 'isInDispute'),
       disputeReason: _strOrNull(json, 'DisputeReason', 'disputeReason'),
+      settlementType: _parseSettlementType(json),
+      cashTiming: _parseCashTiming(json),
+      platformDirectFeeAmount: _double(json, 'PlatformDirectFeeAmount', 'platformDirectFeeAmount') ?? 0.0,
+      isDirectCashSettled: _bool(json, 'IsDirectCashSettled', 'isDirectCashSettled'),
     );
   }
 
@@ -154,6 +166,18 @@ class ServiceRequestModel {
 
   bool get isHeld => paymentStatus == PaymentStatus.held;
   bool get isProcessing => paymentStatus == PaymentStatus.processing;
+
+  String getFormattedPrice() {
+    if (agreedPrice == null) return 'Prix non défini';
+    final s = agreedPrice!.toStringAsFixed(agreedPrice! == agreedPrice!.toInt() ? 0 : 2);
+    final parts = s.split('.');
+    final integerPart = parts[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]} ',
+    );
+    final formatted = parts.length > 1 ? '$integerPart.${parts[1]}' : integerPart;
+    return '$formatted ${agreedCurrency ?? "XOF"}';
+  }
 
   static ServiceRequestStatus _parseStatus(Map<String, dynamic> json) {
     final val = json['Status'] ?? json['status'];
@@ -222,6 +246,35 @@ class ServiceRequestModel {
     return null;
   }
 
+  static PaymentSettlementType _parseSettlementType(Map<String, dynamic> json) {
+    final val = json['SettlementType'] ?? json['settlementType'];
+    if (val is int && val >= 0 && val < PaymentSettlementType.values.length) {
+      return PaymentSettlementType.values[val];
+    }
+    if (val is String) {
+      return PaymentSettlementType.values.firstWhere(
+        (e) => e.name.toLowerCase() == val.toLowerCase(),
+        orElse: () => PaymentSettlementType.walletEscrow,
+      );
+    }
+    return PaymentSettlementType.walletEscrow;
+  }
+
+  static DirectCashTiming? _parseCashTiming(Map<String, dynamic> json) {
+    final val = json['CashTiming'] ?? json['cashTiming'];
+    if (val == null) return null;
+    if (val is int && val >= 0 && val < DirectCashTiming.values.length) {
+      return DirectCashTiming.values[val];
+    }
+    if (val is String) {
+      return DirectCashTiming.values.firstWhere(
+        (e) => e.name.toLowerCase() == val.toLowerCase(),
+        orElse: () => DirectCashTiming.atPickup,
+      );
+    }
+    return null;
+  }
+
   Map<String, dynamic> toJson() => {
     'Id': id,
     'ListingId': listingId,
@@ -256,5 +309,9 @@ class ServiceRequestModel {
     'DeliveryProofUrl': deliveryProofUrl,
     'IsInDispute': isInDispute,
     'DisputeReason': disputeReason,
+    'SettlementType': settlementType.index,
+    'CashTiming': cashTiming?.index,
+    'PlatformDirectFeeAmount': platformDirectFeeAmount,
+    'IsDirectCashSettled': isDirectCashSettled,
   };
 }

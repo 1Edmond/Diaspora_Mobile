@@ -343,27 +343,39 @@ class _ParcelTrackingScreenState extends ConsumerState<ParcelTrackingScreen> {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.shield_rounded, size: 14, color: Colors.green),
-                    SizedBox(width: 4),
-                    Text(
-                      'Séquestre actif',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.green,
-                      ),
+              Builder(
+                builder: (context) {
+                  final isDirect = widget.request?.settlementType == PaymentSettlementType.directHandover;
+                  return Container(
+                    key: const Key('settlement_status_badge'),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDirect
+                          ? Colors.amber.withValues(alpha: 0.2)
+                          : Colors.green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isDirect ? Icons.payments_rounded : Icons.shield_rounded,
+                          size: 14,
+                          color: isDirect ? Colors.amber[800] : Colors.green,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          isDirect ? 'Règlement en main propre' : 'Séquestre actif',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isDirect ? Colors.amber[900] : Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -524,9 +536,94 @@ class _ParcelTrackingScreenState extends ConsumerState<ParcelTrackingScreen> {
     );
   }
 
+  Widget _buildDirectCashInstructionBanner(BuildContext context, bool isDark) {
+    final req = widget.request;
+    final isDirectHandover = req?.settlementType == PaymentSettlementType.directHandover;
+    if (!isDirectHandover) return const SizedBox.shrink();
+
+    final timing = req?.cashTiming ?? DirectCashTiming.atPickup;
+    final amountStr = req != null && req.agreedPrice != null
+        ? req.getFormattedPrice()
+        : 'le montant convenu';
+
+    final String instructionText;
+    if (timing == DirectCashTiming.atDelivery) {
+      instructionText =
+          'Rappel : Le destinataire devra remettre $amountStr en espèces au voyageur lors de la livraison finale.';
+    } else {
+      instructionText =
+          'Rappel : Vous devez régler $amountStr en espèces au voyageur au moment de la remise physique du colis et de la vérification de son poids.';
+    }
+
+    return Container(
+      key: const Key('direct_cash_instruction_banner'),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2E2405) : const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.payments_rounded, color: Colors.amber[800], size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Règlement direct en espèces',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: Colors.amber[900],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  instructionText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.amber[200] : const Color(0xFF78350F),
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '⚠️ Les codes secrets OTP restent actifs et obligatoires pour certifier le transport et sécuriser la transaction.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.white70 : Colors.black87,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionCard(BuildContext context, bool isDark) {
     if (_isInDispute) return const SizedBox.shrink();
 
+    final isDirect = widget.request?.settlementType == PaymentSettlementType.directHandover;
+    final actionWidget = _buildActionStepContent(context, isDark);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (isDirect) _buildDirectCashInstructionBanner(context, isDark),
+        actionWidget,
+      ],
+    );
+  }
+
+  Widget _buildActionStepContent(BuildContext context, bool isDark) {
     // Expéditeur Actions
     if (!widget.isTravelerRole) {
       if (_currentStep == ParcelTrackingStep.bookingConfirmed) {
@@ -788,14 +885,16 @@ class _ParcelTrackingScreenState extends ConsumerState<ParcelTrackingScreen> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.check_circle_rounded, color: Colors.green, size: 28),
-                SizedBox(width: 12),
+                const Icon(Icons.check_circle_rounded, color: Colors.green, size: 28),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Livraison réussie et validée ! Les fonds séquestrés ont été libérés au voyageur.',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.green),
+                    widget.request?.settlementType == PaymentSettlementType.directHandover
+                        ? 'Livraison réussie et validée ! Le règlement direct en espèces a été finalisé.'
+                        : 'Livraison réussie et validée ! Les fonds séquestrés ont été libérés au voyageur.',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.green),
                   ),
                 ),
               ],

@@ -124,5 +124,56 @@ void main() {
       expect(profileType.phoneIndicatif, equals('+228'));
       expect(profileType.flag, equals('🇹🇬'));
     });
+
+    test('ServiceRequestModel deserializes and serializes settlement fields with defaults', () {
+      // 1. Existing reservation JSON without settlement fields defaults safely
+      final legacyJson = {
+        'id': 'legacy-req-1',
+        'listingId': 'listing-1',
+        'listingTitle': 'Colis Lomé - Paris',
+        'requesterId': 'user-1',
+        'providerId': 'user-2',
+        'status': 0,
+        'agreedPrice': 20000.0,
+        'paymentStatus': 1,
+      };
+
+      final legacyModel = ServiceRequestModel.fromJson(legacyJson);
+      expect(legacyModel.settlementType, equals(PaymentSettlementType.walletEscrow));
+      expect(legacyModel.cashTiming, isNull);
+      expect(legacyModel.platformDirectFeeAmount, equals(0.0));
+      expect(legacyModel.isDirectCashSettled, isFalse);
+
+      // 2. Direct cash reservation JSON
+      final directJson = {
+        'id': 'direct-req-1',
+        'listingId': 'listing-1',
+        'listingTitle': 'Colis Lomé - Paris',
+        'requesterId': 'user-1',
+        'providerId': 'user-2',
+        'status': 1,
+        'agreedPrice': 25000.0,
+        'currency': 'XOF',
+        'paymentStatus': 0,
+        'settlementType': 1, // directHandover
+        'cashTiming': 0,     // atPickup
+        'platformDirectFeeAmount': 1000.0,
+        'isDirectCashSettled': true,
+      };
+
+      final directModel = ServiceRequestModel.fromJson(directJson);
+      expect(directModel.settlementType, equals(PaymentSettlementType.directHandover));
+      expect(directModel.cashTiming, equals(DirectCashTiming.atPickup));
+      expect(directModel.platformDirectFeeAmount, equals(1000.0));
+      expect(directModel.isDirectCashSettled, isTrue);
+      expect(directModel.getFormattedPrice(), equals('25 000 XOF'));
+
+      // 3. Round-trip serialization
+      final serialized = directModel.toJson();
+      expect(serialized['SettlementType'], equals(PaymentSettlementType.directHandover.index));
+      expect(serialized['CashTiming'], equals(DirectCashTiming.atPickup.index));
+      expect(serialized['PlatformDirectFeeAmount'], equals(1000.0));
+      expect(serialized['IsDirectCashSettled'], isTrue);
+    });
   });
 }

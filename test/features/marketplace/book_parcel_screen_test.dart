@@ -5,6 +5,7 @@ import 'package:diaspora_app/features/marketplace/data/models/listing_model.dart
 import 'package:diaspora_app/features/marketplace/presentation/screens/book_parcel_screen.dart';
 
 import 'package:diaspora_app/core/constants/enums.dart';
+import 'package:diaspora_app/features/marketplace/domain/entities/enums.dart';
 import 'package:diaspora_app/features/profile/domain/entities/profile.dart';
 import 'package:diaspora_app/features/profile/presentation/controllers/profile_providers.dart';
 
@@ -56,7 +57,7 @@ void main() {
     transportMode: 'Avion',
   );
 
-  Widget buildTestableWidget({ListingModel? listing, Profile? profile}) {
+  Widget buildTestableWidget({ListingModel? listing, Profile? profile, AllowedSettlementPolicy? policy}) {
     return ProviderScope(
       overrides: [
         activeProfileProvider.overrideWithValue(profile ?? mockActiveProfile),
@@ -65,6 +66,7 @@ void main() {
         home: BookParcelScreen(
           listingId: (listing ?? testTravelListing).id,
           listing: listing ?? testTravelListing,
+          policy: policy,
         ),
       ),
     );
@@ -138,6 +140,76 @@ void main() {
 
       final confirmBtn = tester.widget<ElevatedButton>(find.byKey(const Key('confirm_escrow_booking_button')));
       expect(confirmBtn.onPressed, isNull);
+    });
+
+    testWidgets('displays settlement options and switches dynamically to direct cash with breakdown and timing', (tester) async {
+      await tester.pumpWidget(buildTestableWidget());
+      await tester.pumpAndSettle();
+
+      // Check Option A (Escrow) is present with badge and explanation
+      expect(find.text('Protection Diaspora 100%'), findsOneWidget);
+      expect(
+        find.textContaining('Vos fonds sont bloqués en toute sécurité sur votre portefeuille'),
+        findsOneWidget,
+      );
+
+      // Check Option B (Direct Handover) is present with badge and explanation
+      expect(find.text('Paiement en main propre'), findsOneWidget);
+      expect(
+        find.textContaining('Vous remettrez le montant convenu directement au voyageur en espèces'),
+        findsOneWidget,
+      );
+
+      // Default is Escrow -> confirm button says "Confirmer et bloquer sous séquestre"
+      expect(find.text('Confirmer et bloquer sous séquestre'), findsOneWidget);
+
+      // Tap on Option B (Direct Cash)
+      final directOption = find.byKey(const Key('settlement_option_direct_handover'));
+      await tester.ensureVisible(directOption);
+      await tester.tap(directOption);
+      await tester.pumpAndSettle();
+
+      // Cash timing options should appear
+      expect(find.byKey(const Key('cash_timing_pickup')), findsOneWidget);
+      expect(find.byKey(const Key('cash_timing_delivery')), findsOneWidget);
+
+      // Dynamic price breakdown should update
+      expect(find.textContaining('Frais de réservation :'), findsOneWidget);
+      expect(find.textContaining('Montant en espèces à remettre au voyageur :'), findsOneWidget);
+      expect(find.text('Confirmer la réservation directe'), findsOneWidget);
+
+      // Toggle cash timing to delivery
+      await tester.tap(find.byKey(const Key('cash_timing_delivery')));
+      await tester.pumpAndSettle();
+
+      // Switch back to Option A (Escrow)
+      final escrowOption = find.byKey(const Key('settlement_option_wallet_escrow'));
+      await tester.ensureVisible(escrowOption);
+      await tester.tap(escrowOption);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Confirmer et bloquer sous séquestre'), findsOneWidget);
+      expect(find.text('Total sous séquestre sécurisé'), findsOneWidget);
+    });
+
+    testWidgets('enforces AllowedSettlementPolicy when restricted', (tester) async {
+      // 1. walletEscrowOnly: Direct handover option is hidden
+      await tester.pumpWidget(buildTestableWidget(policy: AllowedSettlementPolicy.walletEscrowOnly));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('settlement_option_wallet_escrow')), findsOneWidget);
+      expect(find.byKey(const Key('settlement_option_direct_handover')), findsNothing);
+
+      // 2. directHandoverOnly: Escrow option is hidden and Direct Cash is auto-selected
+      await tester.pumpWidget(buildTestableWidget(policy: AllowedSettlementPolicy.directHandoverOnly));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('settlement_option_wallet_escrow')), findsNothing);
+      expect(find.byKey(const Key('settlement_option_direct_handover')), findsOneWidget);
+      final confirmBtn = find.byKey(const Key('confirm_escrow_booking_button'));
+      await tester.ensureVisible(confirmBtn);
+      await tester.pumpAndSettle();
+      expect(find.text('Confirmer la réservation directe'), findsOneWidget);
     });
   });
 }

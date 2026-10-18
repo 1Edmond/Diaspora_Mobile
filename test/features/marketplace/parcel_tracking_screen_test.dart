@@ -101,5 +101,93 @@ void main() {
       expect(find.byKey(const Key('take_proof_photo_button')), findsOneWidget);
       expect(find.byKey(const Key('submit_otp_button')), findsOneWidget);
     });
+
+    testWidgets('for direct handover request, displays amber badge and atPickup reminder banner with active OTP actions', (tester) async {
+      final directPickupRequest = ServiceRequestModel(
+        id: 'req-direct-1',
+        listingId: 'listing-1',
+        listingTitle: 'Transport Lomé ➔ Moscou',
+        requesterId: 'sender-user-1',
+        requesterName: 'Afi Expéditeur',
+        providerId: 'traveler-user-2',
+        providerName: 'Kofi Voyageur',
+        message: 'Colis de 5kg (vêtements)',
+        status: ServiceRequestStatus.accepted,
+        agreedPrice: 25000.0,
+        agreedCurrency: 'XOF',
+        paymentStatus: PaymentStatus.notApplicable,
+        createdAt: DateTime.now(),
+        trackingStep: ParcelTrackingStep.bookingConfirmed,
+        parcelWeightKg: 5.0,
+        parcelNature: 'Vêtements & Textiles',
+        declaredValue: 30000.0,
+        pickupOtpCode: '482915',
+        deliveryOtpCode: '739104',
+        departureCountryCode: 'TG',
+        departureCity: 'Lomé',
+        arrivalCountryCode: 'RU',
+        arrivalCity: 'Moscou',
+        settlementType: PaymentSettlementType.directHandover,
+        cashTiming: DirectCashTiming.atPickup,
+      );
+
+      await tester.pumpWidget(buildTestableWidget(request: directPickupRequest, isTraveler: false));
+      await tester.pumpAndSettle();
+
+      // Header shows amber badge "Règlement en main propre" instead of "Séquestre actif"
+      expect(find.text('Règlement en main propre'), findsOneWidget);
+      expect(find.text('Séquestre actif'), findsNothing);
+
+      // Action card displays atPickup reminder banner
+      expect(find.byKey(const Key('direct_cash_instruction_banner')), findsOneWidget);
+      expect(
+        find.textContaining('Rappel : Vous devez régler 25 000 XOF en espèces au voyageur au moment de la remise physique'),
+        findsOneWidget,
+      );
+
+      // OTP actions remain 100% active
+      final viewOtpButton = find.byKey(const Key('view_pickup_otp_button'));
+      expect(viewOtpButton, findsOneWidget);
+    });
+
+    testWidgets('for direct handover with atDelivery timing, displays delivery reminder banner', (tester) async {
+      final directDeliveryRequest = ServiceRequestModel(
+        id: 'req-direct-2',
+        listingId: 'listing-1',
+        listingTitle: 'Transport Lomé ➔ Moscou',
+        requesterId: 'sender-user-1',
+        requesterName: 'Afi Expéditeur',
+        providerId: 'traveler-user-2',
+        providerName: 'Kofi Voyageur',
+        message: 'Colis de 5kg (vêtements)',
+        status: ServiceRequestStatus.accepted,
+        agreedPrice: 25000.0,
+        agreedCurrency: 'XOF',
+        paymentStatus: PaymentStatus.notApplicable,
+        createdAt: DateTime.now(),
+        trackingStep: ParcelTrackingStep.bookingConfirmed,
+        parcelWeightKg: 5.0,
+        parcelNature: 'Vêtements & Textiles',
+        declaredValue: 30000.0,
+        pickupOtpCode: '482915',
+        deliveryOtpCode: '739104',
+        departureCountryCode: 'TG',
+        departureCity: 'Lomé',
+        arrivalCountryCode: 'RU',
+        arrivalCity: 'Moscou',
+        settlementType: PaymentSettlementType.directHandover,
+        cashTiming: DirectCashTiming.atDelivery,
+      );
+
+      await tester.pumpWidget(buildTestableWidget(request: directDeliveryRequest, isTraveler: false));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Règlement en main propre'), findsOneWidget);
+      expect(find.byKey(const Key('direct_cash_instruction_banner')), findsOneWidget);
+      expect(
+        find.textContaining('Rappel : Le destinataire devra remettre 25 000 XOF en espèces au voyageur lors de la livraison finale.'),
+        findsOneWidget,
+      );
+    });
   });
 }

@@ -1,5 +1,6 @@
 import 'availability_slot_model.dart';
 import '../../domain/entities/listing.dart';
+import '../../domain/entities/enums.dart';
 
 class CreateListingDto {
   final String categoryId;
@@ -249,6 +250,9 @@ class CreateServiceRequestDto {
   final String? packageDescription;
   final double? agreedPrice;
   final String? agreedCurrency;
+  final PaymentSettlementType? settlementType;
+  final DirectCashTiming? cashTiming;
+  final double? platformDirectFeeAmount;
 
   const CreateServiceRequestDto({
     required this.listingId,
@@ -259,6 +263,9 @@ class CreateServiceRequestDto {
     this.packageDescription,
     this.agreedPrice,
     this.agreedCurrency,
+    this.settlementType,
+    this.cashTiming,
+    this.platformDirectFeeAmount,
   });
 
   Map<String, dynamic> toJson() => {
@@ -271,6 +278,9 @@ class CreateServiceRequestDto {
     if (packageDescription != null) 'PackageDescription': packageDescription,
     if (agreedPrice != null) 'AgreedPrice': agreedPrice,
     if (agreedCurrency != null) 'AgreedCurrency': agreedCurrency,
+    if (settlementType != null) 'SettlementType': settlementType!.index,
+    if (cashTiming != null) 'CashTiming': cashTiming!.index,
+    if (platformDirectFeeAmount != null) 'PlatformDirectFeeAmount': platformDirectFeeAmount,
   };
 }
 
@@ -299,6 +309,9 @@ class BookParcelDto {
   final double declaredValue;
   final String currency;
   final String? message;
+  final PaymentSettlementType? settlementType;
+  final DirectCashTiming? cashTiming;
+  final double? platformDirectFeeAmount;
 
   const BookParcelDto({
     required this.listingId,
@@ -307,6 +320,9 @@ class BookParcelDto {
     required this.declaredValue,
     required this.currency,
     this.message,
+    this.settlementType,
+    this.cashTiming,
+    this.platformDirectFeeAmount,
   });
 
   Map<String, dynamic> toJson() => {
@@ -316,5 +332,8 @@ class BookParcelDto {
     'DeclaredValue': declaredValue,
     'Currency': currency,
     'Message': message ?? '',
+    if (settlementType != null) 'SettlementType': settlementType!.index,
+    if (cashTiming != null) 'CashTiming': cashTiming!.index,
+    if (platformDirectFeeAmount != null) 'PlatformDirectFeeAmount': platformDirectFeeAmount,
   };
 }
