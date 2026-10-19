@@ -52,6 +52,9 @@ class DocumentLocalStorage {
   }
 
   static Future<void> clearAll() async {
+    if (!Hive.isBoxOpen(boxName)) {
+      await Hive.openBox<Map<String, dynamic>>(boxName);
+    }
     final box = Hive.box<Map<String, dynamic>>(boxName);
     await box.clear();
   }

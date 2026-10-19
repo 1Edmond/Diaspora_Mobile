@@ -117,7 +117,11 @@ void main() {
     expect(logged, true);
     expect(notifier.state.hasValue, true);
     expect(notifier.state.value!.email, 'test@email.com');
-    expect(notifier.state.value!.email, 'test@email.com');
     expect(notifier.state.value!.togolesePhoneNumber, '+22890000000');
+
+    // Test logout cleans tokens and state
+    await notifier.logout();
+    expect(notifier.state.value, isNull);
+    expect(notifier.currentAccessToken, isNull);
   });
 }

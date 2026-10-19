@@ -39,6 +39,10 @@ class WalletNotifier extends StateNotifier<AsyncValue<Wallet?>> {
     }
   }
 
+  void reset() {
+    state = const AsyncValue.data(null);
+  }
+
   Future<bool> isPinSet() async => authService.isPinSet();
   Future<void> setPin(String pin) async => authService.setPin(pin);
   Future<bool> verifyPin(String pin) async => authService.verifyPin(pin);

@@ -8,6 +8,8 @@ import 'package:flutter/foundation.dart';
 class FeatureFlags {
   FeatureFlags._();
 
+  static final ValueNotifier<int> revision = ValueNotifier<int>(0);
+
   // ===========================================================================
   // MODULE SWITCHES (Modifiables directement dans le code ou via bootstrap)
   // ===========================================================================
@@ -23,6 +25,22 @@ class FeatureFlags {
   static bool enableProfile = true;
   static bool enableSettings = true;
 
+  /// Réinitialise les flags aux valeurs par défaut locales.
+  static void resetToDefault() {
+    enableWallet = true;
+    enableDocuments = true;
+    enableMarketplace = true;
+    enableProcedures = false;
+    enableChat = true;
+    enableCommunity = false;
+    enableCommittee = false;
+    enableFreelance = false;
+    enableServices = true;
+    enableProfile = true;
+    enableSettings = true;
+    revision.value++;
+  }
+
   /// Met à jour les flags depuis la configuration reçue du serveur.
   static void updateFromRemote(Map<String, dynamic> remoteFlags) {
     if (remoteFlags.containsKey('wallet')) enableWallet = remoteFlags['wallet'] == true;
@@ -36,6 +54,7 @@ class FeatureFlags {
     if (remoteFlags.containsKey('services')) enableServices = remoteFlags['services'] == true;
     if (remoteFlags.containsKey('profile')) enableProfile = remoteFlags['profile'] == true;
     if (remoteFlags.containsKey('settings')) enableSettings = remoteFlags['settings'] == true;
+    revision.value++;
   }
 
   /// Vérifie si l'accès à une route donnée est activé d'après les flags configurés.

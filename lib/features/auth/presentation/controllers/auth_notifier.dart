@@ -7,10 +7,15 @@ import '../../data/models/user_model.dart';
 import '../../../profile/data/services/profile_service.dart';
 import '../../../profile/presentation/controllers/profile_providers.dart';
 import '../../../documents/data/local_storage/document_local_storage.dart';
+import '../../../../core/config/feature_flags.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/services/biometric_key_service.dart';
+import '../../../../core/services/bootstrap_service.dart';
 import '../../../../core/services/device_identity_service.dart';
 import '../../../../shared/services/storage_service.dart';
+import '../../../profile/domain/entities/profile.dart';
+import '../../../wallet/domain/wallet_auth_service.dart';
+import '../../../wallet/presentation/controllers/wallet_notifier.dart';
 import 'pending_verification_provider.dart';
 import 'auth_restore_provider.dart';
 
@@ -272,8 +277,26 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       } catch (e) {
         debugPrint('BiometricKeyService clear failed: $e');
       }
+      if (getIt.isRegistered<IWalletAuthService>()) {
+        try {
+          await getIt<IWalletAuthService>().clearPin();
+        } catch (e) {
+          debugPrint('IWalletAuthService clearPin failed: $e');
+        }
+      }
+      try {
+        _ref?.read(walletProvider.notifier).reset();
+      } catch (e) {
+        debugPrint('walletProvider reset failed: $e');
+      }
+      try {
+        await _storage.remove('pendingVerificationEmail');
+      } catch (e) {
+        debugPrint('remove pendingVerificationEmail failed: $e');
+      }
       _ref?.read(profileListProvider.notifier).setProfiles([]);
       _ref?.read(activeProfileIdProvider.notifier).clear();
+      FeatureFlags.resetToDefault();
       _ref?.read(authRestoredProvider.notifier).state = false;
       authRestoreTick.value++;
       state = const AsyncValue.data(null);
@@ -292,8 +315,20 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       }
 
       final activeId = _ref?.read(activeProfileIdProvider);
-      if (activeId == null && profiles.isNotEmpty) {
+      Profile? activeProfile;
+      if (activeId != null) {
+        activeProfile = profiles.where((p) => p.id == activeId).firstOrNull;
+      }
+      if (activeProfile == null && profiles.isNotEmpty) {
+        activeProfile = profiles.first;
         _ref?.read(activeProfileIdProvider.notifier).setActiveProfileId(profiles.first.id);
+      }
+
+      if (activeProfile != null && activeProfile.profileTypeId.isNotEmpty) {
+        await BootstrapService.initialize(
+          profileTypeId: activeProfile.profileTypeId,
+          countryCode: activeProfile.countryCode,
+        );
       }
     } catch (e, st) {
       debugPrint('fetchProfiles failed: $e');

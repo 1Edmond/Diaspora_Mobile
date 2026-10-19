@@ -15,7 +15,7 @@ void main() {
   });
 
   test('BootstrapService applies remote feature flags and parcelTransportCategoryId', () async {
-    final client = DioClient();
+    final client = DioClient(useMockData: true);
     GetIt.instance.registerSingleton<DioClient>(client);
 
     await BootstrapService.initialize();
@@ -25,5 +25,21 @@ void main() {
     expect(FeatureFlags.enableMarketplace, isTrue);
     expect(FeatureFlags.enableDocuments, isTrue);
     expect(FeatureFlags.enableProcedures, isFalse);
+    expect(FeatureFlags.enableFreelance, isFalse);
+  });
+
+  test('BootstrapService sends profileTypeId and updates feature flags dynamically', () async {
+    final client = DioClient(useMockData: true);
+    GetIt.instance.registerSingleton<DioClient>(client);
+
+    expect(FeatureFlags.enableFreelance, isFalse);
+
+    await BootstrapService.initialize(profileTypeId: 'freelance-provider-type', countryCode: 'TG');
+
+    expect(FeatureFlags.enableFreelance, isTrue);
+
+    // Test resetToDefault
+    FeatureFlags.resetToDefault();
+    expect(FeatureFlags.enableFreelance, isFalse);
   });
 }

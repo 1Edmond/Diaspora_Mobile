@@ -17,8 +17,9 @@ class ApiException implements Exception {
 class DioClient {
   final Dio dio;
 
-  DioClient({Dio? client}) : dio = client ?? Dio(_defaultOptions()) {
-    if (AppConfig.useMockData) {
+  DioClient({Dio? client, bool? useMockData}) : dio = client ?? Dio(_defaultOptions()) {
+    final mock = useMockData ?? AppConfig.useMockData;
+    if (mock) {
       // Mock interceptor routes HTTP calls to in-app MockApi so the app
       // can use a realistic network surface while remaining offline.
       dio.interceptors.add(_MockInterceptor());
@@ -167,24 +168,39 @@ class _MockInterceptor extends Interceptor {
 
       // Mobile Bootstrap Configuration
       if (method == 'GET' && (path == '/config/mobile' || path == '/api/config/mobile')) {
+        final profileTypeId = options.uri.queryParameters['profileTypeId'] ??
+            options.queryParameters['profileTypeId']?.toString();
+        final modules = <String, bool>{
+          'wallet': true,
+          'documents': true,
+          'marketplace': true,
+          'procedures': false,
+          'chat': true,
+          'community': false,
+          'committee': false,
+          'freelance': false,
+          'services': true,
+          'settings': true,
+          'profile': true,
+        };
+        if (profileTypeId != null) {
+          final lower = profileTypeId.toLowerCase();
+          if (lower.contains('freelance')) {
+            modules['freelance'] = true;
+          }
+          if (lower.contains('procedure')) {
+            modules['procedures'] = true;
+          }
+          if (lower.contains('community')) {
+            modules['community'] = true;
+          }
+        }
         return handler.resolve(
           Response(
             requestOptions: options,
             statusCode: 200,
             data: {
-              'activeModules': {
-                'wallet': true,
-                'documents': true,
-                'marketplace': true,
-                'procedures': false,
-                'chat': true,
-                'community': false,
-                'committee': false,
-                'freelance': false,
-                'services': true,
-                'settings': true,
-                'profile': true,
-              },
+              'activeModules': modules,
               'parcelTransportCategoryId': '019248a0-6b3a-7182-9a84-7c6d9e0f1234',
               'defaultLocale': 'fr',
               'supportedLocales': ['fr', 'en', 'ru'],

@@ -7,7 +7,7 @@ import '../network/dio_client.dart';
 class BootstrapService {
   BootstrapService._();
 
-  static Future<void> initialize() async {
+  static Future<void> initialize({String? profileTypeId, String? countryCode}) async {
     try {
       if (!GetIt.instance.isRegistered<DioClient>()) {
         if (kDebugMode) {
@@ -16,8 +16,20 @@ class BootstrapService {
         return;
       }
 
+      final queryParams = <String, String>{};
+      if (profileTypeId != null && profileTypeId.isNotEmpty) {
+        queryParams['profileTypeId'] = profileTypeId;
+      }
+      if (countryCode != null && countryCode.isNotEmpty) {
+        queryParams['countryCode'] = countryCode;
+      }
+
+      final queryString = queryParams.isNotEmpty
+          ? '?${queryParams.entries.map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}').join('&')}'
+          : '';
+
       final client = GetIt.instance<DioClient>();
-      final response = await client.get<Map<String, dynamic>>('/config/mobile');
+      final response = await client.get<Map<String, dynamic>>('/config/mobile$queryString');
 
       if (response.containsKey('activeModules') && response['activeModules'] is Map) {
         final activeModules = Map<String, dynamic>.from(response['activeModules'] as Map);

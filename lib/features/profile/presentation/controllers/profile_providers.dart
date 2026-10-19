@@ -4,17 +4,21 @@ import '../../data/models/public_profile_type_model.dart';
 import '../../data/services/profile_service.dart';
 import '../../../../shared/services/storage_service.dart';
 
+import '../../../../core/services/bootstrap_service.dart';
+
 const _activeProfileIdKey = 'active_profile_id';
 
 final activeProfileIdProvider = StateNotifierProvider<ActiveProfileIdNotifier, String?>((ref) {
-  return ActiveProfileIdNotifier();
+  return ActiveProfileIdNotifier(ref: ref);
 });
 
 class ActiveProfileIdNotifier extends StateNotifier<String?> {
   final StorageService _storage;
+  final Ref? _ref;
 
-  ActiveProfileIdNotifier({StorageService? storage})
+  ActiveProfileIdNotifier({StorageService? storage, Ref? ref})
     : _storage = storage ?? StorageService(),
+      _ref = ref,
       super(null) {
     _restore();
   }
@@ -29,6 +33,21 @@ class ActiveProfileIdNotifier extends StateNotifier<String?> {
   void setActiveProfileId(String id) {
     state = id;
     _storage.save(_activeProfileIdKey, id);
+    _syncBootstrap(id);
+  }
+
+  Future<void> _syncBootstrap(String profileId) async {
+    if (_ref == null) return;
+    try {
+      final profiles = _ref!.read(profileListProvider).valueOrNull ?? [];
+      final profile = profiles.where((p) => p.id == profileId).firstOrNull;
+      if (profile != null && profile.profileTypeId.isNotEmpty) {
+        await BootstrapService.initialize(
+          profileTypeId: profile.profileTypeId,
+          countryCode: profile.countryCode,
+        );
+      }
+    } catch (_) {}
   }
 
   void clear() {

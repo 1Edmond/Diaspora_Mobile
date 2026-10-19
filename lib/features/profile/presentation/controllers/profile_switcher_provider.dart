@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/profile.dart';
+import '../../../../core/services/bootstrap_service.dart';
 import 'profile_providers.dart';
 
 final profileSwitcherProvider =
@@ -44,7 +45,7 @@ class ProfileSwitcherNotifier extends StateNotifier<ProfileSwitcherState> {
     return idx >= 0 ? idx : 0;
   }
 
-  void switchToProfile(String profileId) {
+  Future<void> switchToProfile(String profileId) async {
     final profiles = _profiles;
     final target = profiles.where((p) => p.id == profileId).firstOrNull;
     if (target == null) return;
@@ -53,24 +54,31 @@ class ProfileSwitcherNotifier extends StateNotifier<ProfileSwitcherState> {
 
     _ref.read(activeProfileIdProvider.notifier).setActiveProfileId(profileId);
 
+    if (target.profileTypeId.isNotEmpty) {
+      await BootstrapService.initialize(
+        profileTypeId: target.profileTypeId,
+        countryCode: target.countryCode,
+      );
+    }
+
     state = state.copyWith(isSwitching: false);
   }
 
-  void switchToNext() {
+  Future<void> switchToNext() async {
     final profiles = _profiles;
     if (profiles.length <= 1) return;
 
     final nextIndex = (activeIndex + 1) % profiles.length;
-    switchToProfile(profiles[nextIndex].id);
+    await switchToProfile(profiles[nextIndex].id);
   }
 
-  void switchToPrevious() {
+  Future<void> switchToPrevious() async {
     final profiles = _profiles;
     if (profiles.length <= 1) return;
 
     final previousIndex =
         (activeIndex - 1 + profiles.length) % profiles.length;
-    switchToProfile(profiles[previousIndex].id);
+    await switchToProfile(profiles[previousIndex].id);
   }
 
   void clearLastSwitchedName() {
