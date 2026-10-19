@@ -15,6 +15,7 @@ import '../../data/models/payment_policy_model.dart';
 import '../../domain/repositories/marketplace_repository.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/listing.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/network/dio_client.dart';
 
 class MarketplaceRepositoryImpl implements IMarketplaceRepository {
@@ -23,12 +24,16 @@ class MarketplaceRepositoryImpl implements IMarketplaceRepository {
   MarketplaceRepositoryImpl({required DioClient client}) : _client = client;
 
   @override
-  Future<List<MarketplaceCategoryModel>> getCategories() async {
+  Future<List<MarketplaceCategoryModel>> getCategories({String? profileTypeId}) async {
+    final effectiveProfileTypeId = profileTypeId ?? AppConfig.currentProfileTypeId;
+    final query = effectiveProfileTypeId != null && effectiveProfileTypeId.isNotEmpty
+        ? '?profileTypeId=$effectiveProfileTypeId'
+        : '';
     dynamic res;
     try {
-      res = await _client.get('/category');
+      res = await _client.get('/category$query');
     } catch (_) {
-      res = await _client.get('/servicelisting/categories');
+      res = await _client.get('/servicelisting/categories$query');
     }
     final list = (res as List<dynamic>? ?? []);
     return list

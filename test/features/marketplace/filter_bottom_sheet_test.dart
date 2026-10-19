@@ -12,7 +12,7 @@ import 'package:diaspora_app/features/marketplace/domain/entities/listing.dart';
 
 class FakeMarketplaceRepository implements IMarketplaceRepository {
   @override
-  Future<List<MarketplaceCategoryModel>> getCategories() async {
+  Future<List<MarketplaceCategoryModel>> getCategories({String? profileTypeId}) async {
     return const [
       MarketplaceCategoryModel(id: 'transport-colis', name: 'Transport de colis', count: 5),
       MarketplaceCategoryModel(id: 'logement', name: 'Logement', count: 2),

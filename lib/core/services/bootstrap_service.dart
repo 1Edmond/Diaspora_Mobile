@@ -19,6 +19,7 @@ class BootstrapService {
       final queryParams = <String, String>{};
       if (profileTypeId != null && profileTypeId.isNotEmpty) {
         queryParams['profileTypeId'] = profileTypeId;
+        AppConfig.currentProfileTypeId = profileTypeId;
       }
       if (countryCode != null && countryCode.isNotEmpty) {
         queryParams['countryCode'] = countryCode;

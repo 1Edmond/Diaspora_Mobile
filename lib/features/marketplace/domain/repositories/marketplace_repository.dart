@@ -25,7 +25,7 @@ abstract class IMarketplaceRepository {
   /// than a hardcoded list, so the filter UI never offers a category that
   /// returns zero results. Implements the "Load categories from API" TODO
   /// that used to live directly in filter_bottom_sheet.dart.
-  Future<List<MarketplaceCategoryModel>> getCategories();
+  Future<List<MarketplaceCategoryModel>> getCategories({String? profileTypeId});
 
   Future<PagedResult<ListingSummaryModel>> searchListings({
     int page = 1,

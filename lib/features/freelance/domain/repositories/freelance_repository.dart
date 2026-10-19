@@ -6,7 +6,7 @@ import '../../data/models/freelance_dtos.dart';
 
 abstract class IFreelanceRepository {
   // Categories
-  Future<List<JobCategoryModel>> getCategories();
+  Future<List<JobCategoryModel>> getCategories({String? profileTypeId});
 
   // Templates (employer)
   Future<JobTemplateModel> createTemplate(CreateJobTemplateDto dto);

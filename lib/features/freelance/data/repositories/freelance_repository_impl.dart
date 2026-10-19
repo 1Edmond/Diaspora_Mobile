@@ -15,8 +15,12 @@ class FreelanceRepositoryImpl implements IFreelanceRepository {
   FreelanceRepositoryImpl({required DioClient client}) : _client = client;
 
   @override
-  Future<List<JobCategoryModel>> getCategories() async {
-    final res = await _client.get('/freelance/job-categories');
+  Future<List<JobCategoryModel>> getCategories({String? profileTypeId}) async {
+    final effectiveProfileTypeId = profileTypeId ?? AppConfig.currentProfileTypeId;
+    final query = effectiveProfileTypeId != null && effectiveProfileTypeId.isNotEmpty
+        ? '?profileTypeId=$effectiveProfileTypeId'
+        : '';
+    final res = await _client.get('/freelance/job-categories$query');
     if (res is List) {
       return res
           .map((e) => JobCategoryModel.fromJson(e as Map<String, dynamic>))
