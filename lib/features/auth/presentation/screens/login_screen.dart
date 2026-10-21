@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -412,17 +413,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         context.go('/home');
       } else {
         final authError = ref.read(authNotifierProvider).error;
-        final message = authError is DeviceMismatchException
-            ? authError.message
-            : 'Email ou mot de passe incorrect';
+        String message = 'Email ou mot de passe incorrect';
+        if (authError is DeviceMismatchException) {
+          message = authError.message;
+        } else if (authError is DioException && authError.response?.data is Map) {
+          final data = authError.response!.data as Map;
+          message = data['error']?.toString() ?? data['message']?.toString() ?? message;
+        }
         messenger.showSnackBar(SnackBar(content: Text(message)));
       }
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
+      String message = 'Erreur de connexion, veuillez réessayer';
+      if (e is DioException && e.response?.data is Map) {
+        final data = e.response!.data as Map;
+        message = data['error']?.toString() ?? data['message']?.toString() ?? message;
+      }
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Erreur de connexion, veuillez réessayer'),
-        ),
+        SnackBar(content: Text(message)),
       );
     }
   }
